@@ -82,6 +82,8 @@ public class BridgeCallbackHandler {
     // Pattern to extract player name and object_id from cast messages in game chat HTML
     private static final Pattern CAST_OWNER_PATTERN = Pattern.compile(
             "<font[^>]*>([^<]+)</font>\\s+casts\\s+.*?object_id='([^']+)'");
+    // Pattern to strip HTML tags from XMage messages before sending to LLMs
+    private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]+>");
 
     private final BridgeMageClient client;
     private Session session;
@@ -545,7 +547,7 @@ public class BridgeCallbackHandler {
 
         result.put("action_pending", true);
         result.put("action_type", action.method().name());
-        result.put("message", action.message());
+        result.put("message", stripHtml(action.message()));
 
         // Add compact phase context and player summary
         if (gameView != null) {
@@ -992,7 +994,7 @@ public class BridgeCallbackHandler {
                     trackSentResponse(currentGameId, ResponseType.BOOLEAN, false, null);
                     result.put("action_pending", false);
                     result.put("action_taken", "auto_cancelled_no_targets");
-                    result.put("message", msg.getMessage());
+                    result.put("message", stripHtml(msg.getMessage()));
                     lastChoices = null;
                     break;
                 }
@@ -1015,7 +1017,7 @@ public class BridgeCallbackHandler {
                     for (Map.Entry<UUID, String> entry : choices.entrySet()) {
                         var choiceEntry = new HashMap<String, Object>();
                         choiceEntry.put("index", idx);
-                        choiceEntry.put("description", entry.getValue());
+                        choiceEntry.put("description", stripHtml(entry.getValue()));
                         choiceList.add(choiceEntry);
                         indexToUuid.add(entry.getKey());
                         idx++;
@@ -1043,7 +1045,7 @@ public class BridgeCallbackHandler {
                             for (Map.Entry<String, String> entry : keyChoices.entrySet()) {
                                 var choiceEntry = new HashMap<String, Object>();
                                 choiceEntry.put("index", idx);
-                                choiceEntry.put("description", entry.getValue());
+                                choiceEntry.put("description", stripHtml(entry.getValue()));
                                 choiceList.add(choiceEntry);
                                 indexToKey.add(entry.getKey());
                                 idx++;
@@ -2307,7 +2309,7 @@ public class BridgeCallbackHandler {
             int requestedOffset = cursor;
             int effectiveOffset = Math.max(requestedOffset, oldestOffset);
             effectiveOffset = Math.min(effectiveOffset, totalLength);
-            result.put("log", getGameLogSince(effectiveOffset));
+            result.put("log", stripHtml(getGameLogSince(effectiveOffset)));
             result.put("total_length", totalLength);
             result.put("truncated", requestedOffset < oldestOffset);
             result.put("cursor", totalLength);
@@ -2317,10 +2319,10 @@ public class BridgeCallbackHandler {
             return result;
         }
 
-        String log = getGameLog(maxChars);
-        result.put("log", log);
+        String rawLog = getGameLog(maxChars);
+        result.put("log", stripHtml(rawLog));
         result.put("total_length", totalLength);
-        result.put("truncated", log.length() < totalLength);
+        result.put("truncated", rawLog.length() < totalLength);
         result.put("cursor", totalLength);
         return result;
     }
@@ -2352,7 +2354,7 @@ public class BridgeCallbackHandler {
             }
 
             if (startPos >= 0) {
-                result.put("log", logStr.substring(startPos));
+                result.put("log", stripHtml(logStr.substring(startPos)));
                 result.put("truncated", false);
                 result.put("since_turn", sinceTurn);
                 result.put("since_player", player);
@@ -2361,7 +2363,7 @@ public class BridgeCallbackHandler {
                 Integer currentTurn = playerTurnCounts.get(player);
                 if (currentTurn != null && sinceTurn <= currentTurn && !logStr.isEmpty()) {
                     // Turn existed but was trimmed from the buffer
-                    result.put("log", logStr);
+                    result.put("log", stripHtml(logStr));
                     result.put("truncated", true);
                     result.put("since_player", player);
                 } else {
@@ -2913,7 +2915,7 @@ public class BridgeCallbackHandler {
                     if (perm.isToken()) {
                         permInfo.put("token", true);
                         // Include rules for tokens since get_oracle_text can't look them up
-                        List<String> rules = perm.getRules();
+                        List<String> rules = stripHtmlList(perm.getRules());
                         if (rules != null && !rules.isEmpty()) {
                             permInfo.put("rules", rules);
                         }
@@ -3008,7 +3010,7 @@ public class BridgeCallbackHandler {
                     stackItem.put("id", shortIds.getOrAssign(card.getId()));
                 }
                 stackItem.put("name", safeDisplayName(card));
-                stackItem.put("rules", card.getRules());
+                stackItem.put("rules", stripHtmlList(card.getRules()));
                 if (card.getTargets() != null && !card.getTargets().isEmpty()) {
                     stackItem.put("target_count", card.getTargets().size());
                 }
@@ -3191,7 +3193,7 @@ public class BridgeCallbackHandler {
                         CardView cardView = findCardViewById(uuid);
                         if (cardView != null) {
                             entry.put("name", cardView.getDisplayName());
-                            entry.put("rules", cardView.getRules());
+                            entry.put("rules", stripHtmlList(cardView.getRules()));
                         } else {
                             entry.put("error", "not found");
                         }
@@ -3214,7 +3216,7 @@ public class BridgeCallbackHandler {
                 entry.put("name", name);
                 CardInfo cardInfo = CardRepository.instance.findCard(name);
                 if (cardInfo != null) {
-                    entry.put("rules", cardInfo.getRules());
+                    entry.put("rules", stripHtmlList(cardInfo.getRules()));
                 } else {
                     entry.put("error", "not found");
                 }
@@ -3233,7 +3235,7 @@ public class BridgeCallbackHandler {
                 if (cardView != null) {
                     result.put("success", true);
                     result.put("name", cardView.getDisplayName());
-                    result.put("rules", cardView.getRules());
+                    result.put("rules", stripHtmlList(cardView.getRules()));
                     return result;
                 } else {
                     result.put("success", false);
@@ -3252,7 +3254,7 @@ public class BridgeCallbackHandler {
         if (cardInfo != null) {
             result.put("success", true);
             result.put("name", cardInfo.getName());
-            result.put("rules", cardInfo.getRules());
+            result.put("rules", stripHtmlList(cardInfo.getRules()));
             return result;
         } else {
             result.put("success", false);
@@ -3579,6 +3581,22 @@ public class BridgeCallbackHandler {
             return picker.getMessage();
         }
         return "";
+    }
+
+    /** Strip HTML tags from XMage messages. XMage uses &lt;font&gt; tags for colored text in its Swing UI. */
+    private static String stripHtml(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return HTML_TAG_PATTERN.matcher(s).replaceAll("");
+    }
+
+    /** Strip HTML tags from each string in a list (e.g. card rules). */
+    private static List<String> stripHtmlList(List<String> list) {
+        if (list == null) return null;
+        var result = new ArrayList<String>(list.size());
+        for (String s : list) {
+            result.add(stripHtml(s));
+        }
+        return result;
     }
 
     private void handleChatMessage(ClientCallback callback) {
