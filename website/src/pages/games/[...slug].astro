@@ -93,10 +93,13 @@ const { slug } = Astro.params;
       <div id="card-preview" class="hidden">
         <img id="preview-image" alt="" />
         <div class="card-meta">
-          <div id="preview-name" class="card-name"></div>
+          <div class="card-name-row">
+            <div id="preview-name" class="card-name"></div>
+            <div id="preview-cost" class="card-cost"></div>
+          </div>
           <div id="preview-type" class="card-type"></div>
-          <div id="preview-stats" class="card-stats"></div>
           <pre id="preview-rules" class="card-rules"></pre>
+          <div id="preview-stats" class="card-stats"></div>
         </div>
       </div>
     </div>
@@ -429,6 +432,7 @@ const { slug } = Astro.params;
       container: document.getElementById("card-preview"),
       image: document.getElementById("preview-image"),
       name: document.getElementById("preview-name"),
+      cost: document.getElementById("preview-cost"),
       type: document.getElementById("preview-type"),
       stats: document.getElementById("preview-stats"),
       rules: document.getElementById("preview-rules"),
@@ -790,9 +794,13 @@ const { slug } = Astro.params;
       var prevSeq = index > 0 ? game.snapshots[index - 1].seq : 0;
       var curSeq = snap.seq;
 
+      // Spam patterns to filter from the game log
+      var SPAM_RE = / skip attack$|^Attacker: .+ unblocked$/;
+
       // All game actions + chat up to current snapshot
       var allActions = game.actions.filter(function (a) {
         if (a.seq > curSeq) return false;
+        if (a.type !== "chat" && SPAM_RE.test(a.message)) return false;
         if (filterPlayer) {
           if (a.type === "chat") {
             if (a.from !== filterPlayer) return false;
@@ -870,6 +878,16 @@ const { slug } = Astro.params;
             actionList.appendChild(renderAnnotation(ann));
           }
         });
+      }
+
+      // Show winner at end of game
+      if (game.winner && index === game.snapshots.length - 1) {
+        var winLine = document.createElement("div");
+        winLine.className = "game-result-line";
+        var winIdx = playerColorMap[game.winner];
+        var winCls = winIdx != null ? "action-" + R.PLAYER_COLORS[winIdx] : "";
+        winLine.innerHTML = '<span class="' + winCls + '">' + escapeHtml(game.winner) + '</span> wins the game!';
+        actionList.appendChild(winLine);
       }
 
       // Sync game log height with left column, then auto-scroll to bottom
