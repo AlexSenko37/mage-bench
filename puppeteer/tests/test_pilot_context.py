@@ -415,17 +415,6 @@ def test_render_no_orphaned_tool_results():
 
 
 # ---------------------------------------------------------------------------
-# save_strategy: _summarize_tool_result
-# ---------------------------------------------------------------------------
-
-
-def test_summarize_save_strategy():
-    content = json.dumps({"saved": True, "chars": 42})
-    result = _summarize_tool_result("save_strategy", content)
-    assert result == "saved 42 chars"
-
-
-# ---------------------------------------------------------------------------
 # _extract_last_reasoning
 # ---------------------------------------------------------------------------
 
@@ -476,58 +465,14 @@ def test_extract_last_reasoning_skips_none_content():
 
 
 def test_build_reset_message_base_only():
-    result = _build_reset_message("Continue playing.", "", "")
+    result = _build_reset_message("Continue playing.", "")
     assert result == "Continue playing."
 
 
-def test_build_reset_message_with_strategy():
-    result = _build_reset_message("Continue.", "Focus on aggro", "")
-    assert "Continue." in result
-    assert "Your saved strategy notes: Focus on aggro" in result
-
-
 def test_build_reset_message_with_reasoning():
-    result = _build_reset_message("Continue.", "", "I was about to attack")
+    result = _build_reset_message("Continue.", "I was about to attack")
     assert "Continue." in result
     assert "Before your context was reset, you were thinking: I was about to attack" in result
-
-
-def test_build_reset_message_with_both():
-    result = _build_reset_message("Continue.", "Play aggro", "Attack next turn")
-    assert "Continue." in result
-    assert "Your saved strategy notes: Play aggro" in result
-    assert "Before your context was reset, you were thinking: Attack next turn" in result
-    # Strategy comes before reasoning
-    assert result.index("strategy notes") < result.index("context was reset")
-
-
-# ---------------------------------------------------------------------------
-# _render_context with saved_strategy
-# ---------------------------------------------------------------------------
-
-
-def test_render_short_history_with_strategy():
-    """Strategy is appended to system prompt even for short histories."""
-    history = _make_history(5)
-    messages = _render_context(history, SYSTEM_PROMPT, STATE_SUMMARY, saved_strategy="Play aggro")
-    assert messages[0]["role"] == "system"
-    assert "Your saved strategy notes: Play aggro" in messages[0]["content"]
-    assert messages[0]["content"].startswith(SYSTEM_PROMPT)
-
-
-def test_render_short_history_no_strategy():
-    """Without strategy, system prompt is unmodified."""
-    history = _make_history(5)
-    messages = _render_context(history, SYSTEM_PROMPT, STATE_SUMMARY, saved_strategy="")
-    assert messages[0] == {"role": "system", "content": SYSTEM_PROMPT}
-
-
-def test_render_long_history_with_strategy():
-    """Strategy is in system prompt even for long histories."""
-    n = CONTEXT_RECENT_COUNT + CONTEXT_SUMMARY_COUNT + 10
-    history = _make_history(n)
-    messages = _render_context(history, SYSTEM_PROMPT, STATE_SUMMARY, saved_strategy="Control deck")
-    assert "Your saved strategy notes: Control deck" in messages[0]["content"]
 
 
 # ---------------------------------------------------------------------------
@@ -678,13 +623,13 @@ def test_render_no_cache_control_plain_string():
     assert sys_msg["content"] == SYSTEM_PROMPT
 
 
-def test_render_cache_control_with_strategy():
-    """cache_control + strategy: strategy appended to text, cache_control on block."""
+def test_render_cache_control_with_no_strategy():
+    """cache_control without strategy: system prompt used directly."""
     history = _make_history(5)
     cc = {"type": "ephemeral"}
-    messages = _render_context(history, SYSTEM_PROMPT, STATE_SUMMARY, saved_strategy="Play aggro", cache_control=cc)
+    messages = _render_context(history, SYSTEM_PROMPT, STATE_SUMMARY, cache_control=cc)
     sys_msg = messages[0]
     assert isinstance(sys_msg["content"], list)
     block = sys_msg["content"][0]
-    assert "Play aggro" in block["text"]
+    assert block["text"] == SYSTEM_PROMPT
     assert block["cache_control"] == {"type": "ephemeral"}
