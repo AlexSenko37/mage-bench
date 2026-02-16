@@ -490,18 +490,10 @@ def start_server(
     config_path: Path,
     log_path: Path,
 ) -> subprocess.Popen:
-    """Start the XMage server.
-
-    Uses stock XMage server with testMode enabled, which provides:
-    - Skipped password verification
-    - Skipped deck validation
-    - Extended idle timeouts
-    - Skipped user stats operations
-    """
+    """Start the XMage server."""
     jvm_args = " ".join(
         [
             config.jvm_headless_opts,
-            "-Dxmage.testMode=true",
             f"-Dxmage.config.path={config_path}",
         ]
     )
