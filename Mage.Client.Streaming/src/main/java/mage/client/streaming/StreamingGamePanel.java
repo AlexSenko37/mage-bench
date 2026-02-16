@@ -4,6 +4,7 @@ import mage.abilities.icon.CardIconRenderSettings;
 import mage.cards.Card;
 import mage.cards.MageCard;
 import mage.cards.MageCardLocation;
+import mage.client.MageFrame;
 import mage.client.MagePane;
 import mage.client.SessionHandler;
 import mage.client.cards.Cards;
@@ -253,6 +254,8 @@ public class StreamingGamePanel extends GamePanel {
         super.init(messageId, game, callGameUpdateAfterInit);
         this.lastGame = game;
         roundTracker.update(game);
+        // Update the window title with the game directory name
+        updateFrameGameName();
         // Hide the central hand container (we show hands in play areas instead)
         hideHandContainer();
         requestHandPermissions(game);
@@ -272,6 +275,18 @@ public class StreamingGamePanel extends GamePanel {
         schedulePopupDismissal();
         pushOverlayState(game, true);
         writeStateSnapshotIfChanged(game);
+    }
+
+    private void updateFrameGameName() {
+        String gameDirStr = System.getProperty("xmage.streaming.gameDir");
+        if (gameDirStr == null || gameDirStr.isEmpty()) {
+            return;
+        }
+        MageFrame frame = MageFrame.getInstance();
+        if (frame instanceof StreamingMageFrame) {
+            String gameName = java.nio.file.Paths.get(gameDirStr).getFileName().toString();
+            ((StreamingMageFrame) frame).setGameName(gameName);
+        }
     }
 
     @Override
