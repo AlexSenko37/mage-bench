@@ -17,7 +17,7 @@ from blunder_analysis import (
     _extract_oracle_fields,
     _format_card_ref,
     _format_decisions,
-    _parse_json_array,
+    _parse_annotation,
     main,
 )
 
@@ -118,35 +118,49 @@ def _mock_response(content: str, prompt_tokens: int = 2000, completion_tokens: i
     return response
 
 
-# --- _parse_json_array ---
+# --- _parse_annotation ---
 
 
-class TestParseJsonArray:
-    def test_plain_json(self) -> None:
-        assert _parse_json_array('[{"a": 1}]') == [{"a": 1}]
+class TestParseAnnotation:
+    def test_plain_object(self) -> None:
+        assert _parse_annotation('{"a": 1}') == {"a": 1}
 
-    def test_empty_array(self) -> None:
-        assert _parse_json_array("[]") == []
+    def test_null(self) -> None:
+        assert _parse_annotation("null") is None
+
+    def test_empty_array_compat(self) -> None:
+        assert _parse_annotation("[]") is None
+
+    def test_single_element_array_compat(self) -> None:
+        assert _parse_annotation('[{"a": 1}]') == {"a": 1}
 
     def test_markdown_json_fence(self) -> None:
-        text = '```json\n[{"a": 1}]\n```'
-        assert _parse_json_array(text) == [{"a": 1}]
+        text = '```json\n{"a": 1}\n```'
+        assert _parse_annotation(text) == {"a": 1}
 
-    def test_markdown_plain_fence(self) -> None:
-        text = "```\n[1, 2, 3]\n```"
-        assert _parse_json_array(text) == [1, 2, 3]
+    def test_markdown_null_fence(self) -> None:
+        text = "```json\nnull\n```"
+        assert _parse_annotation(text) is None
 
     def test_surrounding_text(self) -> None:
-        text = 'Here are the results:\n[{"a": 1}]\nDone.'
-        assert _parse_json_array(text) == [{"a": 1}]
+        text = 'Here is the result:\n{"a": 1}\nDone.'
+        assert _parse_annotation(text) == {"a": 1}
 
-    def test_rejects_non_array(self) -> None:
-        with pytest.raises(AssertionError, match="Expected JSON array"):
-            _parse_json_array('{"a": 1}')
+    def test_text_with_null(self) -> None:
+        assert _parse_annotation("The play was reasonable.\n\nnull") is None
+
+    def test_text_with_reasonable(self) -> None:
+        assert _parse_annotation("This is a reasonable play.") is None
+
+    def test_unquoted_keys(self) -> None:
+        text = '{severity: "minor", category: "test", description: "d", actionTaken: "a", betterLine: "b"}'
+        result = _parse_annotation(text)
+        assert result is not None
+        assert result["severity"] == "minor"
 
     def test_rejects_garbage(self) -> None:
-        with pytest.raises(AssertionError, match="No JSON array"):
-            _parse_json_array("no json here at all")
+        with pytest.raises((json.JSONDecodeError, AssertionError)):
+            _parse_annotation("no json here at all")
 
 
 # --- _compute_cost ---
@@ -211,8 +225,9 @@ class TestFormatDecisions:
         result = _format_decisions([_make_decision()])
         # Alice (deciding player) should show full hand
         assert "hand=[Mountain, Lightning Bolt]" in result
-        # Bob (opponent) should only show hand count
-        assert "Bob: 20hp hand=7" in result
+        # Bob (opponent) should not show hand count (hidden info)
+        assert "Bob: 20hp bf=" in result
+        assert "hand=" not in result.split("Bob:")[1].split("\n")[0]
 
     def test_truncates_reasoning(self) -> None:
         long_reasoning = "x" * 1000
@@ -514,7 +529,7 @@ class TestMainIntegration:
     @patch("blunder_analysis._get_oracle_texts", return_value={})
     @patch("blunder_analysis.fetch_openrouter_prices", return_value=_TEST_PRICES)
     @patch("blunder_analysis.OpenAI")
-    def test_filters_invalid_snapshot_index(
+    def test_injects_metadata_fields(
         self,
         mock_openai_cls: MagicMock,
         _mock_prices: MagicMock,
@@ -528,25 +543,25 @@ class TestMainIntegration:
         mock_client = MagicMock()
         mock_openai_cls.return_value = mock_client
 
-        # Returns 2 annotations: one valid (index 0), one out of range (index 999)
-        valid_ann = {
-            "snapshotIndex": 0,
-            "player": "Alice",
-            "type": "blunder",
+        # LLM returns only severity/category/description (no snapshotIndex/player/type)
+        llm_ann = {
             "severity": "minor",
             "category": "unused_mana",
             "description": "test",
             "actionTaken": "test",
             "betterLine": "test",
         }
-        invalid_ann = {**valid_ann, "snapshotIndex": 999}
-        mock_client.chat.completions.create.return_value = _mock_response(json.dumps([valid_ann, invalid_ann]))
+        mock_client.chat.completions.create.return_value = _mock_response(json.dumps(llm_ann))
 
         main(str(gz_path))
 
         result = self._read_gz(gz_path)
         assert len(result["annotations"]) == 1
-        assert result["annotations"][0]["snapshotIndex"] == 0
+        ann = result["annotations"][0]
+        # These fields are injected server-side
+        assert ann["type"] == "blunder"
+        assert ann["player"] == "Alice"
+        assert "snapshotIndex" in ann
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"})
     @patch("blunder_analysis._get_oracle_texts", return_value={})

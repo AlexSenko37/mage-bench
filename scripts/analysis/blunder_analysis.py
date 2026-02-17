@@ -13,6 +13,7 @@ Requires OPENROUTER_API_KEY environment variable.
 import gzip
 import json
 import os
+import re
 import sys
 import tempfile
 import urllib.request
@@ -22,7 +23,7 @@ from pathlib import Path
 from openai import OpenAI
 
 from annotate_game import annotate_game
-from extract_decisions import extract_decisions
+from extract_decisions import _summarize_snapshot, extract_decisions
 from puppeteer.llm_cost import fetch_openrouter_prices, get_model_price
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -50,7 +51,8 @@ MAX_WORKERS = 50
 # v7: include stack, graveyard contents, exile contents in decision context
 # v8: include Scryfall oracle text in per-decision prompt
 # v9: switch from Sonnet 4.5 (thinking=low) to Opus 4.6 (no extended thinking)
-BLUNDER_SCRIPT_VERSION = 9
+# v10: add prior context (snapshot from 2 turns ago + action deltas)
+BLUNDER_SCRIPT_VERSION = 10
 
 # --- Prompt components ---
 
@@ -87,9 +89,6 @@ cards for nothing, missed lethal, or made an error that directly led to losing."
 
 ANNOTATION_SCHEMA = """\
 {
-  "snapshotIndex": <int>,
-  "player": "<name>",
-  "type": "blunder",
   "severity": "questionable" | "minor" | "moderate" | "major",
   "category": "<short_snake_case_label>",
   "description": "<what went wrong in concrete game terms>",
@@ -97,24 +96,26 @@ ANNOTATION_SCHEMA = """\
   "betterLine": "<what they should have done>"
 }"""
 
-PER_DECISION_SYSTEM = f"""\
+PER_DECISION_SYSTEM = """\
 You are a Magic: The Gathering expert evaluating a single decision from a game replay.
 
-Analyze the decision below. If the play was reasonable, return an empty JSON array: []
-If it was a blunder, return a JSON array with one annotation object.
+Analyze the decision below. If the play was reasonable, return null.
+If it was a blunder, return a JSON annotation object.
 
 Most decisions are reasonable — only flag clear mistakes or questionable choices.
 
+You may be given prior context showing the board state from earlier and the action log \
+since then. Use this to understand how the game reached the current state."""
+
+PER_DECISION_FOOTER = f"""\
 {SHARED_CATEGORIES}
 
 {SHARED_SEVERITY}
 
 ## Output Format
 
-Return ONLY a JSON array — either empty [] or containing one annotation object:
-{ANNOTATION_SCHEMA}
-
-Use the snapshot= number from the decision header as snapshotIndex."""
+Return ONLY valid JSON — either `null` (no blunder) or a single annotation object:
+{ANNOTATION_SCHEMA}"""
 
 
 def _load_game(gz_path: str) -> dict:
@@ -224,15 +225,19 @@ def _format_card_ref(card: dict) -> str:
     if card.get("card_faces"):
         parts = []
         for face in card["card_faces"]:
-            parts.append(_format_card_ref(face))
-        return " // ".join(parts)
+            # Strip leading "- " for faces since we join with " // "
+            parts.append(_format_card_ref(face).lstrip("- "))
+        return "- " + " // ".join(parts)
     name = card["name"]
     mana = card.get("mana_cost", "")
     type_line = card.get("type_line", "")
     oracle = card.get("oracle_text", "")
+    # Collapse newlines in oracle text to ` / ` for single-line display
+    if oracle:
+        oracle = oracle.replace("\n", " / ")
     pt = f" {card['power']}/{card['toughness']}" if card.get("power") else ""
     loyalty = f" [Loyalty: {card['loyalty']}]" if card.get("loyalty") else ""
-    line = f"{name} {mana} -- {type_line}{pt}{loyalty}"
+    line = f"- {name} {mana} -- {type_line}{pt}{loyalty}"
     if oracle:
         line += f": {oracle}"
     return line
@@ -257,21 +262,128 @@ def _card_names_in_decision(decision: dict) -> set[str]:
     return names
 
 
+_BASIC_LANDS = {
+    "Plains",
+    "Island",
+    "Swamp",
+    "Mountain",
+    "Forest",
+    "Snow-Covered Plains",
+    "Snow-Covered Island",
+    "Snow-Covered Swamp",
+    "Snow-Covered Mountain",
+    "Snow-Covered Forest",
+    "Wastes",
+}
+
+
 def _card_reference_for_decision(decision: dict, oracle_texts: dict[str, dict]) -> str:
     """Build a card reference section for a single decision."""
     names = _card_names_in_decision(decision) & set(oracle_texts.keys())
+    names -= _BASIC_LANDS
     if not names:
         return ""
     lines = [_format_card_ref(oracle_texts[n]) for n in sorted(names)]
     return "## Card Reference\n\n" + "\n".join(lines)
 
 
+_ACTION_NOISE = re.compile(
+    r" draws a card$"
+    r"|^spectator\d+ has started watching$"
+    r"| skip attack$"
+    r"| keeps hand$"
+    r"| skips Draw step$"
+    r"| puts .+ from stack (onto the Battlefield|into their graveyard)$"
+    r"| puts .+ from hand onto the Battlefield$"
+)
+
+
+def _actions_by_turn(actions: list[dict]) -> dict[int, list[str]]:
+    """Split action log messages into per-turn buckets using TURN markers.
+
+    Rewrites TURN headers from XMage's sequential numbering to per-player
+    turn numbers: "TURN 5 for Alice (20 - 18)" → "Alice turn 3 (20 - 18)".
+    Filters out noisy/redundant messages (draw step, skip attack, zone moves).
+    """
+    by_turn: dict[int, list[str]] = {}
+    current_turn = 0
+    player_turn_counts: dict[str, int] = {}
+    for a in actions:
+        msg = a.get("message", "")
+        m = re.match(r"^TURN (\d+) for (.+?)( \(.+\))$", msg)
+        if m:
+            current_turn = int(m.group(1))
+            player_name = m.group(2)
+            life_info = m.group(3)
+            player_turn_counts[player_name] = player_turn_counts.get(player_name, 0) + 1
+            pt = player_turn_counts[player_name]
+            msg = f"{player_name} turn {pt}{life_info}"
+        elif _ACTION_NOISE.search(msg):
+            continue
+        if current_turn > 0 and msg:
+            by_turn.setdefault(current_turn, []).append(msg)
+    return by_turn
+
+
+def _snapshot_for_turn(snapshots: list[dict], turn: int) -> dict | None:
+    """Find the first snapshot for a given turn number."""
+    for snap in snapshots:
+        if snap.get("turn") == turn:
+            return snap
+    return None
+
+
+def _format_prior_context(
+    decision: dict,
+    snapshots: list[dict],
+    actions_by_turn: dict[int, list[str]],
+    num_players: int,
+) -> str:
+    """Build prior context: snapshot from 2 turn cycles ago + action deltas.
+
+    A turn cycle = one turn per player. So 2 cycles back = 2 * num_players
+    turn numbers back from the current turn.
+    """
+    current_turn = decision.get("turn")
+    lookback = 2 * num_players
+    if not current_turn or current_turn <= lookback:
+        return ""
+
+    ref_turn = current_turn - lookback
+    ref_snap = _snapshot_for_turn(snapshots, ref_turn)
+    if ref_snap is None:
+        return ""
+
+    # Format the reference snapshot
+    summary = _summarize_snapshot(ref_snap)
+    players_parts: list[str] = []
+    for p in summary.get("players", []):
+        bf = p.get("battlefield", [])
+        s = f"{p['name']}: {p.get('life', '?')}hp"
+        if bf:
+            s += f" bf=[{', '.join(str(x) for x in bf[:8])}]"
+        gy = p.get("graveyard", [])
+        if gy:
+            s += f" gy=[{', '.join(str(x) for x in gy)}]"
+        players_parts.append(s)
+
+    lines = ["## Prior Context (2 turn cycles ago)\n"]
+    lines.append(f"Board: {' | '.join(players_parts)}")
+
+    # Add action deltas for turns ref_turn through current_turn - 1
+    lines.append("")
+    for t in range(ref_turn, current_turn):
+        turn_actions = actions_by_turn.get(t, [])
+        for msg in turn_actions:
+            lines.append(msg)
+
+    return "\n".join(lines)
+
+
 def _game_overview(data: dict) -> str:
     lines = [
         f"Game: {data['id']}",
         f"Format: {data.get('deckType', '?')} ({data.get('gameType', '?')})",
-        f"Turns: {data['totalTurns']}",
-        f"Winner: {data['winner']}",
     ]
     for p in data["players"]:
         lines.append(f"  {p['name']} ({p.get('model', '?')})")
@@ -297,7 +409,8 @@ def _format_decisions(decisions: list[dict]) -> str:
                 else:
                     s = f"{p['name']}: {p.get('life', '?')}hp hand=0"
             else:
-                s = f"{p['name']}: {p.get('life', '?')}hp hand={p.get('hand_count', '?')}"
+                # Only show public info for opponents
+                s = f"{p['name']}: {p.get('life', '?')}hp"
             if bf:
                 s += f" bf=[{', '.join(str(x) for x in bf[:8])}]"
             gy = p.get("graveyard", [])
@@ -375,45 +488,94 @@ def _call_llm(
     model: str,
     system: str,
     user: str,
+    retries: int = 3,
 ) -> tuple[str, int, int]:
-    """Call LLM. Returns (text, prompt_tokens, completion_tokens)."""
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        max_tokens=16384,
-    )
-    text = response.choices[0].message.content or ""
-    usage = response.usage
-    assert usage is not None, "API response missing usage data"
-    return text, usage.prompt_tokens, usage.completion_tokens
+    """Call LLM with retry on server errors. Returns (text, prompt_tokens, completion_tokens)."""
+    import time
+
+    for attempt in range(retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                max_tokens=16384,
+            )
+            text = response.choices[0].message.content or ""
+            usage = response.usage
+            assert usage is not None, "API response missing usage data"
+            return text, usage.prompt_tokens, usage.completion_tokens
+        except Exception as e:
+            err_str = str(e)
+            retryable = (
+                "500" in err_str
+                or "502" in err_str
+                or "503" in err_str
+                or "401" in err_str
+            )
+            if attempt < retries and retryable:
+                print(f"    Retrying after error (attempt {attempt + 1})...")
+                time.sleep(2 ** (attempt + 1))
+            else:
+                raise
 
 
-def _parse_json_array(text: str) -> list:
-    """Parse a JSON array from LLM response, stripping markdown fences if present."""
+def _parse_annotation(text: str) -> dict | None:
+    """Parse a JSON annotation (object or null) from LLM response.
+
+    Strips markdown fences if present. Returns None for null/empty responses,
+    or a dict for a blunder annotation.
+    """
     text = text.strip()
-    # Strip markdown code fences
-    if text.startswith("```"):
-        lines = text.split("\n")
-        lines = lines[1:]  # drop opening fence line
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
+    # Strip markdown code fences (may appear at start or after analysis text)
+    fence_match = re.search(r"```(?:json)?\s*\n", text)
+    if fence_match:
+        after_fence = text[fence_match.end() :]
+        close = after_fence.find("```")
+        if close != -1:
+            text = after_fence[:close].strip()
+        else:
+            text = after_fence.strip()
+
+    # Check for null-like responses
+    text_lower = text.lower()
+    if text_lower in ("null", "[]", "none"):
+        return None
+
+    # Look for a JSON object — must start with `{"` or `{word:` (not mana like {T}, {1})
+    json_match = re.search(r'\{\s*"|\{\w+\s*:', text)
+    if json_match is None:
+        # No JSON object — if text is analysis concluding "reasonable", treat as null
+        if (
+            "null" in text_lower
+            or "no blunder" in text_lower
+            or "reasonable" in text_lower
+            or "not a blunder" in text_lower
+        ):
+            return None
+        assert False, f"No JSON found and can't interpret as null:\n{text[:500]}"
+
+    start = json_match.start()
+    end = text.rfind("}")
+    assert end > start, f"Unmatched braces in response:\n{text[:500]}"
+    json_str = text[start : end + 1]
 
     try:
-        result = json.loads(text)
+        result = json.loads(json_str)
     except json.JSONDecodeError:
-        # Try extracting [...]  from surrounding text
-        start = text.find("[")
-        end = text.rfind("]")
-        assert start != -1 and end != -1, (
-            f"No JSON array found in response:\n{text[:500]}"
-        )
-        result = json.loads(text[start : end + 1])
+        # Fix common LLM JSON errors: unquoted keys
+        fixed = re.sub(r"(?<=\{|,)\s*(\w+)\s*:", r' "\1":', json_str)
+        result = json.loads(fixed)
 
-    assert isinstance(result, list), f"Expected JSON array, got {type(result).__name__}"
+    if result is None:
+        return None
+    if isinstance(result, list):
+        return result[0] if result else None
+    assert isinstance(result, dict), (
+        f"Expected JSON object or null, got {type(result).__name__}"
+    )
     return result
 
 
@@ -440,6 +602,9 @@ def _eval_one_decision(
     overview: str,
     decision: dict,
     oracle_texts: dict[str, dict],
+    snapshots: list[dict],
+    actions_by_turn: dict[int, list[str]],
+    num_players: int,
 ) -> tuple[list[dict], float, bool]:
     """Evaluate a single decision. Returns (annotations, cost_usd, parsed_ok).
 
@@ -447,9 +612,14 @@ def _eval_one_decision(
     """
     formatted = _format_decisions([decision])
     card_ref = _card_reference_for_decision(decision, oracle_texts)
-    user_msg = f"## Game Overview\n{overview}\n\n## Decision\n\n{formatted}"
+    prior_ctx = _format_prior_context(decision, snapshots, actions_by_turn, num_players)
+    user_msg = f"## Game Overview\n{overview}"
     if card_ref:
         user_msg += f"\n\n{card_ref}"
+    if prior_ctx:
+        user_msg += f"\n\n{prior_ctx}"
+    user_msg += f"\n\n## Decision\n\n{formatted}"
+    user_msg += f"\n\n{PER_DECISION_FOOTER}"
     label = f"decision_{decision['decision_index']}"
 
     text, in_tok, out_tok = _call_llm(client, model, PER_DECISION_SYSTEM, user_msg)
@@ -457,12 +627,21 @@ def _eval_one_decision(
     print(f"  [{label}] {in_tok:,} in / {out_tok:,} out (${cost:.4f})")
 
     try:
-        anns = _parse_json_array(text)
+        ann = _parse_annotation(text)
     except (json.JSONDecodeError, AssertionError) as e:
         print(f"  WARNING: Failed to parse response for {label}: {e}")
+        print(f"    Raw response: {text[:200]!r}")
         return [], cost, False
 
-    return anns, cost, True
+    if ann is None:
+        return [], cost, True
+
+    # Inject constant fields the LLM doesn't need to generate
+    ann["type"] = "blunder"
+    ann["snapshotIndex"] = decision["snapshot_index"]
+    ann["player"] = decision["player"]
+
+    return [ann], cost, True
 
 
 def main(gz_path: str) -> None:
@@ -510,6 +689,12 @@ def main(gz_path: str) -> None:
     oracle_texts = _get_oracle_texts(sorted(card_names))
     print(f"Oracle texts: {len(oracle_texts)} cards resolved")
 
+    # Build action log index for prior context
+    game_actions = data.get("actions", [])
+    abt = _actions_by_turn(game_actions)
+    game_snapshots = data.get("snapshots", [])
+    num_players = len(data.get("players", []))
+
     # --- Per-decision Opus analysis ---
     print(f"\nAnalyzing {len(non_forced)} decisions with {OPUS_MODEL}...")
 
@@ -528,6 +713,9 @@ def main(gz_path: str) -> None:
                 overview,
                 d,
                 oracle_texts,
+                game_snapshots,
+                abt,
+                num_players,
             )
             futures[fut] = d["decision_index"]
 
@@ -535,7 +723,11 @@ def main(gz_path: str) -> None:
         results_by_idx: dict[int, tuple[list[dict], float, bool]] = {}
         for fut in as_completed(futures):
             idx = futures[fut]
-            results_by_idx[idx] = fut.result()
+            try:
+                results_by_idx[idx] = fut.result()
+            except Exception as e:
+                print(f"  WARNING: decision_{idx} failed: {e}")
+                results_by_idx[idx] = ([], 0.0, False)
 
     for d in non_forced:
         anns, cost, parsed_ok = results_by_idx[d["decision_index"]]
