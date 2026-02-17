@@ -11,6 +11,28 @@ import json
 import sys
 
 
+def _summarize_permanent(c: dict) -> str | dict:
+    """Summarize a battlefield permanent. Returns just the name if nothing
+    interesting, or a dict with extra info when tapped/counters/sick."""
+    if not isinstance(c, dict):
+        return str(c)
+    name = c.get("name", "?")
+    extras: dict = {}
+    if c.get("tapped"):
+        extras["tapped"] = True
+    if c.get("summoning_sick"):
+        extras["summoning_sick"] = True
+    if c.get("counters"):
+        extras["counters"] = c["counters"]
+    if c.get("token"):
+        extras["token"] = True
+    if c.get("face_down"):
+        extras["face_down"] = True
+    if extras:
+        return {"name": name, **extras}
+    return name
+
+
 def _summarize_snapshot(snap: dict) -> dict:
     """Summarize a snapshot for decision context."""
     return {
@@ -28,7 +50,9 @@ def _summarize_snapshot(snap: dict) -> dict:
                     for c in p.get("hand", [])
                 ],
                 "hand_count": p.get("hand_count", len(p.get("hand", []))),
-                "battlefield": [c.get("name", "?") for c in p.get("battlefield", [])],
+                "battlefield": [
+                    _summarize_permanent(c) for c in p.get("battlefield", [])
+                ],
                 "graveyard": [
                     c.get("name", "?") if isinstance(c, dict) else str(c)
                     for c in p.get("graveyard", [])
@@ -170,6 +194,7 @@ def extract_decisions(gz_path: str) -> list[dict]:
             {
                 "decision_index": len(decisions),
                 "snapshot_index": snap_idx,
+                "action_ts": action_ts,
                 "player": player,
                 "turn": game_state.get("turn"),
                 "phase": game_state.get("phase"),

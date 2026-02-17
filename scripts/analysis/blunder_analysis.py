@@ -52,27 +52,24 @@ MAX_WORKERS = 50
 # v8: include Scryfall oracle text in per-decision prompt
 # v9: switch from Sonnet 4.5 (thinking=low) to Opus 4.6 (no extended thinking)
 # v10: add prior context (snapshot from 2 turns ago + action deltas)
-BLUNDER_SCRIPT_VERSION = 10
+# v11: filter out failed (success=false), cancelled, and cast-before-cancel decisions
+BLUNDER_SCRIPT_VERSION = 11
 
 # --- Prompt components ---
 
-SHARED_CATEGORIES = """\
-## Category
+BLUNDER_EXAMPLES = """\
+## Examples of Blunders
 
-The "category" field is a short snake_case label you choose to describe the type of mistake. \
-Use your judgment — here are some common examples, but use whatever fits best:
+Here are some examples of the kinds of mistakes to flag:
 
-- `missed_lethal` — not attacking for lethal, missing combo kills, burn in hand at low life
-- `wasted_resources` — casting spells that accomplish nothing, cards with no valid targets, \
-countering own spells, declining pure-upside abilities
-- `wrong_target` — removing the wrong threat, fetching the wrong land, naming the wrong card
-- `bad_sequencing` — casting spells before playing lands, creatures before combat with tricks
-- `bad_combat` — poor attack/block decisions, attacking such that opponent can make favorable blocks
-- `unused_mana` — missing land drops, not using mana sinks at end of opponent's turn, \
-holding castable spells for no reason
-- `strategic_error` — fundamentally wrong game plan decisions, not countering must-answer threats, \
-choosing to go second
-- `walked_into_removal` — overextending into board wipes, running best threat into open counter mana"""
+- Not attacking for lethal, missing combo kills, burn in hand at low life
+- Casting spells that accomplish nothing, cards with no valid targets, declining pure-upside abilities
+- Removing the wrong threat, fetching the wrong land, naming the wrong card
+- Casting spells before playing lands, creatures before combat when holding tricks
+- Poor attack/block decisions, attacking into unfavorable blocks
+- Missing land drops, not using mana sinks at end of opponent's turn
+- Fundamentally wrong game plan decisions, not countering must-answer threats
+- Overextending into board wipes, running best threat into open counter mana"""
 
 SHARED_SEVERITY = """\
 ## Severity Levels
@@ -90,7 +87,6 @@ cards for nothing, missed lethal, or made an error that directly led to losing."
 ANNOTATION_SCHEMA = """\
 {
   "severity": "questionable" | "minor" | "moderate" | "major",
-  "category": "<short_snake_case_label>",
   "description": "<what went wrong in concrete game terms>",
   "actionTaken": "<what they actually did>",
   "betterLine": "<what they should have done>"
@@ -108,7 +104,7 @@ You may be given prior context showing the board state from earlier and the acti
 since then. Use this to understand how the game reached the current state."""
 
 PER_DECISION_FOOTER = f"""\
-{SHARED_CATEGORIES}
+{BLUNDER_EXAMPLES}
 
 {SHARED_SEVERITY}
 
@@ -605,10 +601,11 @@ def _eval_one_decision(
     snapshots: list[dict],
     actions_by_turn: dict[int, list[str]],
     num_players: int,
-) -> tuple[list[dict], float, bool]:
-    """Evaluate a single decision. Returns (annotations, cost_usd, parsed_ok).
+) -> tuple[list[dict], float, bool, dict]:
+    """Evaluate a single decision. Returns (annotations, cost_usd, parsed_ok, raw_record).
 
-    On parse failure, prints a warning and returns ([], cost, False).
+    On parse failure, prints a warning and returns ([], cost, False, raw_record).
+    The raw_record contains the full prompt and response for archival.
     """
     formatted = _format_decisions([decision])
     card_ref = _card_reference_for_decision(decision, oracle_texts)
@@ -626,22 +623,47 @@ def _eval_one_decision(
     cost = _compute_cost(prices, model, in_tok, out_tok)
     print(f"  [{label}] {in_tok:,} in / {out_tok:,} out (${cost:.4f})")
 
+    raw_record = {
+        "decision_index": decision["decision_index"],
+        "player": decision["player"],
+        "snapshot_index": decision["snapshot_index"],
+        "model": model,
+        "system_prompt": PER_DECISION_SYSTEM,
+        "user_prompt": user_msg,
+        "response": text,
+        "prompt_tokens": in_tok,
+        "completion_tokens": out_tok,
+        "cost_usd": cost,
+    }
+
     try:
         ann = _parse_annotation(text)
     except (json.JSONDecodeError, AssertionError) as e:
         print(f"  WARNING: Failed to parse response for {label}: {e}")
         print(f"    Raw response: {text[:200]!r}")
-        return [], cost, False
+        return [], cost, False, raw_record
 
     if ann is None:
-        return [], cost, True
+        return [], cost, True, raw_record
 
-    # Inject constant fields the LLM doesn't need to generate
+    # Inject constant fields the LLM doesn't need to generate.
+    # snapshotIndex points to the first snapshot AFTER the action resolved,
+    # so the viewer shows the annotation alongside its consequences.
+    action_ts = decision.get("action_ts", "")
+    if action_ts:
+        # Find first snapshot at or after action_ts
+        aftermath_idx = decision["snapshot_index"]
+        for i in range(decision["snapshot_index"], len(snapshots)):
+            if snapshots[i].get("ts", "") >= action_ts:
+                aftermath_idx = i
+                break
+    else:
+        aftermath_idx = decision["snapshot_index"]
     ann["type"] = "blunder"
-    ann["snapshotIndex"] = decision["snapshot_index"]
+    ann["snapshotIndex"] = aftermath_idx
     ann["player"] = decision["player"]
 
-    return [ann], cost, True
+    return [ann], cost, True, raw_record
 
 
 def main(gz_path: str) -> None:
@@ -677,8 +699,44 @@ def main(gz_path: str) -> None:
 
     # Extract decisions
     decisions = extract_decisions(gz_path)
-    non_forced = [d for d in decisions if not d["is_forced"]]
-    print(f"Extracted {len(decisions)} decisions ({len(non_forced)} non-forced)")
+
+    # Build set of decision indices to skip:
+    # 1. Forced decisions (only one choice)
+    # 2. Failed actions (success=false, e.g. bad index/args)
+    # 3. Cancelled actions (player backed out of a spell/ability)
+    # 4. The cast decision that preceded a cancel (tried to cast, then undid it)
+    skip_indices: set[int] = set()
+    for i, d in enumerate(decisions):
+        if d["is_forced"]:
+            skip_indices.add(i)
+            continue
+        ar = d.get("action_result", {})
+        if ar.get("success") is False:
+            skip_indices.add(i)
+            continue
+        if ar.get("action_taken") == "cancelled":
+            skip_indices.add(i)
+            # Also skip the preceding same-player decision if it was
+            # "Play spells and abilities" / "Play instants and activated abilities"
+            # — the net effect was nothing (cast attempt + cancel = no action)
+            for j in range(i - 1, max(i - 5, -1), -1):
+                if decisions[j]["player"] != d["player"]:
+                    continue
+                if decisions[j]["is_forced"]:
+                    continue
+                prev_msg = decisions[j].get("message", "")
+                if prev_msg.startswith(
+                    "Play spells and abilities"
+                ) or prev_msg.startswith("Play instants and activated abilities"):
+                    skip_indices.add(j)
+                break
+
+    non_forced = [d for i, d in enumerate(decisions) if i not in skip_indices]
+    print(
+        f"Extracted {len(decisions)} decisions, "
+        f"skipped {len(skip_indices)} (forced/failed/cancelled), "
+        f"{len(non_forced)} to analyze"
+    )
 
     if not non_forced:
         print("No non-forced decisions to analyze.")
@@ -699,6 +757,7 @@ def main(gz_path: str) -> None:
     print(f"\nAnalyzing {len(non_forced)} decisions with {OPUS_MODEL}...")
 
     annotations: list[dict] = []
+    raw_records: list[dict] = []
     total_cost = 0.0
     parse_failures = 0
 
@@ -720,21 +779,23 @@ def main(gz_path: str) -> None:
             futures[fut] = d["decision_index"]
 
         # Collect results preserving decision order
-        results_by_idx: dict[int, tuple[list[dict], float, bool]] = {}
+        results_by_idx: dict[int, tuple[list[dict], float, bool, dict]] = {}
         for fut in as_completed(futures):
             idx = futures[fut]
             try:
                 results_by_idx[idx] = fut.result()
             except Exception as e:
                 print(f"  WARNING: decision_{idx} failed: {e}")
-                results_by_idx[idx] = ([], 0.0, False)
+                results_by_idx[idx] = ([], 0.0, False, {})
 
     for d in non_forced:
-        anns, cost, parsed_ok = results_by_idx[d["decision_index"]]
+        anns, cost, parsed_ok, raw = results_by_idx[d["decision_index"]]
         total_cost += cost
         if not parsed_ok:
             parse_failures += 1
         annotations.extend(anns)
+        if raw:
+            raw_records.append(raw)
 
     if parse_failures > len(non_forced) / 2:
         raise RuntimeError(
@@ -742,6 +803,23 @@ def main(gz_path: str) -> None:
         )
 
     print(f"\n  Total: {len(annotations)} annotation(s), ${total_cost:.3f}")
+
+    # Save raw LLM data to log directory (never overwrite — new file each run)
+    if raw_records:
+        from datetime import datetime
+
+        game_id = Path(gz_path).stem.replace(".json", "")
+        log_dir = Path.home() / ".mage-bench" / "logs" / game_id
+        if log_dir.is_dir():
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            raw_path = (
+                log_dir / f"blunder_analysis_v{BLUNDER_SCRIPT_VERSION}_{ts}.jsonl"
+            )
+            raw_records.sort(key=lambda r: r.get("decision_index", 0))
+            with open(raw_path, "w") as f:
+                for rec in raw_records:
+                    f.write(json.dumps(rec) + "\n")
+            print(f"  Raw LLM data saved to {raw_path}")
 
     # Filter out annotations with invalid snapshotIndex (LLM sometimes fabricates indices)
     num_snapshots = len(data.get("snapshots", []))
@@ -773,7 +851,7 @@ def main(gz_path: str) -> None:
         snap_idx = ann["snapshotIndex"]
         turn = snapshots[snap_idx]["turn"] if snap_idx < len(snapshots) else "?"
         sev = ann["severity"].upper()
-        print(f"  Turn {turn} ({ann['player']}) - {sev} {ann['category']}")
+        print(f"  Turn {turn} ({ann['player']}) - {sev}")
         print(f"    {ann['description']}")
         print(f"    Better: {ann['betterLine']}")
         print()
