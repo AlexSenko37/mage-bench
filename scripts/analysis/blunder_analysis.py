@@ -24,6 +24,7 @@ from openai import OpenAI
 
 from annotate_game import annotate_game
 from extract_decisions import _summarize_snapshot, extract_decisions
+from puppeteer.harness_epoch import MIN_BLUNDER_VERSION  # noqa: F401 (re-exported)
 from puppeteer.llm_cost import fetch_openrouter_prices, get_model_price
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -53,7 +54,8 @@ MAX_WORKERS = 50
 # v9: switch from Sonnet 4.5 (thinking=low) to Opus 4.6 (no extended thinking)
 # v10: add prior context (snapshot from 2 turns ago + action deltas)
 # v11: filter out failed (success=false), cancelled, and cast-before-cancel decisions
-BLUNDER_SCRIPT_VERSION = 11
+# v12: add current-turn action context (no prompt additions, just context)
+BLUNDER_SCRIPT_VERSION = 12
 
 # --- Prompt components ---
 
@@ -376,6 +378,59 @@ def _format_prior_context(
     return "\n".join(lines)
 
 
+def _format_current_turn_actions(
+    decision: dict,
+    all_actions: list[dict],
+    cutoff_ts: str,
+) -> str:
+    """Format actions from the current turn before this decision.
+
+    Helps the LLM see what happened (or didn't happen) this turn,
+    e.g. whether a land was already played or spells were cast.
+    """
+    current_turn = decision.get("turn")
+    if not current_turn or not cutoff_ts:
+        return ""
+
+    in_current_turn = False
+    lines: list[str] = []
+    for a in all_actions:
+        msg = a.get("message", "")
+        ts = a.get("ts", "")
+
+        # Track TURN markers to find current turn boundaries
+        m = re.match(r"^TURN (\d+) for", msg)
+        if m:
+            turn_num = int(m.group(1))
+            if turn_num == current_turn:
+                in_current_turn = True
+                continue
+            elif turn_num > current_turn:
+                break
+            else:
+                in_current_turn = False
+                continue
+
+        if not in_current_turn:
+            continue
+
+        # Only actions before the decision was presented
+        if ts >= cutoff_ts:
+            break
+
+        # Filter noise (same as prior context)
+        if _ACTION_NOISE.search(msg):
+            continue
+
+        if msg:
+            lines.append(msg)
+
+    if not lines:
+        return "## This Turn\n(no actions yet)"
+
+    return "## This Turn\n" + "\n".join(lines)
+
+
 def _game_overview(data: dict) -> str:
     lines = [
         f"Game: {data['id']}",
@@ -601,6 +656,7 @@ def _eval_one_decision(
     snapshots: list[dict],
     actions_by_turn: dict[int, list[str]],
     num_players: int,
+    all_actions: list[dict],
 ) -> tuple[list[dict], float, bool, dict]:
     """Evaluate a single decision. Returns (annotations, cost_usd, parsed_ok, raw_record).
 
@@ -610,11 +666,16 @@ def _eval_one_decision(
     formatted = _format_decisions([decision])
     card_ref = _card_reference_for_decision(decision, oracle_texts)
     prior_ctx = _format_prior_context(decision, snapshots, actions_by_turn, num_players)
+    # Current-turn actions before this decision (shows whether land was played, etc.)
+    snap_ts = snapshots[decision["snapshot_index"]].get("ts", "")
+    turn_ctx = _format_current_turn_actions(decision, all_actions, snap_ts)
     user_msg = f"## Game Overview\n{overview}"
     if card_ref:
         user_msg += f"\n\n{card_ref}"
     if prior_ctx:
         user_msg += f"\n\n{prior_ctx}"
+    if turn_ctx:
+        user_msg += f"\n\n{turn_ctx}"
     user_msg += f"\n\n## Decision\n\n{formatted}"
     user_msg += f"\n\n{PER_DECISION_FOOTER}"
     label = f"decision_{decision['decision_index']}"
@@ -775,6 +836,7 @@ def main(gz_path: str) -> None:
                 game_snapshots,
                 abt,
                 num_players,
+                game_actions,
             )
             futures[fut] = d["decision_index"]
 
