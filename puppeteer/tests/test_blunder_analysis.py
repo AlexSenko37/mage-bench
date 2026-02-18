@@ -630,6 +630,7 @@ class TestMainIntegration:
         return game
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"})
+    @patch("blunder_analysis._auto_ingest_ground_truth")
     @patch("blunder_analysis._get_oracle_texts", return_value={})
     @patch("blunder_analysis.fetch_openrouter_prices", return_value=_TEST_PRICES)
     @patch("blunder_analysis.OpenAI")
@@ -638,6 +639,7 @@ class TestMainIntegration:
         mock_openai_cls: MagicMock,
         _mock_prices: MagicMock,
         _mock_oracle: MagicMock,
+        _mock_ingest: MagicMock,
         tmp_path: Path,
     ) -> None:
         game = self._make_game_with_decisions()
@@ -682,6 +684,7 @@ class TestMainIntegration:
         assert "extra_body" not in call_kwargs.kwargs
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"})
+    @patch("blunder_analysis._auto_ingest_ground_truth")
     @patch("blunder_analysis._get_oracle_texts", return_value={})
     @patch("blunder_analysis.fetch_openrouter_prices", return_value=_TEST_PRICES)
     @patch("blunder_analysis.OpenAI")
@@ -690,6 +693,7 @@ class TestMainIntegration:
         mock_openai_cls: MagicMock,
         _mock_prices: MagicMock,
         _mock_oracle: MagicMock,
+        _mock_ingest: MagicMock,
         tmp_path: Path,
     ) -> None:
         game = self._make_game_with_decisions()
@@ -724,6 +728,7 @@ class TestMainIntegration:
         mock_openai_cls.assert_not_called()
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"})
+    @patch("blunder_analysis._auto_ingest_ground_truth")
     @patch("blunder_analysis._get_oracle_texts", return_value={})
     @patch("blunder_analysis.fetch_openrouter_prices", return_value=_TEST_PRICES)
     @patch("blunder_analysis.OpenAI")
@@ -732,6 +737,7 @@ class TestMainIntegration:
         mock_openai_cls: MagicMock,
         _mock_prices: MagicMock,
         _mock_oracle: MagicMock,
+        _mock_ingest: MagicMock,
         tmp_path: Path,
     ) -> None:
         game = self._make_game_with_decisions()
@@ -761,6 +767,7 @@ class TestMainIntegration:
         assert "snapshotIndex" in ann
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"})
+    @patch("blunder_analysis._auto_ingest_ground_truth")
     @patch("blunder_analysis._get_oracle_texts", return_value={})
     @patch("blunder_analysis.fetch_openrouter_prices", return_value=_TEST_PRICES)
     @patch("blunder_analysis.OpenAI")
@@ -769,6 +776,7 @@ class TestMainIntegration:
         mock_openai_cls: MagicMock,
         _mock_prices: MagicMock,
         _mock_oracle: MagicMock,
+        _mock_ingest: MagicMock,
         tmp_path: Path,
     ) -> None:
         """When >50% of decisions fail to parse, raises RuntimeError."""
@@ -786,6 +794,7 @@ class TestMainIntegration:
             main(str(gz_path))
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key"})
+    @patch("blunder_analysis._auto_ingest_ground_truth")
     @patch("blunder_analysis._get_oracle_texts", return_value={})
     @patch("blunder_analysis.fetch_openrouter_prices", return_value=_TEST_PRICES)
     @patch("blunder_analysis.OpenAI")
@@ -794,6 +803,7 @@ class TestMainIntegration:
         mock_openai_cls: MagicMock,
         _mock_prices: MagicMock,
         _mock_oracle: MagicMock,
+        _mock_ingest: MagicMock,
         tmp_path: Path,
     ) -> None:
         game = self._make_game_with_decisions()
