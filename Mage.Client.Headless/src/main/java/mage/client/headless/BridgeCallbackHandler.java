@@ -651,6 +651,16 @@ public class BridgeCallbackHandler {
                             item.put("owner", owner);
                         }
                     }
+                    if (card.getTargets() != null && !card.getTargets().isEmpty()) {
+                        var targets = new ArrayList<Map<String, Object>>();
+                        for (UUID targetId : card.getTargets()) {
+                            var t = new HashMap<String, Object>();
+                            t.put("id", shortIds.getOrAssign(targetId));
+                            t.put("name", describeTarget(targetId, null, lastGameView));
+                            targets.add(t);
+                        }
+                        item.put("targets", targets);
+                    }
                     stackSummary.add(item);
                 }
                 result.put("stack", stackSummary);
@@ -3105,7 +3115,14 @@ public class BridgeCallbackHandler {
                 stackItem.put("name", safeDisplayName(card));
                 stackItem.put("rules", stripHtmlList(card.getRules()));
                 if (card.getTargets() != null && !card.getTargets().isEmpty()) {
-                    stackItem.put("target_count", card.getTargets().size());
+                    var targets = new ArrayList<Map<String, Object>>();
+                    for (UUID targetId : card.getTargets()) {
+                        var t = new HashMap<String, Object>();
+                        t.put("id", shortIds.getOrAssign(targetId));
+                        t.put("name", describeTarget(targetId, null, lastGameView));
+                        targets.add(t);
+                    }
+                    stackItem.put("targets", targets);
                 }
                 if (card.getId() != null) {
                     String owner = castOwners.get(card.getId().toString());
