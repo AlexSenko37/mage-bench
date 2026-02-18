@@ -183,7 +183,6 @@ public class StreamingGraveyardPanel extends JPanel {
 
     /**
      * Return card components keyed by card id.
-     * Used by the overlay exporter for pixel-position sync (avoids reflection).
      */
     public Map<UUID, MageCard> getCardPanels() {
         return cards;

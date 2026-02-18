@@ -174,7 +174,6 @@ public class CommanderPanel extends JPanel {
 
     /**
      * Return commander card components keyed by card id.
-     * Used by the streaming overlay exporter for pixel-position sync.
      */
     public Map<UUID, MageCard> getCardPanels() {
         return cards;
