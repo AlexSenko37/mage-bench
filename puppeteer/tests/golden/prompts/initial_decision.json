@@ -4,8 +4,27 @@
     "role": "system"
   },
   {
-    "content": "The game is starting. Your first decision: Mulligan down to 6 cards?\nCall get_action_choices to see your hand, then choose_action to decide.",
+    "content": "The game is starting. Your first decision (GAME_TARGET): Select a starting player\nCall get_action_choices to see your options, then choose_action to decide.",
     "role": "user"
+  },
+  {
+    "content": null,
+    "role": "assistant",
+    "tool_calls": [
+      {
+        "function": {
+          "arguments": "{}",
+          "name": "pass_priority"
+        },
+        "id": "call_1",
+        "type": "function"
+      }
+    ]
+  },
+  {
+    "content": "{\"actions_passed\":0,\"action_type\":\"GAME_TARGET\",\"players\":\"TestPlayer(you,20hp), Opponent(20hp)\",\"context\":\"T1 ()\",\"stop_reason\":\"non_priority_action\",\"response_type\":\"index\",\"can_cancel\":false,\"respond_with\":\"id\\u003d\\\"pN\\\" or index\\u003dN\",\"message\":\"Select a starting player\",\"choices\":[{\"is_you\":true,\"name\":\"TestPlayer\",\"target_type\":\"player\",\"index\":0,\"id\":\"p1\"},{\"name\":\"Opponent\",\"target_type\":\"player\",\"index\":1,\"id\":\"p2\"}],\"required\":true,\"action_pending\":true}",
+    "role": "tool",
+    "tool_call_id": "call_1"
   },
   {
     "content": null,
@@ -16,14 +35,14 @@
           "arguments": "{}",
           "name": "get_game_state"
         },
-        "id": "call_1",
+        "id": "call_2",
         "type": "function"
       }
     ]
   },
   {
-    "content": "{\"active_player\": \"PlayerA\", \"available\": true, \"phase\": \"Precombat Main\", \"players\": [{\"hand\": [{\"id\": \"p1\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}, {\"id\": \"p2\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}, {\"id\": \"p3\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}, {\"id\": \"p4\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}, {\"id\": \"p5\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}, {\"id\": \"p6\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}, {\"id\": \"p7\", \"is_land\": true, \"name\": \"Mountain\", \"rules\": [\"{T}: Add {R}.\"]}], \"hand_size\": 7, \"is_active\": true, \"is_you\": true, \"library_size\": 101, \"life\": 20, \"name\": \"PlayerA\"}, {\"hand_size\": 7, \"is_active\": false, \"is_you\": false, \"library_size\": 101, \"life\": 20, \"name\": \"PlayerB\"}], \"priority_player\": \"PlayerB\", \"stack\": [], \"step\": \"Precombat Main\", \"turn\": 1}",
+    "content": "{\"priority_player\":\"\",\"cursor\":1,\"stack\":[],\"active_player\":\"\",\"players\":[{\"hand_size\":0,\"is_active\":false,\"is_you\":true,\"name\":\"TestPlayer\",\"library_size\":50,\"life\":20,\"hand\":[]},{\"hand_size\":0,\"is_active\":false,\"is_you\":false,\"name\":\"Opponent\",\"library_size\":60,\"life\":20}],\"available\":true,\"turn\":1}",
     "role": "tool",
-    "tool_call_id": "call_1"
+    "tool_call_id": "call_2"
   }
 ]

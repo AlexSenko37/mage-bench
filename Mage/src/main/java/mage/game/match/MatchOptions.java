@@ -47,6 +47,9 @@ public class MatchOptions implements Serializable {
     protected MatchBufferTime matchBufferTime = MatchBufferTime.NONE; // additional/buffer time limit for each priority before real time ticking starts
     protected MulliganType mulliganType = MulliganType.GAME_DEFAULT;
 
+    protected boolean skipInitShuffling;
+    protected String choosingPlayerName; // null = random die roll, non-null = player with this name wins the toss
+
     protected Collection<DeckCardInfo> perPlayerEmblemCards = Collections.emptySet();
     protected Collection<DeckCardInfo> globalEmblemCards = Collections.emptySet();
 
@@ -284,6 +287,22 @@ public class MatchOptions implements Serializable {
 
     public MulliganType getMulliganType() {
         return mulliganType;
+    }
+
+    public boolean isSkipInitShuffling() {
+        return skipInitShuffling;
+    }
+
+    public void setSkipInitShuffling(boolean skipInitShuffling) {
+        this.skipInitShuffling = skipInitShuffling;
+    }
+
+    public String getChoosingPlayerName() {
+        return choosingPlayerName;
+    }
+
+    public void setChoosingPlayerName(String choosingPlayerName) {
+        this.choosingPlayerName = choosingPlayerName;
     }
 
     public Collection<DeckCardInfo> getPerPlayerEmblemCards() {
