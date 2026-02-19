@@ -597,39 +597,10 @@ public class BridgeCallbackHandler {
             }
             result.put("context", ctx.toString());
 
-            // Compact player summary: "You(40), Opp1(38), Opp2(40)"
-            UUID gameId = currentGameId; // snapshot volatile to prevent TOCTOU race
-            UUID myPlayerId = gameId != null ? activeGames.get(gameId) : null;
-            var playerSummary = new StringBuilder();
-            for (PlayerView player : getStablePlayers(gameView, myPlayerId)) {
-                if (playerSummary.length() > 0) playerSummary.append(", ");
-                playerSummary.append(player.getName());
-                if (player.getPlayerId().equals(myPlayerId)) {
-                    playerSummary.append("(you,");
-                } else {
-                    playerSummary.append("(");
-                }
-                playerSummary.append(player.getLife()).append("hp)");
-            }
-            result.put("players", playerSummary.toString());
+            // Full board state: players with battlefield, graveyard, exile, hand, etc.
+            result.put("board", buildPlayersArray(gameView));
 
-            // Add mana pool and untapped land count for the current player
-            ManaPoolView pool = getMyManaPoolView(gameView);
-            if (pool != null) {
-                int total = pool.getRed() + pool.getGreen() + pool.getBlue()
-                          + pool.getWhite() + pool.getBlack() + pool.getColorless();
-                if (total > 0) {
-                    var mana = new HashMap<String, Integer>();
-                    if (pool.getRed() > 0) mana.put("R", pool.getRed());
-                    if (pool.getGreen() > 0) mana.put("G", pool.getGreen());
-                    if (pool.getBlue() > 0) mana.put("U", pool.getBlue());
-                    if (pool.getWhite() > 0) mana.put("W", pool.getWhite());
-                    if (pool.getBlack() > 0) mana.put("B", pool.getBlack());
-                    if (pool.getColorless() > 0) mana.put("C", pool.getColorless());
-                    result.put("mana_pool", mana);
-                }
-            }
-
+            // Convenience top-level fields (also available per-player in board)
             PlayerView myPlayer = gameView.getMyPlayer();
             if (myPlayer != null && myPlayer.getBattlefield() != null) {
                 int untappedLands = 0;
@@ -3013,6 +2984,86 @@ public class BridgeCallbackHandler {
         state.put("priority_player", gameView.getPriorityPlayerName());
 
         // Players
+        state.put("players", buildPlayersArray(gameView));
+
+        // Stack
+        var stack = new ArrayList<Map<String, Object>>();
+        if (gameView.getStack() != null) {
+            for (CardView card : gameView.getStack().values()) {
+                var stackItem = new HashMap<String, Object>();
+                if (card.getId() != null) {
+                    stackItem.put("id", shortIds.getOrAssign(card.getId()));
+                }
+                stackItem.put("name", safeDisplayName(card));
+                stackItem.put("rules", stripHtmlList(card.getRules()));
+                if (card.getTargets() != null && !card.getTargets().isEmpty()) {
+                    var targets = new ArrayList<Map<String, Object>>();
+                    for (UUID targetId : card.getTargets()) {
+                        var t = new HashMap<String, Object>();
+                        t.put("id", shortIds.getOrAssign(targetId));
+                        t.put("name", describeTarget(targetId, null, lastGameView));
+                        targets.add(t);
+                    }
+                    stackItem.put("targets", targets);
+                }
+                if (card.getId() != null) {
+                    String owner = castOwners.get(card.getId().toString());
+                    if (owner != null) {
+                        stackItem.put("owner", owner);
+                    }
+                }
+                stack.add(stackItem);
+            }
+        }
+        state.put("stack", stack);
+
+        // Combat
+        List<Map<String, Object>> combatGroups = buildCombatGroups(gameView);
+        if (combatGroups != null) {
+            state.put("combat", combatGroups);
+        }
+
+        return state;
+    }
+
+    private List<PlayerView> getStablePlayers(GameView gameView, UUID myPlayerId) {
+        var players = new ArrayList<PlayerView>(gameView.getPlayers());
+        players.sort((a, b) -> {
+            boolean aIsYou = myPlayerId != null && a.getPlayerId().equals(myPlayerId);
+            boolean bIsYou = myPlayerId != null && b.getPlayerId().equals(myPlayerId);
+            int youCmp = Boolean.compare(bIsYou, aIsYou);
+            if (youCmp != 0) {
+                return youCmp;
+            }
+            String aName = a.getName() != null ? a.getName() : "";
+            String bName = b.getName() != null ? b.getName() : "";
+            int nameCmp = String.CASE_INSENSITIVE_ORDER.compare(aName, bName);
+            if (nameCmp != 0) {
+                return nameCmp;
+            }
+            return a.getPlayerId().toString().compareTo(b.getPlayerId().toString());
+        });
+        return players;
+    }
+
+    private boolean isAllPlayerTargets(List<TargetChoice> targetChoices) {
+        if (targetChoices.isEmpty()) {
+            return false;
+        }
+        for (TargetChoice choice : targetChoices) {
+            if (!"player".equals(choice.entry().get("target_type"))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Build the full players array with board state. Includes hand (ours only),
+     * battlefield (with rules), graveyard, exile, mana pool, counters, commanders.
+     * Shared by getGameState() and getActionChoices().
+     */
+    private List<Map<String, Object>> buildPlayersArray(GameView gameView) {
         var players = new ArrayList<Map<String, Object>>();
         UUID gameId = currentGameId; // snapshot volatile to prevent TOCTOU race
         UUID myPlayerId = gameId != null ? activeGames.get(gameId) : null;
@@ -3098,13 +3149,14 @@ public class BridgeCallbackHandler {
                     if (orig != null) {
                         modified = !Objects.equals(stripHtmlList(perm.getRules()), stripHtmlList(orig.getRules()));
                     }
+                    if (modified) {
+                        permInfo.put("modified", true);
+                    }
 
-                    // Include current rules for tokens (oracle can't look them up) or modified permanents
-                    if (perm.isToken() || modified) {
-                        List<String> rules = stripHtmlList(perm.getRules());
-                        if (rules != null && !rules.isEmpty()) {
-                            permInfo.put("rules", rules);
-                        }
+                    // Include oracle text (rules) for all permanents
+                    List<String> rules = stripHtmlList(perm.getRules());
+                    if (rules != null && !rules.isEmpty()) {
+                        permInfo.put("rules", rules);
                     }
 
                     // Original card name when identity has changed (copy, transform, flip, MDFC, meld)
@@ -3136,6 +3188,10 @@ public class BridgeCallbackHandler {
                     var cardInfo = new HashMap<String, Object>();
                     cardInfo.put("id", shortIds.getOrAssign(entry.getKey()));
                     cardInfo.put("name", safeDisplayName(entry.getValue()));
+                    List<String> gyRules = stripHtmlList(entry.getValue().getRules());
+                    if (gyRules != null && !gyRules.isEmpty()) {
+                        cardInfo.put("rules", gyRules);
+                    }
                     graveyard.add(cardInfo);
                 }
             }
@@ -3153,6 +3209,10 @@ public class BridgeCallbackHandler {
                     var cardInfo = new HashMap<String, Object>();
                     cardInfo.put("id", shortIds.getOrAssign(entry.getKey()));
                     cardInfo.put("name", safeDisplayName(entry.getValue()));
+                    List<String> exileRules = stripHtmlList(entry.getValue().getRules());
+                    if (exileRules != null && !exileRules.isEmpty()) {
+                        cardInfo.put("rules", exileRules);
+                    }
                     exileCards.add(cardInfo);
                 }
             }
@@ -3197,78 +3257,7 @@ public class BridgeCallbackHandler {
 
             players.add(playerInfo);
         }
-        state.put("players", players);
-
-        // Stack
-        var stack = new ArrayList<Map<String, Object>>();
-        if (gameView.getStack() != null) {
-            for (CardView card : gameView.getStack().values()) {
-                var stackItem = new HashMap<String, Object>();
-                if (card.getId() != null) {
-                    stackItem.put("id", shortIds.getOrAssign(card.getId()));
-                }
-                stackItem.put("name", safeDisplayName(card));
-                stackItem.put("rules", stripHtmlList(card.getRules()));
-                if (card.getTargets() != null && !card.getTargets().isEmpty()) {
-                    var targets = new ArrayList<Map<String, Object>>();
-                    for (UUID targetId : card.getTargets()) {
-                        var t = new HashMap<String, Object>();
-                        t.put("id", shortIds.getOrAssign(targetId));
-                        t.put("name", describeTarget(targetId, null, lastGameView));
-                        targets.add(t);
-                    }
-                    stackItem.put("targets", targets);
-                }
-                if (card.getId() != null) {
-                    String owner = castOwners.get(card.getId().toString());
-                    if (owner != null) {
-                        stackItem.put("owner", owner);
-                    }
-                }
-                stack.add(stackItem);
-            }
-        }
-        state.put("stack", stack);
-
-        // Combat
-        List<Map<String, Object>> combatGroups = buildCombatGroups(gameView);
-        if (combatGroups != null) {
-            state.put("combat", combatGroups);
-        }
-
-        return state;
-    }
-
-    private List<PlayerView> getStablePlayers(GameView gameView, UUID myPlayerId) {
-        var players = new ArrayList<PlayerView>(gameView.getPlayers());
-        players.sort((a, b) -> {
-            boolean aIsYou = myPlayerId != null && a.getPlayerId().equals(myPlayerId);
-            boolean bIsYou = myPlayerId != null && b.getPlayerId().equals(myPlayerId);
-            int youCmp = Boolean.compare(bIsYou, aIsYou);
-            if (youCmp != 0) {
-                return youCmp;
-            }
-            String aName = a.getName() != null ? a.getName() : "";
-            String bName = b.getName() != null ? b.getName() : "";
-            int nameCmp = String.CASE_INSENSITIVE_ORDER.compare(aName, bName);
-            if (nameCmp != 0) {
-                return nameCmp;
-            }
-            return a.getPlayerId().toString().compareTo(b.getPlayerId().toString());
-        });
         return players;
-    }
-
-    private boolean isAllPlayerTargets(List<TargetChoice> targetChoices) {
-        if (targetChoices.isEmpty()) {
-            return false;
-        }
-        for (TargetChoice choice : targetChoices) {
-            if (!"player".equals(choice.entry().get("target_type"))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
