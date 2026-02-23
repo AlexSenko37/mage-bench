@@ -25,7 +25,6 @@ GOLDEN_EXPORTS_DIR = Path(__file__).resolve().parent / "golden" / "exports"
 
 UPDATE_MODE = os.environ.get("UPDATE_GOLDEN", "").lower() in ("1", "true", "yes")
 SPECTATOR_READY_TIMEOUT_SECONDS = 240
-VOLATILE_PROMPT_INT_FIELDS = {"game_seq"}
 
 # Default decks for tests (relative to project root)
 DECK_RED_STOMPY = "Mage.Client/release/sample-decks/Legacy/Red-Stompy.dck"
@@ -39,6 +38,7 @@ DECK_FILLER = "puppeteer/tests/decks/filler_opponent.dck"
 DECK_MANA_DRAIN_FOF = "puppeteer/tests/decks/mana_drain_fact_or_fiction.dck"
 DECK_PLAINS_LIONS = "puppeteer/tests/decks/plains_lions_opponent.dck"
 DECK_SAVANNAH_LIONS = "puppeteer/tests/decks/savannah_lions.dck"
+DECK_ANCIENT_STIRRINGS = "puppeteer/tests/decks/ancient_stirrings.dck"
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +122,7 @@ def run_golden_scenario(
     deck_a: str,
     deck_b: str,
     script: list[dict],
+    golden_name: str,
     player_a_name: str = "TestPlayer",
     player_b_name: str = "Opponent",
     game_type: str = "Two Player Duel",
@@ -132,6 +133,9 @@ def run_golden_scenario(
     Starts a streaming spectator (creates the game table), a replay client
     (executes scripted MCP tool calls and captures the LLM prompt), and a
     potato client (auto-responds to everything as the opponent).
+
+    Automatically asserts golden prompt and export comparisons using
+    ``golden_name`` as the file identifier.
 
     Returns the captured prompt messages array (what the LLM would see).
     """
@@ -293,7 +297,12 @@ def run_golden_scenario(
         # Read golden prompt
         prompt_path = game_dir / f"{player_a_name}_golden_prompt.json"
         assert prompt_path.exists(), f"Golden prompt not written: {prompt_path}\nCheck replay log: {replay_log}"
-        return json.loads(prompt_path.read_text())
+        prompt = json.loads(prompt_path.read_text())
+
+        assert_golden_prompt(golden_name, prompt)
+        assert_golden_export(golden_name, game_dir)
+
+        return prompt
 
     finally:
         for proc in procs:
@@ -312,12 +321,17 @@ def run_golden_scenario_two_replay(
     deck_b: str,
     script_a: list[dict],
     script_b: list[dict],
+    golden_name: str,
     player_a_name: str = "TestPlayer",
     player_b_name: str = "Opponent",
     game_type: str = "Two Player Duel",
     deck_type: str = "Constructed - Legacy",
 ) -> list[dict]:
-    """Run a golden test scenario with replay clients for both players."""
+    """Run a golden test scenario with replay clients for both players.
+
+    Automatically asserts golden prompt and export comparisons using
+    ``golden_name`` as the file identifier.
+    """
     game_dir.mkdir(parents=True, exist_ok=True)
 
     # Write scripts
@@ -488,7 +502,12 @@ def run_golden_scenario_two_replay(
         # Read golden prompt for player A
         prompt_path = game_dir / f"{player_a_name}_golden_prompt.json"
         assert prompt_path.exists(), f"Golden prompt not written: {prompt_path}\nCheck replay log: {replay_a_log}"
-        return json.loads(prompt_path.read_text())
+        prompt = json.loads(prompt_path.read_text())
+
+        assert_golden_prompt(golden_name, prompt)
+        assert_golden_export(golden_name, game_dir)
+
+        return prompt
 
     finally:
         for proc in procs:
@@ -516,9 +535,6 @@ def _normalize_prompt_for_golden(obj: object) -> object:
     if isinstance(obj, dict):
         out: dict[str, object] = {}
         for key, value in obj.items():
-            if key in VOLATILE_PROMPT_INT_FIELDS and isinstance(value, int):
-                out[key] = 0
-                continue
             if key == "id" and _is_short_id(value):
                 out[key] = "_"
                 continue
