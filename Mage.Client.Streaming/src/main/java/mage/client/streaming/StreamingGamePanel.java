@@ -29,6 +29,10 @@ import mage.constants.Zone;
 import mage.view.CardView;
 import mage.view.CardsView;
 import mage.view.CombatGroupView;
+import mage.view.LookedAtView;
+import mage.view.ManaPoolView;
+import mage.view.RevealedView;
+import mage.view.SimpleCardView;
 import mage.view.StackAbilityView;
 import mage.view.CommanderView;
 import mage.view.CommandObjectView;
@@ -75,6 +79,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -153,6 +158,7 @@ public class StreamingGamePanel extends GamePanel {
     // Game event JSONL logging
     private PrintWriter gameEventWriter;
     private int gameEventSeq = 0;
+    private int lastServerGameSeq = 0;  // Server-side game_seq from GameView
     private String lastSnapshotKey = "";  // For deduplication
     private static final ZoneId LOG_TZ = ZoneId.of("America/Los_Angeles");
     private static final DateTimeFormatter LOG_TS_FMT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -1716,6 +1722,9 @@ public class StreamingGamePanel extends GamePanel {
         gameEventSeq++;
         data.addProperty("ts", ZonedDateTime.now(LOG_TZ).format(LOG_TS_FMT));
         data.addProperty("seq", gameEventSeq);
+        if (lastServerGameSeq > 0) {
+            data.addProperty("game_seq", lastServerGameSeq);
+        }
         data.addProperty("type", type);
         gameEventWriter.println(data.toString());
         gameEventWriter.flush();
@@ -1742,7 +1751,17 @@ public class StreamingGamePanel extends GamePanel {
         for (PlayerView p : game.getPlayers()) {
             keyBuilder.append(p.getName()).append(":").append(p.getLife()).append(":")
                       .append(p.getHandCount()).append(":")
-                      .append(p.getBattlefield() != null ? p.getBattlefield().size() : 0).append(",");
+                      .append(p.getBattlefield() != null ? p.getBattlefield().size() : 0).append(":")
+                      .append(p.getGraveyard() != null ? p.getGraveyard().size() : 0).append(":")
+                      .append(p.getExile() != null ? p.getExile().size() : 0).append(":")
+                      .append(p.isMonarch() ? "M" : "").append(":")
+                      .append(p.isInitiative() ? "I" : "").append(",");
+            ManaPoolView mp = p.getManaPool();
+            if (mp != null) {
+                keyBuilder.append("mp:").append(mp.getWhite()).append(mp.getBlue())
+                          .append(mp.getBlack()).append(mp.getRed())
+                          .append(mp.getGreen()).append(mp.getColorless()).append(",");
+            }
         }
         // Include combat state so blocker assignment triggers a new snapshot
         if (game.getCombat() != null) {
@@ -1757,11 +1776,22 @@ public class StreamingGamePanel extends GamePanel {
                 keyBuilder.append(group.isBlocked() ? "B" : "U").append(",");
             }
         }
+        // Include stack for dedup (spells/abilities resolving changes state)
+        if (game.getStack() != null) {
+            keyBuilder.append("stack:").append(game.getStack().size()).append(",");
+        }
+        // Include revealed cards
+        if (game.getRevealed() != null) {
+            keyBuilder.append("rev:").append(game.getRevealed().size()).append(",");
+        }
         String key = keyBuilder.toString();
         if (key.equals(lastSnapshotKey)) {
             return;
         }
         lastSnapshotKey = key;
+
+        // Capture server-side game_seq for cross-referencing with server logs
+        lastServerGameSeq = game.getGameSeq();
 
         var event = new JsonObject();
         event.addProperty("turn", roundTracker.getGameRound());
@@ -1782,13 +1812,46 @@ public class StreamingGamePanel extends GamePanel {
             playerJson.addProperty("hand_count", player.getHandCount());
             playerJson.addProperty("is_active", player.isActive());
             playerJson.addProperty("has_left", player.hasLeft());
+            if (player.isMonarch()) {
+                playerJson.addProperty("monarch", true);
+            }
+            if (player.isInitiative()) {
+                playerJson.addProperty("initiative", true);
+            }
             playerJson.add("counters", countersToJson(player));
+
+            // Mana pool
+            ManaPoolView manaPool = player.getManaPool();
+            if (manaPool != null) {
+                var manaJson = new JsonObject();
+                if (manaPool.getWhite() > 0) manaJson.addProperty("W", manaPool.getWhite());
+                if (manaPool.getBlue() > 0) manaJson.addProperty("U", manaPool.getBlue());
+                if (manaPool.getBlack() > 0) manaJson.addProperty("B", manaPool.getBlack());
+                if (manaPool.getRed() > 0) manaJson.addProperty("R", manaPool.getRed());
+                if (manaPool.getGreen() > 0) manaJson.addProperty("G", manaPool.getGreen());
+                if (manaPool.getColorless() > 0) manaJson.addProperty("C", manaPool.getColorless());
+                if (manaJson.size() > 0) {
+                    playerJson.add("mana_pool", manaJson);
+                }
+            }
+
+            // Designations (City's Blessing, Day/Night, etc.)
+            List<String> designations = player.getDesignationNames();
+            if (designations != null && !designations.isEmpty()) {
+                var desArr = new JsonArray();
+                for (String d : designations) {
+                    desArr.add(d);
+                }
+                playerJson.add("designations", desArr);
+            }
 
             // Battlefield - compact (name + tapped only)
             var bfArray = new JsonArray();
             if (player.getBattlefield() != null) {
                 for (PermanentView perm : player.getBattlefield().values()) {
                     var permJson = new JsonObject();
+                    permJson.addProperty("id", Objects.requireNonNull(perm.getShortId(),
+                        "battlefield permanent missing shortId: " + perm.getDisplayName()));
                     permJson.addProperty("name", safe(perm.getDisplayName()));
                     permJson.addProperty("tapped", perm.isTapped());
                     permJson.addProperty("typeLine", formatTypeLine(perm));
@@ -1845,29 +1908,69 @@ public class StreamingGamePanel extends GamePanel {
             }
             playerJson.add("battlefield", bfArray);
 
-            // Commanders
+            // Command zone objects (commanders, emblems, dungeons, planes)
             var cmdArray = new JsonArray();
             if (player.getCommandObjectList() != null) {
                 for (CommandObjectView cmd : player.getCommandObjectList()) {
-                    cmdArray.add(safe(cmd.getName()));
+                    var cmdJson = new JsonObject();
+                    cmdJson.addProperty("name", safe(cmd.getName()));
+                    if (cmd instanceof CommanderView) {
+                        cmdJson.addProperty("type", "commander");
+                        CommanderView cv = (CommanderView) cmd;
+                        if (cv.getShortId() != null) {
+                            cmdJson.addProperty("id", cv.getShortId());
+                        }
+                    } else {
+                        // EmblemView, DungeonView, PlaneView
+                        cmdJson.addProperty("type", cmd.getClass().getSimpleName()
+                            .replace("View", "").toLowerCase());
+                    }
+                    List<String> rules = cmd.getRules();
+                    if (rules != null && !rules.isEmpty()) {
+                        var rulesArr = new JsonArray();
+                        for (String r : rules) {
+                            rulesArr.add(stripHtml(r));
+                        }
+                        cmdJson.add("rules", rulesArr);
+                    }
+                    cmdArray.add(cmdJson);
                 }
             }
-            playerJson.add("commanders", cmdArray);
+            playerJson.add("command_zone", cmdArray);
 
-            // Graveyard (names only)
+            // Top card of library (when revealed, e.g. Courser of Kruphix)
+            CardView topCard = player.getTopCard();
+            if (topCard != null) {
+                var topJson = new JsonObject();
+                if (topCard.getShortId() != null) {
+                    topJson.addProperty("id", topCard.getShortId());
+                }
+                topJson.addProperty("name", safe(topCard.getDisplayName()));
+                playerJson.add("top_card", topJson);
+            }
+
+            // Graveyard
             var gyArray = new JsonArray();
             if (player.getGraveyard() != null) {
                 for (CardView card : player.getGraveyard().values()) {
-                    gyArray.add(safe(card.getDisplayName()));
+                    var gyCard = new JsonObject();
+                    gyCard.addProperty("id", Objects.requireNonNull(card.getShortId(),
+                        "graveyard card missing shortId: " + card.getDisplayName()));
+                    gyCard.addProperty("name", safe(card.getDisplayName()));
+                    gyArray.add(gyCard);
                 }
             }
             playerJson.add("graveyard", gyArray);
 
-            // Exile (names only)
+            // Exile
             var exileArray = new JsonArray();
             if (player.getExile() != null) {
                 for (CardView card : player.getExile().values()) {
-                    exileArray.add(safe(card.getDisplayName()));
+                    var exCard = new JsonObject();
+                    exCard.addProperty("id", Objects.requireNonNull(card.getShortId(),
+                        "exile card missing shortId: " + card.getDisplayName()));
+                    exCard.addProperty("name", safe(card.getDisplayName()));
+                    exileArray.add(exCard);
                 }
             }
             playerJson.add("exile", exileArray);
@@ -1878,6 +1981,8 @@ public class StreamingGamePanel extends GamePanel {
             if (handCards != null) {
                 for (CardView card : handCards.values()) {
                     var cardJson = new JsonObject();
+                    cardJson.addProperty("id", Objects.requireNonNull(card.getShortId(),
+                        "hand card missing shortId: " + card.getDisplayName()));
                     cardJson.addProperty("name", safe(card.getDisplayName()));
                     cardJson.addProperty("mana_cost", safe(card.getManaCostStr()));
                     handArray.add(cardJson);
@@ -1894,6 +1999,8 @@ public class StreamingGamePanel extends GamePanel {
         if (game.getStack() != null) {
             for (CardView card : game.getStack().values()) {
                 var stackJson = new JsonObject();
+                stackJson.addProperty("id", Objects.requireNonNull(card.getShortId(),
+                    "stack card missing shortId: " + stackCardName(card)));
                 stackJson.addProperty("name", stackCardName(card));
                 if (card.getId() != null) {
                     String owner = castOwners.get(card.getId().toString());
@@ -1921,6 +2028,9 @@ public class StreamingGamePanel extends GamePanel {
                 var attackersArr = new JsonArray();
                 for (CardView attacker : group.getAttackers().values()) {
                     var aJson = new JsonObject();
+                    if (attacker.getShortId() != null) {
+                        aJson.addProperty("id", attacker.getShortId());
+                    }
                     aJson.addProperty("name", safe(attacker.getDisplayName()));
                     if (attacker.getPower() != null) {
                         aJson.addProperty("power", safe(attacker.getPower()));
@@ -1932,6 +2042,9 @@ public class StreamingGamePanel extends GamePanel {
                 var blockersArr = new JsonArray();
                 for (CardView blocker : group.getBlockers().values()) {
                     var bJson = new JsonObject();
+                    if (blocker.getShortId() != null) {
+                        bJson.addProperty("id", blocker.getShortId());
+                    }
                     bJson.addProperty("name", safe(blocker.getDisplayName()));
                     if (blocker.getPower() != null) {
                         bJson.addProperty("power", safe(blocker.getPower()));
@@ -1947,6 +2060,111 @@ public class StreamingGamePanel extends GamePanel {
                 combatArray.add(groupJson);
             }
             event.add("combat", combatArray);
+        }
+
+        // Revealed cards (from effects like Courser of Kruphix, reveal spells)
+        if (game.getRevealed() != null && !game.getRevealed().isEmpty()) {
+            var revealedArray = new JsonArray();
+            for (RevealedView rv : game.getRevealed()) {
+                var rvJson = new JsonObject();
+                rvJson.addProperty("name", safe(rv.getName()));
+                var cardsArr = new JsonArray();
+                for (CardView card : rv.getCards().values()) {
+                    var cJson = new JsonObject();
+                    if (card.getShortId() != null) {
+                        cJson.addProperty("id", card.getShortId());
+                    }
+                    cJson.addProperty("name", safe(card.getDisplayName()));
+                    cardsArr.add(cJson);
+                }
+                rvJson.add("cards", cardsArr);
+                revealedArray.add(rvJson);
+            }
+            event.add("revealed", revealedArray);
+        }
+
+        // Companion cards
+        if (game.getCompanion() != null && !game.getCompanion().isEmpty()) {
+            var companionArray = new JsonArray();
+            for (RevealedView rv : game.getCompanion()) {
+                var rvJson = new JsonObject();
+                rvJson.addProperty("name", safe(rv.getName()));
+                var cardsArr = new JsonArray();
+                for (CardView card : rv.getCards().values()) {
+                    var cJson = new JsonObject();
+                    if (card.getShortId() != null) {
+                        cJson.addProperty("id", card.getShortId());
+                    }
+                    cJson.addProperty("name", safe(card.getDisplayName()));
+                    cardsArr.add(cJson);
+                }
+                rvJson.add("cards", cardsArr);
+                companionArray.add(rvJson);
+            }
+            event.add("companion", companionArray);
+        }
+
+        // Looked-at cards (scry, surveil, etc.)
+        if (game.getLookedAt() != null && !game.getLookedAt().isEmpty()) {
+            var lookedAtArray = new JsonArray();
+            for (LookedAtView lv : game.getLookedAt()) {
+                var lvJson = new JsonObject();
+                lvJson.addProperty("name", safe(lv.getName()));
+                var cardsArr = new JsonArray();
+                for (SimpleCardView sv : lv.getCards().values()) {
+                    var cJson = new JsonObject();
+                    if (sv.getShortId() != null) {
+                        cJson.addProperty("id", sv.getShortId());
+                    }
+                    cardsArr.add(cJson);
+                }
+                lvJson.add("cards", cardsArr);
+                lookedAtArray.add(lvJson);
+            }
+            event.add("looked_at", lookedAtArray);
+        }
+
+        // Game-level exile zones (with zone names for context)
+        if (game.getExile() != null && !game.getExile().isEmpty()) {
+            var exileZonesArray = new JsonArray();
+            for (ExileView ev : game.getExile()) {
+                var ezJson = new JsonObject();
+                ezJson.addProperty("zone_name", safe(ev.getName()));
+                var cardsArr = new JsonArray();
+                for (CardView card : ev.values()) {
+                    var cJson = new JsonObject();
+                    if (card.getShortId() != null) {
+                        cJson.addProperty("id", card.getShortId());
+                    }
+                    cJson.addProperty("name", safe(card.getDisplayName()));
+                    cardsArr.add(cJson);
+                }
+                ezJson.add("cards", cardsArr);
+                exileZonesArray.add(ezJson);
+            }
+            event.add("exile_zones", exileZonesArray);
+        }
+
+        // Helper emblems (Radiation, etc.)
+        if (game.getMyHelperEmblems() != null && !game.getMyHelperEmblems().isEmpty()) {
+            var emblemsArray = new JsonArray();
+            for (CardView card : game.getMyHelperEmblems().values()) {
+                var eJson = new JsonObject();
+                if (card.getShortId() != null) {
+                    eJson.addProperty("id", card.getShortId());
+                }
+                eJson.addProperty("name", safe(card.getDisplayName()));
+                List<String> rules = card.getRules();
+                if (rules != null && !rules.isEmpty()) {
+                    var rulesArr = new JsonArray();
+                    for (String r : rules) {
+                        rulesArr.add(stripHtml(r));
+                    }
+                    eJson.add("rules", rulesArr);
+                }
+                emblemsArray.add(eJson);
+            }
+            event.add("helper_emblems", emblemsArray);
         }
 
         writeGameEvent("state_snapshot", event);

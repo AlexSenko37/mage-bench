@@ -27,21 +27,21 @@ def test_clone_copies_memnite(xmage_server, tmp_path, project_root):
             {"name": "choose_action", "arguments": {"index": 0}},
             {"name": "pass_priority", "arguments": {}},
             {"name": "choose_action", "arguments": {"answer": False}},
-            # Play Island (alphabetical: Black Lotus=p3, Island=p4..p7, Memnite=p8).
+            # Play Island.
             {"name": "pass_priority", "arguments": {}},
-            {"name": "choose_action", "arguments": {"id": "p4"}},
+            {"name": "choose_action", "arguments": {"index": 1}},
             # Next turn: cast Black Lotus then Memnite.
-            {"name": "pass_priority", "arguments": {}},
-            {"name": "choose_action", "arguments": {"id": "p3"}},
             {"name": "pass_priority", "arguments": {}},
             {"name": "choose_action", "arguments": {"index": 0}},
             {"name": "pass_priority", "arguments": {}},
-            {"name": "choose_action", "arguments": {"id": "p8"}},
+            {"name": "choose_action", "arguments": {"index": 0}},
+            {"name": "pass_priority", "arguments": {}},
+            {"name": "choose_action", "arguments": {"index": 5}},
             {"name": "pass_priority", "arguments": {}},
             {"name": "choose_action", "arguments": {"index": 0}},
             # Cast Clone, choose to copy, target Memnite, then capture state.
             {"name": "pass_priority", "arguments": {}},
-            {"name": "choose_action", "arguments": {"id": "p10"}},
+            {"name": "choose_action", "arguments": {"index": 0}},
             {"name": "pass_priority", "arguments": {}},
             {"name": "choose_action", "arguments": {"answer": True}},
             {"name": "pass_priority", "arguments": {}},

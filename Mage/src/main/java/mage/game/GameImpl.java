@@ -172,6 +172,11 @@ public abstract class GameImpl implements Game {
     // temporary store for income concede commands, don't copy
     private final LinkedList<UUID> concedingPlayers = new LinkedList<>();
 
+    // Server-side game event log: monotonic sequence counter and shared short ID registry.
+    // These are NOT deep-copied — copies share the same counter/registry (they are game-lifetime singletons).
+    private transient AtomicInteger gameSeq;
+    private transient ShortIdRegistry shortIdRegistry;
+
     public GameImpl(MultiplayerAttackOption attackOption, RangeOfInfluence range, Mulligan mulligan, int minimumDeckSize, int startingLife, int startingHandSize) {
         this.id = UUID.randomUUID();
         this.gameIndex = GLOBAL_INDEX.incrementAndGet();
@@ -183,6 +188,8 @@ public abstract class GameImpl implements Game {
         this.startingHandSize = startingHandSize;
         this.executingRollback = false;
         this.minimumDeckSize = minimumDeckSize;
+        this.gameSeq = new AtomicInteger(0);
+        this.shortIdRegistry = new ShortIdRegistry();
 
         initGameDefaultWatchers();
     }
@@ -198,6 +205,8 @@ public abstract class GameImpl implements Game {
         this.gameIndex = game.gameIndex;
         this.tableId = game.tableId;
         this.totalErrorsCount.set(game.totalErrorsCount.get());
+        this.gameSeq = game.gameSeq;
+        this.shortIdRegistry = game.shortIdRegistry;
 
         this.ready = game.ready;
         //this.tableEventSource = game.tableEventSource; // client-server part, not need on copy/simulations
@@ -3195,7 +3204,8 @@ public abstract class GameImpl implements Game {
 
     @Override
     public void informPlayers(String message) {
-        DataCollectorServices.getInstance().onGameLog(this, message);
+        int seq = nextGameSeq();
+        DataCollectorServices.getInstance().onGameLog(this, message, seq);
 
         // Uncomment to print game messages
         // System.out.println(message.replaceAll("\\<.*?\\>", ""));
@@ -4281,5 +4291,20 @@ public abstract class GameImpl implements Game {
     @Override
     public void setTableId(UUID tableId) {
         this.tableId = tableId;
+    }
+
+    @Override
+    public int nextGameSeq() {
+        return gameSeq.incrementAndGet();
+    }
+
+    @Override
+    public int getGameSeq() {
+        return gameSeq.get();
+    }
+
+    @Override
+    public ShortIdRegistry getShortIdRegistry() {
+        return shortIdRegistry;
     }
 }

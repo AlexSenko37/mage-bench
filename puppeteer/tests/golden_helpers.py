@@ -21,8 +21,11 @@ from puppeteer.process_manager import kill_tree
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden" / "prompts"
+GOLDEN_EXPORTS_DIR = Path(__file__).resolve().parent / "golden" / "exports"
 
 UPDATE_MODE = os.environ.get("UPDATE_GOLDEN", "").lower() in ("1", "true", "yes")
+SPECTATOR_READY_TIMEOUT_SECONDS = 240
+VOLATILE_PROMPT_INT_FIELDS = {"game_seq"}
 
 # Default decks for tests (relative to project root)
 DECK_RED_STOMPY = "Mage.Client/release/sample-decks/Legacy/Red-Stompy.dck"
@@ -84,6 +87,31 @@ def _wait_for_log_marker(
         time.sleep(2)
     log_text = log_path.read_text() if log_path.exists() else "<no log>"
     raise TimeoutError(f"Marker not found within {timeout}s: {marker!r}\nLog tail:\n{log_text[-2000:]}")
+
+
+def _wait_for_files_quiescent(paths: list[Path], timeout: int = 30, stable_for: float = 2.0) -> None:
+    """Wait until at least one export file exists and observed sizes stop changing."""
+    deadline = time.monotonic() + timeout
+    last_sizes: tuple[tuple[str, int], ...] | None = None
+    stable_since: float | None = None
+    while time.monotonic() < deadline:
+        snapshot: list[tuple[str, int]] = []
+        for path in paths:
+            if path.exists():
+                snapshot.append((str(path), path.stat().st_size))
+        size_tuple = tuple(snapshot)
+        if size_tuple and size_tuple == last_sizes:
+            if stable_since is None:
+                stable_since = time.monotonic()
+            elif (time.monotonic() - stable_since) >= stable_for:
+                return
+        else:
+            stable_since = None
+            if size_tuple:
+                last_sizes = size_tuple
+        time.sleep(0.25)
+    current = {str(path): (path.stat().st_size if path.exists() else "<missing>") for path in paths}
+    raise TimeoutError(f"Game export files did not quiesce within {timeout}s: {current}")
 
 
 def run_golden_scenario(
@@ -175,7 +203,12 @@ def run_golden_scenario(
         log_fhs.append(spectator_fh)
 
         # Wait for table creation
-        _wait_for_log_marker(spectator_log, "AI Puppeteer: waiting for", spectator_proc, timeout=120)
+        _wait_for_log_marker(
+            spectator_log,
+            "AI Puppeteer: waiting for",
+            spectator_proc,
+            timeout=SPECTATOR_READY_TIMEOUT_SECONDS,
+        )
 
         # --- Start replay client (player A) ---
         replay_log = game_dir / f"{player_a_name}_replay.log"
@@ -253,6 +286,9 @@ def run_golden_scenario(
             raise RuntimeError(
                 f"Replay client exited with code {replay_proc.returncode}.\nReplay log tail:\n{replay_text[-2000:]}"
             )
+
+        # Ensure spectator has finished flushing export inputs.
+        _wait_for_files_quiescent([game_dir / "game_events.jsonl", game_dir / "server_game_events.jsonl"])
 
         # Read golden prompt
         prompt_path = game_dir / f"{player_a_name}_golden_prompt.json"
@@ -352,7 +388,12 @@ def run_golden_scenario_two_replay(
         log_fhs.append(spectator_fh)
 
         # Wait for table creation
-        _wait_for_log_marker(spectator_log, "AI Puppeteer: waiting for", spectator_proc, timeout=120)
+        _wait_for_log_marker(
+            spectator_log,
+            "AI Puppeteer: waiting for",
+            spectator_proc,
+            timeout=SPECTATOR_READY_TIMEOUT_SECONDS,
+        )
 
         # --- Start replay client (player A) ---
         replay_a_log = game_dir / f"{player_a_name}_replay.log"
@@ -441,6 +482,9 @@ def run_golden_scenario_two_replay(
                 f"Replay log tail:\n{replay_b_text[-2000:]}"
             )
 
+        # Ensure spectator has finished flushing export inputs.
+        _wait_for_files_quiescent([game_dir / "game_events.jsonl", game_dir / "server_game_events.jsonl"])
+
         # Read golden prompt for player A
         prompt_path = game_dir / f"{player_a_name}_golden_prompt.json"
         assert prompt_path.exists(), f"Golden prompt not written: {prompt_path}\nCheck replay log: {replay_a_log}"
@@ -459,9 +503,42 @@ def _to_sorted_json(obj: object) -> str:
     return json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False)
 
 
+def _is_short_id(value: object) -> bool:
+    return isinstance(value, str) and len(value) > 1 and value[0] == "p" and value[1:].isdigit()
+
+
+def _normalize_prompt_for_golden(obj: object) -> object:
+    """Normalize prompt payloads for deterministic golden comparisons.
+
+    - Strip short IDs (pN) to avoid non-semantic ID churn.
+    - Parse embedded JSON strings and re-serialize with sorted keys.
+    """
+    if isinstance(obj, dict):
+        out: dict[str, object] = {}
+        for key, value in obj.items():
+            if key in VOLATILE_PROMPT_INT_FIELDS and isinstance(value, int):
+                out[key] = 0
+                continue
+            if key == "id" and _is_short_id(value):
+                out[key] = "_"
+                continue
+            out[key] = _normalize_prompt_for_golden(value)
+        return out
+    if isinstance(obj, list):
+        return [_normalize_prompt_for_golden(item) for item in obj]
+    if isinstance(obj, str):
+        try:
+            parsed = json.loads(obj)
+        except json.JSONDecodeError:
+            return obj
+        normalized = _normalize_prompt_for_golden(parsed)
+        return json.dumps(normalized, separators=(",", ":"), sort_keys=True, ensure_ascii=False)
+    return obj
+
+
 def assert_golden_prompt(name: str, actual: list[dict]) -> None:
     """Compare prompt messages against golden file, or update in UPDATE_GOLDEN mode."""
-    actual_json = _to_sorted_json(actual)
+    actual_json = _to_sorted_json(_normalize_prompt_for_golden(actual))
     golden_file = GOLDEN_DIR / f"{name}.json"
 
     if UPDATE_MODE:
@@ -486,4 +563,87 @@ def assert_golden_prompt(name: str, actual: list[dict]) -> None:
         diff_text = "\n".join(diffs[:20])
         raise AssertionError(
             f"Golden file mismatch: {name}.json\nRun 'make update-golden' to regenerate.\n\n{diff_text}"
+        )
+
+
+def _normalize_embedded_json(obj: object) -> object:
+    """Recursively normalize embedded JSON strings for deterministic key order.
+
+    MCP tool results are serialized as JSON strings within the export data.
+    The key order in these strings can vary between runs (e.g. {"blocks":"p10","id":"p7"}
+    vs {"id":"p7","blocks":"p10"}). Parse and re-serialize with sorted keys.
+    """
+    if isinstance(obj, dict):
+        return {k: _normalize_embedded_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_normalize_embedded_json(item) for item in obj]
+    elif isinstance(obj, str) and obj.startswith(("{", "[")):
+        try:
+            parsed = json.loads(obj)
+            parsed = _normalize_embedded_json(parsed)
+            return json.dumps(parsed, sort_keys=True, ensure_ascii=False)
+        except (json.JSONDecodeError, ValueError):
+            return obj
+    return obj
+
+
+def _strip_volatile(data: dict) -> None:
+    """Remove fields that vary between test runs from export data, in place."""
+    # Top-level volatile fields
+    data.pop("timestamp", None)
+    data.pop("id", None)
+
+    # Strip ts from actions
+    for action in data.get("actions", []):
+        action.pop("ts", None)
+
+    # Strip ts from llmEvents, then sort deterministically.
+    # Events from different players can interleave with sub-millisecond
+    # timestamp differences, so the sort order is fragile across runs.
+    for event in data.get("llmEvents", []):
+        event.pop("ts", None)
+    data.get("llmEvents", []).sort(key=lambda e: json.dumps(e, sort_keys=True, ensure_ascii=False))
+
+    # Strip ts from llmTrace and sort deterministically.
+    for event in data.get("llmTrace", []):
+        event.pop("ts", None)
+    data.get("llmTrace", []).sort(key=lambda e: json.dumps(e, sort_keys=True, ensure_ascii=False))
+
+
+def assert_golden_export(name: str, game_dir: Path) -> None:
+    """Run export pipeline on game dir, compare against golden file."""
+    # Import here to avoid circular imports at module level
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    from export_game import build_export
+
+    export_data = build_export(game_dir)
+    _strip_volatile(export_data)
+    export_data = _normalize_embedded_json(export_data)
+    actual_json = _to_sorted_json(export_data)
+    golden_file = GOLDEN_EXPORTS_DIR / f"{name}.json"
+
+    if UPDATE_MODE:
+        golden_file.parent.mkdir(parents=True, exist_ok=True)
+        golden_file.write_text(actual_json + "\n")
+        print(f"Updated golden export: {golden_file}")
+        return
+
+    assert golden_file.exists(), (
+        f"Golden export file not found: {golden_file}\nRun 'make update-golden' to generate it."
+    )
+
+    expected = golden_file.read_text().rstrip()
+    if expected != actual_json:
+        expected_lines = expected.split("\n")
+        actual_lines = actual_json.split("\n")
+        diffs = []
+        max_lines = max(len(expected_lines), len(actual_lines))
+        for i in range(max_lines):
+            exp = expected_lines[i] if i < len(expected_lines) else "<missing>"
+            act = actual_lines[i] if i < len(actual_lines) else "<missing>"
+            if exp != act:
+                diffs.append(f"  Line {i + 1}:\n    expected: {exp}\n    actual:   {act}")
+        diff_text = "\n".join(diffs[:20])
+        raise AssertionError(
+            f"Golden export mismatch: {name}.json\nRun 'make update-golden' to regenerate.\n\n{diff_text}"
         )
