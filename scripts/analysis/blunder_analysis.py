@@ -10,7 +10,6 @@ Usage:
 Requires OPENROUTER_API_KEY environment variable.
 """
 
-import gzip
 import json
 import os
 import re
@@ -26,6 +25,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import scryfall  # noqa: E402
 from annotate_game import annotate_game  # noqa: E402
+from blunder_eval_common import load_game  # noqa: E402
 from extract_decisions import _summarize_snapshot, extract_decisions  # noqa: E402
 from puppeteer.harness_epoch import MIN_BLUNDER_VERSION  # noqa: F401, E402
 from puppeteer.llm_cost import fetch_openrouter_prices, get_model_price  # noqa: E402
@@ -125,12 +125,7 @@ Return ONLY valid JSON — either `null` (no blunder) or a single annotation obj
 {ANNOTATION_SCHEMA}"""
 
 
-def _load_game(gz_path: str) -> dict:
-    if gz_path.endswith(".json.gz"):
-        with gzip.open(gz_path, "rt") as f:
-            return json.load(f)
-    with open(gz_path, "r") as f:
-        return json.load(f)
+_load_game = load_game
 
 
 # --- Oracle text via Scryfall with disk cache ---
@@ -818,9 +813,17 @@ def _eval_one_decision(
     # Inject constant fields the LLM doesn't need to generate.
     # snapshotIndex points to the first snapshot AFTER the action resolved,
     # so the viewer shows the annotation alongside its consequences.
+    action_seq = decision.get("action_seq", 0)
     action_ts = decision.get("action_ts", "")
-    if action_ts:
-        # Find first snapshot at or after action_ts
+    if action_seq:
+        # v2: find first snapshot at or after action_seq
+        aftermath_idx = decision["snapshot_index"]
+        for i in range(decision["snapshot_index"], len(snapshots)):
+            if snapshots[i].get("seq", 0) >= action_seq:
+                aftermath_idx = i
+                break
+    elif action_ts:
+        # v1: find first snapshot at or after action_ts
         aftermath_idx = decision["snapshot_index"]
         for i in range(decision["snapshot_index"], len(snapshots)):
             if snapshots[i].get("ts", "") >= action_ts:
@@ -1095,7 +1098,8 @@ def main(gz_path: str) -> None:
         sev = ann["severity"].upper()
         print(f"  Turn {turn} ({ann['player']}) - {sev}")
         print(f"    {ann['description']}")
-        print(f"    Better: {ann['betterLine']}")
+        if ann.get("betterLine"):
+            print(f"    Better: {ann['betterLine']}")
         print()
 
     _write_annotations(gz_path, annotations)
