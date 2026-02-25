@@ -988,17 +988,18 @@ def _strip_volatile(data: dict) -> None:
     for action in data.get("actions", []):
         action.pop("ts", None)
 
-    # Strip ts from llmEvents, then sort deterministically.
-    # Events from different players can interleave with sub-millisecond
-    # timestamp differences, so the sort order is fragile across runs.
+    # Sort llmEvents by (seq, player) then strip ts.
+    # seq-first keeps events interleaved chronologically across players;
+    # player breaks ties deterministically (ts is stripped as volatile,
+    # so it can't be a sort key — wall-clock order varies between runs).
     for event in data.get("llmEvents", []):
         event.pop("ts", None)
-    data.get("llmEvents", []).sort(key=lambda e: json.dumps(e, sort_keys=True, ensure_ascii=False))
+    data.get("llmEvents", []).sort(key=lambda e: (e.get("seq", 0), e.get("player", "")))
 
-    # Strip ts from llmTrace and sort deterministically.
+    # Same for llmTrace.
     for event in data.get("llmTrace", []):
         event.pop("ts", None)
-    data.get("llmTrace", []).sort(key=lambda e: json.dumps(e, sort_keys=True, ensure_ascii=False))
+    data.get("llmTrace", []).sort(key=lambda e: (e.get("seq", 0), e.get("player", "")))
 
 
 def assert_golden_export(name: str, game_dir: Path) -> None:
