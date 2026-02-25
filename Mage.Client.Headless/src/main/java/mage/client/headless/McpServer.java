@@ -42,18 +42,35 @@ public class McpServer {
         ConcedeTool.class,
     };
 
-    private final BridgeCallbackHandler callbackHandler;
+    /** Additional tools only available in keepAlive (multi-game) mode. */
+    private static final Class<?>[] KEEP_ALIVE_TOOL_CLASSES = {
+        JoinTableTool.class,
+    };
+
+    private final BridgeMageClient client;
     private final Gson gson;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final PrintWriter stdout;
     private boolean initialized = false;
     private final McpToolRegistry registry;
 
-    public McpServer(BridgeCallbackHandler callbackHandler) {
-        this.callbackHandler = callbackHandler;
+    public McpServer(BridgeMageClient client) {
+        this(client, false);
+    }
+
+    public McpServer(BridgeMageClient client, boolean keepAlive) {
+        this.client = client;
         this.gson = new GsonBuilder().create();
         this.stdout = new PrintWriter(System.out, true);
-        this.registry = new McpToolRegistry(TOOL_CLASSES);
+        if (keepAlive) {
+            // Merge base tools + keepAlive tools
+            Class<?>[] allTools = new Class<?>[TOOL_CLASSES.length + KEEP_ALIVE_TOOL_CLASSES.length];
+            System.arraycopy(TOOL_CLASSES, 0, allTools, 0, TOOL_CLASSES.length);
+            System.arraycopy(KEEP_ALIVE_TOOL_CLASSES, 0, allTools, TOOL_CLASSES.length, KEEP_ALIVE_TOOL_CLASSES.length);
+            this.registry = new McpToolRegistry(allTools);
+        } else {
+            this.registry = new McpToolRegistry(TOOL_CLASSES);
+        }
     }
 
     /**
@@ -104,7 +121,7 @@ public class McpServer {
             Object result = handleRequest(method, params);
             sendResponse(id, result, null);
         } catch (Exception e) {
-            callbackHandler.logError("MCP request failed (" + method + "): " + e.getMessage());
+            client.getCallbackHandler().logError("MCP request failed (" + method + "): " + e.getMessage());
             sendError(id, -32603, e.getMessage());
         }
     }
@@ -149,7 +166,7 @@ public class McpServer {
         }
         JsonObject arguments = params.has("arguments") ? params.getAsJsonObject("arguments") : new JsonObject();
 
-        Map<String, Object> toolResult = registry.call(toolName, arguments, callbackHandler);
+        Map<String, Object> toolResult = registry.call(toolName, arguments, client.getCallbackHandler());
 
         // Format as MCP tool result
         return Map.of(

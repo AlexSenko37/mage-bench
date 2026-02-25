@@ -58,6 +58,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -179,6 +180,17 @@ public class BridgeCallbackHandler {
     private static final long CHAT_DEDUP_WINDOW_MS = 30_000; // Suppress identical messages within 30s
     private volatile int bridgeEventCursor = 0; // Pull cursor for bridge event log
     private final List<BridgeLogEntry> cachedBridgeEvents = new ArrayList<>(); // Client-side cache survives game cleanup
+
+    // Keep-alive multi-game support: latches for cross-thread signaling
+    private volatile CountDownLatch gameStartLatch = new CountDownLatch(1);
+    private volatile CountDownLatch gameFinishedLatch = new CountDownLatch(1);
+
+    // Join handler: provided by HeadlessClient so JoinTableTool can trigger table joining
+    @FunctionalInterface
+    public interface JoinHandler {
+        UUID joinTable(String deckPath) throws Exception;
+    }
+    private volatile JoinHandler joinHandler = null;
 
     // Lost response retry: track last response sent from chooseAction so we can
     // re-send if the server discards it due to the waitResponseOpen race condition
@@ -368,6 +380,64 @@ public class BridgeCallbackHandler {
     public void setMaxInteractionsPerTurn(int max) {
         this.maxInteractionsPerTurn = Math.max(5, max);
         logger.info("[" + client.getUsername() + "] maxInteractionsPerTurn set to " + this.maxInteractionsPerTurn);
+    }
+
+    public void setJoinHandler(JoinHandler handler) {
+        this.joinHandler = handler;
+    }
+
+    /**
+     * Create a fresh handler for the next game, copying only persistent config fields.
+     * Installs the new handler on the client (so callbacks route to it) and returns it.
+     */
+    public BridgeCallbackHandler createFreshForNextGame() {
+        BridgeCallbackHandler fresh = new BridgeCallbackHandler(client);
+        fresh.session = this.session;
+        fresh.mcpMode = this.mcpMode;
+        fresh.actionDelayMs = this.actionDelayMs;
+        fresh.keepAliveAfterGame = this.keepAliveAfterGame;
+        fresh.maxInteractionsPerTurn = this.maxInteractionsPerTurn;
+        fresh.errorLogPath = this.errorLogPath;
+        fresh.bridgeLogPath = this.bridgeLogPath;
+        fresh.joinHandler = this.joinHandler;
+        client.setCallbackHandler(fresh);
+        logger.info("[" + client.getUsername() + "] Created fresh handler for next game");
+        return fresh;
+    }
+
+    /**
+     * Block until {@code handleStartGame()} fires. Used by join_table tool.
+     * @return true if game started, false if timed out
+     */
+    public boolean awaitGameStart(long timeoutMs) throws InterruptedException {
+        return gameStartLatch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Block until {@code handleGameOver()} fires. Used by potato keepAlive loop.
+     * @return true if game finished, false if timed out
+     */
+    public boolean awaitGameFinished(long timeoutMs) throws InterruptedException {
+        return gameFinishedLatch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Join the next available game table with a new deck. Used by JoinTableTool.
+     * Creates a fresh handler (discarding all old game state), loads the deck,
+     * joins a table, and waits for game start.
+     */
+    public void joinNextTable(String deckPath) throws Exception {
+        JoinHandler jh = this.joinHandler;
+        assert jh != null : "joinHandler not set — keepAlive mode requires a JoinHandler";
+        BridgeCallbackHandler fresh = createFreshForNextGame();
+        mage.cards.decks.DeckCardLists deck = HeadlessClient.loadDeck(deckPath);
+        fresh.setDeckList(deck);
+        UUID tableId = jh.joinTable(deckPath);
+        assert tableId != null : "Failed to join any table within timeout";
+        logger.info("[" + client.getUsername() + "] Joined table " + tableId + ", waiting for game start...");
+        boolean started = fresh.awaitGameStart(60_000);
+        assert started : "Game did not start within 60s after joining table";
+        logger.info("[" + client.getUsername() + "] Game started after join_table");
     }
 
     public void reset() {
@@ -4464,6 +4534,7 @@ public class BridgeCallbackHandler {
         });
 
         logger.info("[" + client.getUsername() + "] Game started: gameId=" + gameId + ", playerId=" + playerId);
+        gameStartLatch.countDown();
     }
 
     private void handleGameInit(UUID gameId, ClientCallback callback) {
@@ -5144,14 +5215,17 @@ public class BridgeCallbackHandler {
         }
         logger.info("[" + client.getUsername() + "] Game over: " + message.getMessage());
 
-        if (mcpMode) {
+        if (keepAliveAfterGame) {
+            // Multi-game session: signal game finished but keep the client alive.
+            // The Python side (join_table tool or potato stdin) drives the next game.
+            logger.info("[" + client.getUsername() + "] Game ended (keepAlive mode, staying connected)");
+            gameFinishedLatch.countDown();
+        } else if (mcpMode) {
             // In MCP mode, each game gets its own pilot process + bridge client.
             // Disconnect immediately so the XMage server doesn't auto-join us
             // into the next game in a parallel gauntlet.
             logger.info("[" + client.getUsername() + "] Game ended (MCP mode, stopping client)");
             client.stop();
-        } else if (keepAliveAfterGame) {
-            logger.info("[" + client.getUsername() + "] Game ended (staller mode, staying connected)");
         } else if (activeGames.isEmpty()) {
             logger.info("[" + client.getUsername() + "] No more active games, stopping client");
             client.stop();
