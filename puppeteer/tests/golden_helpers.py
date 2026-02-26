@@ -16,6 +16,7 @@ import asyncio
 import io
 import json
 import os
+import select
 import subprocess
 import sys
 import time
@@ -67,7 +68,7 @@ class BridgeSession:
         self._stdin = io.TextIOWrapper(proc.stdin, encoding="utf-8", line_buffering=True)
         self._stdout = io.TextIOWrapper(proc.stdout, encoding="utf-8")
 
-    def _rpc(self, method: str, params: dict | None = None) -> dict:
+    def _rpc(self, method: str, params: dict | None = None, timeout: int = 300) -> dict:
         self._id += 1
         req: dict = {"jsonrpc": "2.0", "method": method, "id": self._id}
         if params is not None:
@@ -75,6 +76,10 @@ class BridgeSession:
         line = json.dumps(req, separators=(",", ":"))
         self._stdin.write(line + "\n")
         self._stdin.flush()
+        # Wait for data with timeout to avoid hanging forever on a stuck JVM.
+        ready, _, _ = select.select([self.proc.stdout], [], [], timeout)
+        if not ready:
+            raise TimeoutError(f"Bridge RPC timeout after {timeout}s waiting for response to {method}")
         resp_line = self._stdout.readline()
         assert resp_line, "Bridge process closed stdout unexpectedly"
         resp = json.loads(resp_line)
