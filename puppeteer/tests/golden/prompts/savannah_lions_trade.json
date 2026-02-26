@@ -44,6 +44,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 1,
       "can_cancel": false,
       "choices": [
         {
@@ -105,7 +106,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 1
+          },
           "name": "pass_priority"
         },
         "id": "call_3",
@@ -192,6 +195,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 2,
       "context": "T1 ()",
       "game_seq": 3,
       "message": "Mulligan down to 6 cards?",
@@ -286,7 +290,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 2
+          },
           "name": "pass_priority"
         },
         "id": "call_5",
@@ -379,6 +385,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 3,
       "choices": [
         {
           "action": "land",
@@ -491,7 +498,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 3
+          },
           "name": "pass_priority"
         },
         "id": "call_8",
@@ -613,6 +622,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 5,
       "choices": [
         {
           "action": "land",
@@ -698,7 +708,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 5
+          },
           "name": "pass_priority"
         },
         "id": "call_10",
@@ -814,6 +826,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 6,
       "choices": [
         {
           "choice_type": "attacker",
@@ -905,6 +918,7 @@
       {
         "function": {
           "arguments": {
+            "board_cursor": 6,
             "until": "postcombat_main"
           },
           "name": "pass_priority"
@@ -1024,6 +1038,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 7,
       "choices": [
         {
           "action": "land",

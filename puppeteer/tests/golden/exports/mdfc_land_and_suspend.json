@@ -518,6 +518,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 1,
         "can_cancel": false,
         "choices": [
           {
@@ -565,7 +566,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 3,
       "player": "TestPlayer",
       "result": {
@@ -649,6 +652,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 2,
         "context": "T1 ()",
         "game_seq": 3,
         "message": "Mulligan down to 6 cards?",
@@ -732,7 +736,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 2
+      },
       "gameSeq": 11,
       "player": "TestPlayer",
       "result": {
@@ -822,6 +828,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 3,
         "choices": [
           {
             "action": "activate",
@@ -904,7 +911,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 3
+      },
       "gameSeq": 25,
       "player": "TestPlayer",
       "result": {
@@ -1014,6 +1023,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 4,
         "choices": [
           {
             "action": "activate",
@@ -1103,7 +1113,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 4
+      },
       "gameSeq": 35,
       "player": "TestPlayer",
       "result": {
@@ -1214,6 +1226,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 5,
         "choices": [
           {
             "action": "activate",
@@ -1332,7 +1345,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 5
+      },
       "gameSeq": 55,
       "player": "TestPlayer",
       "result": {
@@ -1458,6 +1473,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 6,
         "choices": [
           {
             "action": "land",
@@ -1529,7 +1545,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 6
+      },
       "gameSeq": 78,
       "player": "TestPlayer",
       "result": {
@@ -1670,6 +1688,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 7,
         "choices": [
           {
             "action": "land",
@@ -1741,7 +1760,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 7
+      },
       "gameSeq": 101,
       "player": "TestPlayer",
       "result": {
@@ -1897,6 +1918,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 8,
         "choices": [
           {
             "action": "land",
@@ -1968,7 +1990,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 8
+      },
       "gameSeq": 127,
       "player": "TestPlayer",
       "result": {
@@ -2125,6 +2149,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 9,
         "context": "T6 Beginning/Upkeep (TestPlayer)",
         "game_seq": 127,
         "message": "Cast spell without paying its mana cost (Crashing Footfalls)?",
@@ -2161,7 +2186,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 9
+      },
       "gameSeq": 134,
       "player": "TestPlayer",
       "result": {
@@ -2356,6 +2383,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 10,
         "choices": [
           {
             "action": "land",

@@ -192,6 +192,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 1,
         "can_cancel": false,
         "choices": [
           {
@@ -239,7 +240,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 3,
       "player": "TestPlayer",
       "result": {
@@ -323,6 +326,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 2,
         "context": "T1 ()",
         "game_seq": 3,
         "message": "Mulligan down to 6 cards?",
@@ -406,7 +410,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 2
+      },
       "gameSeq": 11,
       "player": "TestPlayer",
       "result": {
@@ -495,6 +501,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 3,
         "choices": [
           {
             "action": "land",
@@ -562,7 +569,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 3
+      },
       "gameSeq": 16,
       "player": "TestPlayer",
       "result": {
@@ -650,6 +659,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 4,
         "choices": [
           {
             "action": "cast",
@@ -713,94 +723,16 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 4
+      },
       "gameSeq": 19,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_SELECT",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "id": "p14",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ],
-                "tapped": false
-              }
-            ],
-            "hand": [
-              {
-                "id": "p10",
-                "is_land": true,
-                "name": "Badlands",
-                "rules": [
-                  "{T}: Add {B}.",
-                  "{T}: Add {R}."
-                ]
-              },
-              {
-                "id": "p11",
-                "mana_cost": "{R}",
-                "name": "Lightning Bolt",
-                "playable": true,
-                "rules": [
-                  "{this} deals 3 damage to any target."
-                ]
-              },
-              {
-                "id": "p12",
-                "mana_cost": "{R}",
-                "name": "Lightning Bolt",
-                "playable": true,
-                "rules": [
-                  "{this} deals 3 damage to any target."
-                ]
-              },
-              {
-                "id": "p13",
-                "mana_cost": "{0}",
-                "name": "Memnite",
-                "power": "1",
-                "toughness": "1"
-              },
-              {
-                "id": "p15",
-                "is_land": true,
-                "name": "Plateau",
-                "rules": [
-                  "{T}: Add {R}.",
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p16",
-                "is_land": true,
-                "name": "Taiga",
-                "rules": [
-                  "{T}: Add {G}.",
-                  "{T}: Add {R}."
-                ]
-              }
-            ],
-            "hand_size": 6,
-            "is_active": false,
-            "is_you": true,
-            "library_size": 53,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "hand_size": 8,
-            "is_active": true,
-            "is_you": false,
-            "library_size": 52,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
+        "board_cursor": 4,
+        "board_unchanged": true,
         "choices": [
           {
             "action": "cast",
@@ -849,7 +781,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 4
+      },
       "gameSeq": 25,
       "player": "TestPlayer",
       "result": {
@@ -959,6 +893,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 5,
         "choices": [
           {
             "action": "land",
@@ -1041,7 +976,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 5
+      },
       "gameSeq": 30,
       "player": "TestPlayer",
       "result": {
@@ -1146,6 +1083,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 6,
         "choices": [
           {
             "action": "cast",
@@ -1194,7 +1132,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 6
+      },
       "gameSeq": 35,
       "player": "TestPlayer",
       "result": {
@@ -1299,6 +1239,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 7,
         "choices": [
           {
             "action": "cast",

@@ -64,7 +64,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 1
+          },
           "name": "pass_priority"
         },
         "id": "call_3",
@@ -154,6 +156,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 2,
       "context": "T1 ()",
       "game_seq": 3,
       "message": "Mulligan down to 6 cards?",
@@ -251,7 +254,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 2
+          },
           "name": "pass_priority"
         },
         "id": "call_5",
@@ -346,6 +351,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 3,
       "choices": [
         {
           "action": "land",
@@ -427,7 +433,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 3
+          },
           "name": "pass_priority"
         },
         "id": "call_7",
@@ -521,6 +529,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 4,
       "choices": [
         {
           "action": "cast",
@@ -598,7 +607,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 4
+          },
           "name": "pass_priority"
         },
         "id": "call_9",
@@ -610,88 +621,8 @@
     "content": {
       "action_pending": true,
       "action_type": "GAME_SELECT",
-      "board": [
-        {
-          "battlefield": [
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ],
-              "tapped": false
-            }
-          ],
-          "hand": [
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Badlands",
-              "rules": [
-                "{T}: Add {B}.",
-                "{T}: Add {R}."
-              ]
-            },
-            {
-              "id": "_",
-              "mana_cost": "{R}",
-              "name": "Lightning Bolt",
-              "playable": true,
-              "rules": [
-                "{this} deals 3 damage to any target."
-              ]
-            },
-            {
-              "id": "_",
-              "mana_cost": "{R}",
-              "name": "Lightning Bolt",
-              "playable": true,
-              "rules": [
-                "{this} deals 3 damage to any target."
-              ]
-            },
-            {
-              "id": "_",
-              "mana_cost": "{0}",
-              "name": "Memnite",
-              "power": 1,
-              "toughness": 1
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plateau",
-              "rules": [
-                "{T}: Add {R}.",
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Taiga",
-              "rules": [
-                "{T}: Add {G}.",
-                "{T}: Add {R}."
-              ]
-            }
-          ],
-          "hand_size": 6,
-          "is_active": false,
-          "is_you": true,
-          "library_size": 53,
-          "life": 20,
-          "name": "TestPlayer"
-        },
-        {
-          "hand_size": 8,
-          "is_active": true,
-          "is_you": false,
-          "library_size": 52,
-          "life": 20,
-          "name": "Opponent"
-        }
-      ],
+      "board_cursor": 4,
+      "board_unchanged": true,
       "choices": [
         {
           "action": "cast",
@@ -754,7 +685,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 4
+          },
           "name": "pass_priority"
         },
         "id": "call_11",
@@ -870,6 +803,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 5,
       "choices": [
         {
           "action": "land",
@@ -966,7 +900,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 5
+          },
           "name": "pass_priority"
         },
         "id": "call_13",
@@ -1077,6 +1013,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 6,
       "choices": [
         {
           "action": "cast",
@@ -1139,7 +1076,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 6
+          },
           "name": "pass_priority"
         },
         "id": "call_15",
@@ -1250,6 +1189,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 7,
       "choices": [
         {
           "action": "cast",

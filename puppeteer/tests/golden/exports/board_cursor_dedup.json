@@ -43,7 +43,7 @@
       "type": "phase_change"
     },
     {
-      "message": "TestPlayer puts Forest from hand onto the Battlefield",
+      "message": "TestPlayer puts Mountain from hand onto the Battlefield",
       "seq": 12
     },
     {
@@ -55,27 +55,33 @@
       "type": "phase_change"
     },
     {
-      "message": "TestPlayer casts Ancient Stirrings from hand",
-      "seq": 15
+      "message": "Opponent skip attack",
+      "seq": 17
     },
     {
-      "message": "TestPlayer reveals Ornithopter (source: Ancient Stirrings)",
-      "seq": 20
+      "active_player": "Opponent",
+      "seq": 17,
+      "turn": 2,
+      "type": "turn_change"
     },
     {
-      "message": "TestPlayer puts a card from library into their hand",
-      "seq": 21
+      "active_player": "Opponent",
+      "phase": "COMBAT",
+      "seq": 17,
+      "step": "DECLARE_ATTACKERS",
+      "turn": 2,
+      "type": "phase_change"
     },
     {
       "message": "TestPlayer wants to concede",
-      "seq": 23
+      "seq": 20
     }
   ],
   "cardImages": {},
   "deckType": "Constructed - Legacy",
   "gameOver": {
     "message": "Game ended",
-    "seq": 24
+    "seq": 21
   },
   "gameType": "Two Player Duel",
   "llmEvents": [
@@ -183,58 +189,60 @@
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "is_land": true,
+                "name": "Badlands",
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}: Add {B}.",
+                  "{T}: Add {R}."
                 ]
               },
               {
                 "id": "p11",
-                "is_land": true,
-                "name": "Forest",
+                "mana_cost": "{R}",
+                "name": "Lightning Bolt",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{this} deals 3 damage to any target."
                 ]
               },
               {
                 "id": "p12",
-                "is_land": true,
-                "name": "Plains",
+                "mana_cost": "{R}",
+                "name": "Lightning Bolt",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{this} deals 3 damage to any target."
                 ]
               },
               {
                 "id": "p13",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
+                "mana_cost": "{0}",
+                "name": "Memnite",
+                "power": "1",
+                "toughness": "1"
               },
               {
                 "id": "p14",
                 "is_land": true,
-                "name": "Plains",
+                "name": "Mountain",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {R}."
                 ]
               },
               {
                 "id": "p15",
                 "is_land": true,
-                "name": "Plains",
+                "name": "Plateau",
                 "rules": [
+                  "{T}: Add {R}.",
                   "{T}: Add {W}."
                 ]
               },
               {
                 "id": "p16",
                 "is_land": true,
-                "name": "Plains",
+                "name": "Taiga",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {G}.",
+                  "{T}: Add {R}."
                 ]
               }
             ],
@@ -263,52 +271,54 @@
         "stop_reason": "non_priority_action",
         "your_hand": [
           {
-            "mana_cost": "{G}",
-            "name": "Ancient Stirrings",
+            "is_land": true,
+            "name": "Badlands",
             "rules": [
-              "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+              "{T}: Add {B}.",
+              "{T}: Add {R}."
+            ]
+          },
+          {
+            "mana_cost": "{R}",
+            "name": "Lightning Bolt",
+            "rules": [
+              "{this} deals 3 damage to any target."
+            ]
+          },
+          {
+            "mana_cost": "{R}",
+            "name": "Lightning Bolt",
+            "rules": [
+              "{this} deals 3 damage to any target."
+            ]
+          },
+          {
+            "mana_cost": "{0}",
+            "name": "Memnite",
+            "power": "1",
+            "toughness": "1"
+          },
+          {
+            "is_land": true,
+            "name": "Mountain",
+            "rules": [
+              "{T}: Add {R}."
             ]
           },
           {
             "is_land": true,
-            "name": "Forest",
+            "name": "Plateau",
             "rules": [
-              "{T}: Add {G}."
-            ]
-          },
-          {
-            "is_land": true,
-            "name": "Plains",
-            "rules": [
+              "{T}: Add {R}.",
               "{T}: Add {W}."
             ]
           },
           {
             "is_land": true,
-            "name": "Plains",
+            "name": "Taiga",
             "rules": [
-              "{T}: Add {W}."
-            ]
-          },
-          {
-            "is_land": true,
-            "name": "Plains",
-            "rules": [
-              "{T}: Add {W}."
-            ]
-          },
-          {
-            "is_land": true,
-            "name": "Plains",
-            "rules": [
-              "{T}: Add {W}."
-            ]
-          },
-          {
-            "is_land": true,
-            "name": "Plains",
-            "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {G}.",
+              "{T}: Add {R}."
             ]
           }
         ]
@@ -349,64 +359,65 @@
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "is_land": true,
+                "name": "Badlands",
+                "playable": true,
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}: Add {B}.",
+                  "{T}: Add {R}."
                 ]
               },
               {
                 "id": "p11",
-                "is_land": true,
-                "name": "Forest",
-                "playable": true,
+                "mana_cost": "{R}",
+                "name": "Lightning Bolt",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{this} deals 3 damage to any target."
                 ]
               },
               {
                 "id": "p12",
-                "is_land": true,
-                "name": "Plains",
-                "playable": true,
+                "mana_cost": "{R}",
+                "name": "Lightning Bolt",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{this} deals 3 damage to any target."
                 ]
               },
               {
                 "id": "p13",
-                "is_land": true,
-                "name": "Plains",
+                "mana_cost": "{0}",
+                "name": "Memnite",
                 "playable": true,
-                "rules": [
-                  "{T}: Add {W}."
-                ]
+                "power": "1",
+                "toughness": "1"
               },
               {
                 "id": "p14",
                 "is_land": true,
-                "name": "Plains",
+                "name": "Mountain",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {R}."
                 ]
               },
               {
                 "id": "p15",
                 "is_land": true,
-                "name": "Plains",
+                "name": "Plateau",
                 "playable": true,
                 "rules": [
+                  "{T}: Add {R}.",
                   "{T}: Add {W}."
                 ]
               },
               {
                 "id": "p16",
                 "is_land": true,
-                "name": "Plains",
+                "name": "Taiga",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {G}.",
+                  "{T}: Add {R}."
                 ]
               }
             ],
@@ -430,39 +441,36 @@
         "choices": [
           {
             "action": "land",
-            "id": "p11",
+            "id": "p10",
             "index": 0,
-            "name": "Forest"
+            "name": "Badlands"
           },
           {
-            "action": "land",
-            "id": "p12",
-            "index": 1,
-            "name": "Plains"
-          },
-          {
-            "action": "land",
+            "action": "cast",
             "id": "p13",
-            "index": 2,
-            "name": "Plains"
+            "index": 1,
+            "mana_cost": "{0}",
+            "name": "Memnite",
+            "power": "1",
+            "toughness": "1"
           },
           {
             "action": "land",
             "id": "p14",
-            "index": 3,
-            "name": "Plains"
+            "index": 2,
+            "name": "Mountain"
           },
           {
             "action": "land",
             "id": "p15",
-            "index": 4,
-            "name": "Plains"
+            "index": 3,
+            "name": "Plateau"
           },
           {
             "action": "land",
             "id": "p16",
-            "index": 5,
-            "name": "Plains"
+            "index": 4,
+            "name": "Taiga"
           }
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
@@ -480,12 +488,12 @@
     },
     {
       "args": {
-        "id": "p11"
+        "id": "p14"
       },
       "gameSeq": 11,
       "player": "TestPlayer",
       "result": {
-        "action_taken": "selected_0",
+        "action_taken": "selected_2",
         "game_seq": 11,
         "next_action_hint": "Call get_action_choices or choose_action to see details, or pass_priority to continue.",
         "next_action_pending": true,
@@ -498,17 +506,120 @@
     },
     {
       "args": {
-        "id": "p10"
+        "board_cursor": 3
       },
-      "gameSeq": 13,
+      "gameSeq": 16,
       "player": "TestPlayer",
       "result": {
-        "action_taken": "selected_0",
-        "game_seq": 13,
-        "next_action_hint": "Call get_action_choices or choose_action to see details, or pass_priority to continue.",
-        "next_action_pending": true,
-        "next_action_type": "GAME_SELECT",
-        "success": true
+        "action_pending": true,
+        "action_type": "GAME_SELECT",
+        "board": [
+          {
+            "battlefield": [
+              {
+                "id": "p14",
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}."
+                ],
+                "tapped": false
+              }
+            ],
+            "hand": [
+              {
+                "id": "p10",
+                "is_land": true,
+                "name": "Badlands",
+                "rules": [
+                  "{T}: Add {B}.",
+                  "{T}: Add {R}."
+                ]
+              },
+              {
+                "id": "p11",
+                "mana_cost": "{R}",
+                "name": "Lightning Bolt",
+                "playable": true,
+                "rules": [
+                  "{this} deals 3 damage to any target."
+                ]
+              },
+              {
+                "id": "p12",
+                "mana_cost": "{R}",
+                "name": "Lightning Bolt",
+                "playable": true,
+                "rules": [
+                  "{this} deals 3 damage to any target."
+                ]
+              },
+              {
+                "id": "p13",
+                "mana_cost": "{0}",
+                "name": "Memnite",
+                "power": "1",
+                "toughness": "1"
+              },
+              {
+                "id": "p15",
+                "is_land": true,
+                "name": "Plateau",
+                "rules": [
+                  "{T}: Add {R}.",
+                  "{T}: Add {W}."
+                ]
+              },
+              {
+                "id": "p16",
+                "is_land": true,
+                "name": "Taiga",
+                "rules": [
+                  "{T}: Add {G}.",
+                  "{T}: Add {R}."
+                ]
+              }
+            ],
+            "hand_size": 6,
+            "is_active": false,
+            "is_you": true,
+            "library_size": 53,
+            "life": 20,
+            "name": "TestPlayer"
+          },
+          {
+            "hand_size": 8,
+            "is_active": true,
+            "is_you": false,
+            "library_size": 52,
+            "life": 20,
+            "name": "Opponent"
+          }
+        ],
+        "board_cursor": 4,
+        "choices": [
+          {
+            "action": "cast",
+            "id": "p11",
+            "index": 0,
+            "mana_cost": "{R}",
+            "name": "Lightning Bolt"
+          },
+          {
+            "action": "cast",
+            "id": "p12",
+            "index": 1,
+            "mana_cost": "{R}",
+            "name": "Lightning Bolt"
+          }
+        ],
+        "context": "T1 Precombat Main/Precombat Main (Opponent)",
+        "game_seq": 16,
+        "has_playable_cards": true,
+        "message": "Play instants and activated abilities",
+        "respond_with": "id=\"pN\" or index=N to play, or answer=false to pass",
+        "response_type": "select",
+        "stop_reason": "playable_cards",
+        "untapped_lands": 1
       },
       "seq": 8,
       "tool": "",
@@ -516,96 +627,37 @@
     },
     {
       "args": {
-        "board_cursor": 3
+        "board_cursor": 4
       },
-      "gameSeq": 18,
+      "gameSeq": 16,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
-        "action_type": "GAME_ASK",
-        "board": [
+        "action_type": "GAME_SELECT",
+        "board_cursor": 4,
+        "board_unchanged": true,
+        "choices": [
           {
-            "battlefield": [
-              {
-                "id": "p11",
-                "name": "Forest",
-                "rules": [
-                  "{T}: Add {G}."
-                ],
-                "tapped": true
-              }
-            ],
-            "hand": [
-              {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p15",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p16",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              }
-            ],
-            "hand_size": 5,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 53,
-            "life": 20,
-            "name": "TestPlayer"
+            "action": "cast",
+            "id": "p11",
+            "index": 0,
+            "mana_cost": "{R}",
+            "name": "Lightning Bolt"
           },
           {
-            "hand_size": 7,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 53,
-            "life": 20,
-            "name": "Opponent"
+            "action": "cast",
+            "id": "p12",
+            "index": 1,
+            "mana_cost": "{R}",
+            "name": "Lightning Bolt"
           }
         ],
-        "board_cursor": 5,
-        "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
-        "game_seq": 18,
-        "land_drops_used": 1,
-        "message": "Reveal a colorless card and put it into your hand?",
-        "respond_with": "answer=true or answer=false",
-        "response_type": "boolean",
-        "stack": [
-          {
-            "name": "Ancient Stirrings"
-          }
-        ],
-        "stop_reason": "non_priority_action"
+        "context": "T1 Precombat Main/Precombat Main (Opponent)",
+        "game_seq": 16,
+        "message": "Play instants and activated abilities",
+        "respond_with": "id=\"pN\" or index=N to play, or answer=false to pass",
+        "response_type": "select",
+        "untapped_lands": 1
       },
       "seq": 9,
       "tool": "",
@@ -613,16 +665,16 @@
     },
     {
       "args": {
-        "answer": true
+        "answer": false
       },
-      "gameSeq": 18,
+      "gameSeq": 16,
       "player": "TestPlayer",
       "result": {
-        "action_taken": "yes",
-        "game_seq": 18,
+        "action_taken": "passed_priority",
+        "game_seq": 16,
         "next_action_hint": "Call get_action_choices or choose_action to see details, or pass_priority to continue.",
         "next_action_pending": true,
-        "next_action_type": "GAME_TARGET",
+        "next_action_type": "GAME_SELECT",
         "success": true
       },
       "seq": 10,
@@ -630,139 +682,14 @@
       "type": "tool_call"
     },
     {
-      "args": {
-        "index": 0
-      },
-      "gameSeq": 19,
+      "args": {},
       "player": "TestPlayer",
       "result": {
-        "action_taken": "selected_target_0",
-        "game_seq": 19,
-        "next_action_hint": "Call get_action_choices or choose_action to see details, or pass_priority to continue.",
-        "next_action_pending": true,
-        "next_action_type": "GAME_TARGET",
-        "success": true
+        "cursor": 18,
+        "event_count": 18,
+        "history": "Turn 1:\n    - TestPlayer drew Mountain\n    - TestPlayer drew Lightning Bolt\n    - TestPlayer drew Lightning Bolt\n    - TestPlayer drew Memnite\n    - TestPlayer drew Taiga\n    - TestPlayer drew Badlands\n    - TestPlayer drew Plateau\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n  Postcombat Main:\n    - TestPlayer played Mountain\n\nTurn 2 (Opponent):\n  Draw:\n    - Opponent drew a card\n"
       },
       "seq": 11,
-      "tool": "",
-      "type": "tool_call"
-    },
-    {
-      "args": {},
-      "gameSeq": 22,
-      "player": "TestPlayer",
-      "result": {
-        "active_player": "TestPlayer",
-        "available": true,
-        "cursor": 1,
-        "game_seq": 22,
-        "phase": "Postcombat Main",
-        "players": [
-          {
-            "battlefield": [
-              {
-                "id": "p11",
-                "name": "Forest",
-                "rules": [
-                  "{T}: Add {G}."
-                ],
-                "tapped": true
-              }
-            ],
-            "hand": [
-              {
-                "id": "p24",
-                "mana_cost": "{0}",
-                "name": "Ornithopter",
-                "power": "0",
-                "rules": [
-                  "Flying"
-                ],
-                "toughness": "2"
-              },
-              {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p15",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p16",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              }
-            ],
-            "hand_size": 6,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 52,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "hand_size": 7,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 53,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
-        "priority_player": "TestPlayer",
-        "stack": [
-          {
-            "id": "p23",
-            "name": "Ancient Stirrings",
-            "rules": [
-              "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
-            ]
-          }
-        ],
-        "step": "Postcombat Main",
-        "turn": 1
-      },
-      "seq": 12,
-      "tool": "",
-      "type": "tool_call"
-    },
-    {
-      "args": {},
-      "player": "TestPlayer",
-      "result": {
-        "cursor": 17,
-        "event_count": 17,
-        "history": "Turn 1:\n    - TestPlayer drew Ancient Stirrings\n    - TestPlayer drew Forest\n    - TestPlayer drew Plains\n    - TestPlayer drew Plains\n    - TestPlayer drew Plains\n    - TestPlayer drew Plains\n    - TestPlayer drew Plains\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n    - Opponent drew a card\n  Postcombat Main:\n    - TestPlayer played Forest\n    - TestPlayer cast Ancient Stirrings\n"
-      },
-      "seq": 13,
       "tool": "",
       "type": "tool_call"
     }
@@ -770,10 +697,10 @@
   "llmTrace": [],
   "players": [
     {
-      "deckName": "ancient_stirrings",
+      "deckName": "bolt_and_burn",
       "name": "TestPlayer",
       "toolCallsFailed": 0,
-      "toolCallsOk": 12,
+      "toolCallsOk": 10,
       "tools": [
         "get_game_log",
         "get_game_history",
@@ -893,49 +820,49 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p14",
-              "name": "Plains",
+              "name": "Mountain",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1022,49 +949,49 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p14",
-              "name": "Plains",
+              "name": "Mountain",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1151,49 +1078,49 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p14",
-              "name": "Plains",
+              "name": "Mountain",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1280,49 +1207,49 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p14",
-              "name": "Plains",
+              "name": "Mountain",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1409,49 +1336,49 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p14",
-              "name": "Plains",
+              "name": "Mountain",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1538,49 +1465,49 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p14",
-              "name": "Plains",
+              "name": "Mountain",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1664,8 +1591,8 @@
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p14",
+              "name": "Mountain",
               "summoning_sick": true,
               "tapped": false,
               "token": false
@@ -1676,42 +1603,42 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Badlands",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p11",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p14",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1795,8 +1722,8 @@
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p14",
+              "name": "Mountain",
               "summoning_sick": true,
               "tapped": false,
               "token": false
@@ -1806,36 +1733,43 @@
           "graveyard": [],
           "hand": [
             {
+              "id": "p10",
+              "name": "Badlands",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p11",
+              "name": "Lightning Bolt",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p14",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1846,22 +1780,15 @@
           "name": "TestPlayer"
         }
       ],
-      "priority_player": "TestPlayer",
+      "priority_player": "Opponent",
       "seq": 14,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
+      "stack": [],
       "step": "POSTCOMBAT_MAIN",
       "turn": 1
     },
     {
-      "active_player": "TestPlayer",
-      "phase": "POSTCOMBAT_MAIN",
+      "active_player": "Opponent",
+      "phase": "PRECOMBAT_MAIN",
       "players": [
         {
           "battlefield": [],
@@ -1916,9 +1843,16 @@
               "visible_to": [
                 "Opponent"
               ]
+            },
+            {
+              "id": "p23",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
             }
           ],
-          "library_size": 53,
+          "library_size": 52,
           "life": 20,
           "name": "Opponent"
         },
@@ -1926,10 +1860,10 @@
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p14",
+              "name": "Mountain",
               "summoning_sick": true,
-              "tapped": true,
+              "tapped": false,
               "token": false
             }
           ],
@@ -1937,36 +1871,181 @@
           "graveyard": [],
           "hand": [
             {
+              "id": "p10",
+              "name": "Badlands",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p11",
+              "name": "Lightning Bolt",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p14",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            }
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "TestPlayer"
+        }
+      ],
+      "priority_player": "Opponent",
+      "seq": 15,
+      "stack": [],
+      "step": "PRECOMBAT_MAIN",
+      "turn": 2
+    },
+    {
+      "active_player": "Opponent",
+      "phase": "PRECOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            },
+            {
+              "id": "p23",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
+            }
+          ],
+          "library_size": 52,
+          "life": 20,
+          "name": "Opponent"
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p14",
+              "name": "Mountain",
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false
+            }
+          ],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p10",
+              "name": "Badlands",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p11",
+              "name": "Lightning Bolt",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p12",
+              "name": "Lightning Bolt",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p13",
+              "name": "Memnite",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plateau",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -1979,20 +2058,13 @@
       ],
       "priority_player": "TestPlayer",
       "seq": 16,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
-      "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "stack": [],
+      "step": "PRECOMBAT_MAIN",
+      "turn": 2
     },
     {
-      "active_player": "TestPlayer",
-      "phase": "POSTCOMBAT_MAIN",
+      "active_player": "Opponent",
+      "phase": "COMBAT",
       "players": [
         {
           "battlefield": [],
@@ -2047,9 +2119,16 @@
               "visible_to": [
                 "Opponent"
               ]
+            },
+            {
+              "id": "p23",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
             }
           ],
-          "library_size": 53,
+          "library_size": 52,
           "life": 20,
           "name": "Opponent"
         },
@@ -2057,10 +2136,10 @@
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p14",
+              "name": "Mountain",
               "summoning_sick": true,
-              "tapped": true,
+              "tapped": false,
               "token": false
             }
           ],
@@ -2068,36 +2147,43 @@
           "graveyard": [],
           "hand": [
             {
+              "id": "p10",
+              "name": "Badlands",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
+              "id": "p11",
+              "name": "Lightning Bolt",
+              "visible_to": [
+                "TestPlayer"
+              ]
+            },
+            {
               "id": "p12",
-              "name": "Plains",
+              "name": "Lightning Bolt",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p13",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p14",
-              "name": "Plains",
+              "name": "Memnite",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p15",
-              "name": "Plains",
+              "name": "Plateau",
               "visible_to": [
                 "TestPlayer"
               ]
             },
             {
               "id": "p16",
-              "name": "Plains",
+              "name": "Taiga",
               "visible_to": [
                 "TestPlayer"
               ]
@@ -2109,152 +2195,14 @@
         }
       ],
       "priority_player": "Opponent",
-      "seq": 17,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
-      "step": "POSTCOMBAT_MAIN",
-      "turn": 1
-    },
-    {
-      "active_player": "TestPlayer",
-      "phase": "POSTCOMBAT_MAIN",
-      "players": [
-        {
-          "battlefield": [],
-          "exile": [],
-          "graveyard": [],
-          "hand": [
-            {
-              "id": "p3",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p4",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p5",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p6",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p7",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p8",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p9",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            }
-          ],
-          "library_size": 53,
-          "life": 20,
-          "name": "Opponent"
-        },
-        {
-          "battlefield": [
-            {
-              "face_down": false,
-              "id": "p11",
-              "name": "Forest",
-              "summoning_sick": true,
-              "tapped": true,
-              "token": false
-            }
-          ],
-          "exile": [],
-          "graveyard": [],
-          "hand": [
-            {
-              "id": "p12",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p13",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p14",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p15",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p16",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            }
-          ],
-          "library_size": 53,
-          "life": 20,
-          "name": "TestPlayer"
-        }
-      ],
-      "priority_player": "TestPlayer",
       "seq": 18,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
-      "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "stack": [],
+      "step": "DECLARE_ATTACKERS",
+      "turn": 2
     },
     {
-      "active_player": "TestPlayer",
-      "phase": "POSTCOMBAT_MAIN",
+      "active_player": "Opponent",
+      "phase": "COMBAT",
       "players": [
         {
           "battlefield": [],
@@ -2309,9 +2257,16 @@
               "visible_to": [
                 "Opponent"
               ]
+            },
+            {
+              "id": "p23",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent"
+              ]
             }
           ],
-          "library_size": 53,
+          "library_size": 52,
           "life": 20,
           "name": "Opponent"
         },
@@ -2319,10 +2274,10 @@
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p14",
+              "name": "Mountain",
               "summoning_sick": true,
-              "tapped": true,
+              "tapped": false,
               "token": false
             }
           ],
@@ -2335,20 +2290,13 @@
         }
       ],
       "priority_player": "TestPlayer",
-      "seq": 24,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
-      "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "seq": 21,
+      "stack": [],
+      "step": "DECLARE_ATTACKERS",
+      "turn": 2
     }
   ],
-  "totalTurns": 1,
+  "totalTurns": 2,
   "version": 2,
   "winner": null
 }

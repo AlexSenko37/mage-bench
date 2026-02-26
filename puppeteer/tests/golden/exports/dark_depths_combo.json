@@ -398,6 +398,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 1,
         "can_cancel": false,
         "choices": [
           {
@@ -445,7 +446,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 3,
       "player": "TestPlayer",
       "result": {
@@ -530,6 +533,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 2,
         "context": "T1 ()",
         "game_seq": 3,
         "message": "Mulligan down to 6 cards?",
@@ -614,7 +618,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 2
+      },
       "gameSeq": 11,
       "player": "TestPlayer",
       "result": {
@@ -706,6 +712,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 3,
         "choices": [
           {
             "action": "land",
@@ -782,7 +789,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 3
+      },
       "gameSeq": 25,
       "player": "TestPlayer",
       "result": {
@@ -893,6 +902,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 4,
         "choices": [
           {
             "action": "land",
@@ -970,7 +980,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 4
+      },
       "gameSeq": 44,
       "player": "TestPlayer",
       "result": {
@@ -1096,6 +1108,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 5,
         "choices": [
           {
             "action": "land",
@@ -1173,7 +1186,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 5
+      },
       "gameSeq": 63,
       "player": "TestPlayer",
       "result": {
@@ -1317,6 +1332,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 6,
         "choices": [
           {
             "action": "land",
@@ -1394,7 +1410,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 6
+      },
       "gameSeq": 68,
       "player": "TestPlayer",
       "result": {
@@ -1531,6 +1549,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 7,
         "choices": [
           {
             "action": "activate",
@@ -1583,143 +1602,16 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 7
+      },
       "gameSeq": 69,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_CHOOSE_ABILITY",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "counters": {
-                  "ice": 10
-                },
-                "id": "p10",
-                "name": "Dark Depths",
-                "rules": [
-                  "{this} enters with ten ice counters on it.",
-                  "{3}: Remove an ice counter from {this}.",
-                  "When {this} has no ice counters on it, sacrifice it. If you do, create Marit Lage, a legendary 20/20 black Avatar creature token with flying and indestructible."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p11",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p12",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p16",
-                "name": "Thespian's Stage",
-                "rules": [
-                  "{T}: Add {C}.",
-                  "{2}, {T}: {this} becomes a copy of target land, except it has this ability."
-                ],
-                "tapped": false
-              }
-            ],
-            "hand": [
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p15",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p24",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p26",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p28",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              }
-            ],
-            "hand_size": 6,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 50,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "graveyard": [
-              {
-                "id": "p3",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ]
-              },
-              {
-                "id": "p4",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ]
-              },
-              {
-                "id": "p5",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ]
-              }
-            ],
-            "hand_size": 7,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 50,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
+        "board_cursor": 7,
+        "board_unchanged": true,
         "choices": [
           {
             "description": "1. {T}: Add {C}.",
@@ -1761,143 +1653,16 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 7
+      },
       "gameSeq": 70,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_TARGET",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "counters": {
-                  "ice": 10
-                },
-                "id": "p10",
-                "name": "Dark Depths",
-                "rules": [
-                  "{this} enters with ten ice counters on it.",
-                  "{3}: Remove an ice counter from {this}.",
-                  "When {this} has no ice counters on it, sacrifice it. If you do, create Marit Lage, a legendary 20/20 black Avatar creature token with flying and indestructible."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p11",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p12",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p16",
-                "name": "Thespian's Stage",
-                "rules": [
-                  "{T}: Add {C}.",
-                  "{2}, {T}: {this} becomes a copy of target land, except it has this ability."
-                ],
-                "tapped": false
-              }
-            ],
-            "hand": [
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p15",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p24",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p26",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p28",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              }
-            ],
-            "hand_size": 6,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 50,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "graveyard": [
-              {
-                "id": "p3",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ]
-              },
-              {
-                "id": "p4",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ]
-              },
-              {
-                "id": "p5",
-                "name": "Mountain",
-                "rules": [
-                  "{T}: Add {R}."
-                ]
-              }
-            ],
-            "hand_size": 7,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 50,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
+        "board_cursor": 7,
+        "board_unchanged": true,
         "can_cancel": true,
         "choices": [
           {
@@ -1962,7 +1727,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 7
+      },
       "gameSeq": 76,
       "player": "TestPlayer",
       "result": {
@@ -2104,6 +1871,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 8,
         "can_cancel": false,
         "choices": [
           {
@@ -2152,7 +1920,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 8
+      },
       "gameSeq": 97,
       "player": "TestPlayer",
       "result": {
@@ -2321,6 +2091,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 9,
         "choices": [
           {
             "action": "land",
@@ -2398,7 +2169,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 9
+      },
       "gameSeq": 99,
       "player": "TestPlayer",
       "result": {
@@ -2560,6 +2333,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 10,
         "choices": [
           {
             "choice_type": "attacker",
@@ -2802,7 +2576,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 10
+      },
       "gameSeq": 110,
       "player": "TestPlayer",
       "result": {

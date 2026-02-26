@@ -291,6 +291,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 1,
         "context": "T1 ()",
         "game_seq": 4,
         "message": "Mulligan down to 6 cards?",
@@ -378,6 +379,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 1,
         "can_cancel": false,
         "choices": [
           {
@@ -443,7 +445,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 21,
       "player": "Opponent",
       "result": {
@@ -557,6 +561,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 2,
         "choices": [
           {
             "action": "land",
@@ -615,7 +620,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 3,
       "player": "TestPlayer",
       "result": {
@@ -696,6 +703,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 2,
         "context": "T1 ()",
         "game_seq": 3,
         "message": "Mulligan down to 6 cards?",
@@ -812,7 +820,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 2
+      },
       "gameSeq": 11,
       "player": "TestPlayer",
       "result": {
@@ -899,6 +909,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 3,
         "choices": [
           {
             "action": "land",
@@ -951,7 +962,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 2
+      },
       "gameSeq": 43,
       "player": "Opponent",
       "result": {
@@ -1061,6 +1074,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 4,
         "choices": [
           {
             "choice_type": "blocker",
@@ -1177,7 +1191,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 3
+      },
       "gameSeq": 36,
       "player": "TestPlayer",
       "result": {
@@ -1293,6 +1309,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 5,
         "choices": [
           {
             "action": "land",
@@ -1382,7 +1399,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 4
+      },
       "gameSeq": 57,
       "player": "Opponent",
       "result": {
@@ -1396,7 +1415,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 5
+      },
       "gameSeq": 38,
       "player": "TestPlayer",
       "result": {
@@ -1506,6 +1527,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 6,
         "choices": [
           {
             "choice_type": "attacker",
@@ -1584,6 +1606,7 @@
     },
     {
       "args": {
+        "board_cursor": 6,
         "until": "postcombat_main"
       },
       "gameSeq": 54,
@@ -1697,6 +1720,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 7,
         "choices": [
           {
             "action": "land",

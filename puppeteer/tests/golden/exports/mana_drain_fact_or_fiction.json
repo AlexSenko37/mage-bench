@@ -384,6 +384,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 1,
         "context": "T1 ()",
         "game_seq": 4,
         "message": "Mulligan down to 6 cards?",
@@ -488,6 +489,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 1,
         "can_cancel": false,
         "choices": [
           {
@@ -553,7 +555,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 21,
       "player": "Opponent",
       "result": {
@@ -679,6 +683,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 2,
         "choices": [
           {
             "action": "land",
@@ -707,7 +712,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 1
+      },
       "gameSeq": 3,
       "player": "TestPlayer",
       "result": {
@@ -789,6 +796,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 2,
         "context": "T1 ()",
         "game_seq": 3,
         "message": "Mulligan down to 6 cards?",
@@ -889,6 +897,7 @@
     },
     {
       "args": {
+        "board_cursor": 2,
         "until": "end_of_turn"
       },
       "gameSeq": 28,
@@ -1017,6 +1026,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 3,
         "choices": [
           {
             "action": "cast",
@@ -1043,7 +1053,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 2
+      },
       "gameSeq": 11,
       "player": "TestPlayer",
       "result": {
@@ -1130,6 +1142,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 3,
         "choices": [
           {
             "action": "land",
@@ -1177,6 +1190,7 @@
     },
     {
       "args": {
+        "board_cursor": 3,
         "until": "precombat_main"
       },
       "gameSeq": 33,
@@ -1247,7 +1261,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 3
+      },
       "gameSeq": 40,
       "player": "Opponent",
       "result": {
@@ -1392,6 +1408,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 4,
         "choices": [
           {
             "action": "land",
@@ -1431,6 +1448,7 @@
     },
     {
       "args": {
+        "board_cursor": 3,
         "until": "my_turn"
       },
       "gameSeq": 30,
@@ -1539,6 +1557,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 5,
         "choices": [
           {
             "action": "land",
@@ -1605,6 +1624,7 @@
     },
     {
       "args": {
+        "board_cursor": 5,
         "until": "precombat_main"
       },
       "gameSeq": 30,
@@ -1612,107 +1632,8 @@
       "result": {
         "action_pending": true,
         "action_type": "GAME_SELECT",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "id": "p10",
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p16",
-                "name": "Sol Ring",
-                "rules": [
-                  "{T}: Add {C}{C}."
-                ],
-                "tapped": false
-              }
-            ],
-            "hand": [
-              {
-                "id": "p11",
-                "is_land": true,
-                "name": "Island",
-                "playable": true,
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p12",
-                "is_land": true,
-                "name": "Island",
-                "playable": true,
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Island",
-                "playable": true,
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Island",
-                "playable": true,
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p25",
-                "is_land": true,
-                "name": "Island",
-                "playable": true,
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p15",
-                "mana_cost": "{U}{U}",
-                "name": "Mana Drain",
-                "rules": [
-                  "Counter target spell. At the beginning of your next main phase, add an amount of {C} equal to that spell's mana value."
-                ]
-              }
-            ],
-            "hand_size": 6,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 52,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "battlefield": [
-              {
-                "id": "p7",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              }
-            ],
-            "hand_size": 7,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 52,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
+        "board_cursor": 5,
+        "board_unchanged": true,
         "choices": [
           {
             "action": "land",
@@ -1760,7 +1681,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 4
+      },
       "gameSeq": 47,
       "player": "Opponent",
       "result": {
@@ -1903,6 +1826,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 5,
         "choices": [
           {
             "action": "cast",
@@ -1966,6 +1890,7 @@
     },
     {
       "args": {
+        "board_cursor": 5,
         "until": "end_of_turn"
       },
       "gameSeq": 51,
@@ -2078,6 +2003,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 6,
         "choices": [
           {
             "action": "cast",
@@ -2106,7 +2032,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 5
+      },
       "gameSeq": 73,
       "player": "Opponent",
       "result": {
@@ -2256,6 +2184,7 @@
             "name": "TestPlayer"
           }
         ],
+        "board_cursor": 6,
         "can_cancel": true,
         "choices": [
           {
@@ -2354,6 +2283,7 @@
     },
     {
       "args": {
+        "board_cursor": 6,
         "until": "my_turn"
       },
       "gameSeq": 64,
@@ -2481,6 +2411,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 7,
         "choices": [
           {
             "action": "cast",
@@ -2516,156 +2447,16 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 6
+      },
       "gameSeq": 74,
       "player": "Opponent",
       "result": {
         "action_pending": true,
         "action_type": "GAME_TARGET",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "id": "p7",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": true
-              },
-              {
-                "id": "p24",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              }
-            ],
-            "graveyard": [
-              {
-                "id": "p8",
-                "name": "Savannah Lions"
-              }
-            ],
-            "hand": [
-              {
-                "id": "p3",
-                "mana_cost": "{2}{W}{W}",
-                "name": "Ajani Goldmane",
-                "rules": [
-                  "+1: You gain 2 life.",
-                  "-1: Put a +1/+1 counter on each creature you control. Those creatures gain vigilance until end of turn.",
-                  "-6: Create a white Avatar creature token. It has \"This creature's power and toughness are each equal to your life total.\""
-                ]
-              },
-              {
-                "id": "p4",
-                "mana_cost": "{3}{W}{W}",
-                "name": "Baneslayer Angel",
-                "power": "5",
-                "rules": [
-                  "Flying",
-                  "First strike",
-                  "Lifelink",
-                  "Protection from Demons and from Dragons"
-                ],
-                "toughness": "5"
-              },
-              {
-                "id": "p5",
-                "mana_cost": "{4}{W}{W}",
-                "name": "Captain of the Watch",
-                "power": "3",
-                "rules": [
-                  "Vigilance",
-                  "Other Soldier creatures you control get +1/+1 and have vigilance.",
-                  "When {this} enters, create three 1/1 white Soldier creature tokens."
-                ],
-                "toughness": "3"
-              },
-              {
-                "id": "p6",
-                "mana_cost": "{2}{W}{W}",
-                "name": "Guardian Seraph",
-                "power": "3",
-                "rules": [
-                  "Flying",
-                  "If a source an opponent controls would deal damage to you, prevent 1 of that damage."
-                ],
-                "toughness": "4"
-              },
-              {
-                "id": "p26",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p9",
-                "mana_cost": "{3}{W}{W}",
-                "name": "Serra Angel",
-                "power": "4",
-                "rules": [
-                  "Flying",
-                  "Vigilance"
-                ],
-                "toughness": "4"
-              }
-            ],
-            "hand_size": 6,
-            "is_active": false,
-            "is_you": true,
-            "library_size": 51,
-            "life": 20,
-            "name": "Opponent"
-          },
-          {
-            "battlefield": [
-              {
-                "id": "p10",
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ],
-                "tapped": true
-              },
-              {
-                "id": "p11",
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ],
-                "tapped": true
-              },
-              {
-                "id": "p16",
-                "name": "Sol Ring",
-                "rules": [
-                  "{T}: Add {C}{C}."
-                ],
-                "tapped": true
-              }
-            ],
-            "graveyard": [
-              {
-                "id": "p15",
-                "name": "Mana Drain",
-                "rules": [
-                  "Counter target spell. At the beginning of your next main phase, add an amount of {C} equal to that spell's mana value."
-                ]
-              }
-            ],
-            "hand_size": 4,
-            "is_active": true,
-            "is_you": false,
-            "library_size": 51,
-            "life": 20,
-            "name": "TestPlayer"
-          }
-        ],
+        "board_cursor": 6,
+        "board_unchanged": true,
         "can_cancel": true,
         "choices": [
           {
@@ -2722,6 +2513,7 @@
     },
     {
       "args": {
+        "board_cursor": 7,
         "until": "precombat_main"
       },
       "gameSeq": 64,
@@ -2729,126 +2521,8 @@
       "result": {
         "action_pending": true,
         "action_type": "GAME_SELECT",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "id": "p10",
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p11",
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ],
-                "tapped": false
-              },
-              {
-                "id": "p16",
-                "name": "Sol Ring",
-                "rules": [
-                  "{T}: Add {C}{C}."
-                ],
-                "tapped": false
-              }
-            ],
-            "graveyard": [
-              {
-                "id": "p15",
-                "name": "Mana Drain",
-                "rules": [
-                  "Counter target spell. At the beginning of your next main phase, add an amount of {C} equal to that spell's mana value."
-                ]
-              }
-            ],
-            "hand": [
-              {
-                "id": "p29",
-                "mana_cost": "{3}{U}",
-                "name": "Fact or Fiction",
-                "playable": true,
-                "rules": [
-                  "Reveal the top five cards of your library. An opponent separates those cards into two piles. Put one pile into your hand and the other into your graveyard."
-                ]
-              },
-              {
-                "id": "p12",
-                "is_land": true,
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              },
-              {
-                "id": "p25",
-                "is_land": true,
-                "name": "Island",
-                "rules": [
-                  "{T}: Add {U}."
-                ]
-              }
-            ],
-            "hand_size": 5,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 51,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "battlefield": [
-              {
-                "id": "p7",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": true
-              },
-              {
-                "id": "p24",
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ],
-                "tapped": false
-              }
-            ],
-            "graveyard": [
-              {
-                "id": "p8",
-                "name": "Savannah Lions"
-              }
-            ],
-            "hand_size": 6,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 51,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
+        "board_cursor": 7,
+        "board_unchanged": true,
         "choices": [
           {
             "action": "cast",
@@ -2922,7 +2596,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 6
+      },
       "gameSeq": 87,
       "player": "Opponent",
       "result": {
@@ -2936,7 +2612,9 @@
       "type": "tool_call"
     },
     {
-      "args": {},
+      "args": {
+        "board_cursor": 7
+      },
       "gameSeq": 75,
       "player": "TestPlayer",
       "result": {
@@ -3053,6 +2731,7 @@
             "name": "Opponent"
           }
         ],
+        "board_cursor": 8,
         "context": "T3 Precombat Main/Precombat Main (TestPlayer) YOUR_MAIN",
         "game_seq": 75,
         "land_drops_used": 0,

@@ -53,7 +53,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 1
+          },
           "name": "pass_priority"
         },
         "id": "call_3",
@@ -104,7 +106,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 2
+          },
           "name": "pass_priority"
         },
         "id": "call_5",
@@ -200,6 +204,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 3,
       "choices": [
         {
           "action": "activate",
@@ -296,7 +301,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 3
+          },
           "name": "pass_priority"
         },
         "id": "call_7",
@@ -412,6 +419,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 4,
       "choices": [
         {
           "action": "activate",
@@ -515,7 +523,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 4
+          },
           "name": "pass_priority"
         },
         "id": "call_9",
@@ -632,6 +642,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 5,
       "choices": [
         {
           "action": "activate",
@@ -784,7 +795,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 5
+          },
           "name": "pass_priority"
         },
         "id": "call_13",
@@ -916,6 +929,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 6,
       "choices": [
         {
           "action": "land",
@@ -1001,7 +1015,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 6
+          },
           "name": "pass_priority"
         },
         "id": "call_15",
@@ -1148,6 +1164,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 7,
       "choices": [
         {
           "action": "land",
@@ -1233,7 +1250,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 7
+          },
           "name": "pass_priority"
         },
         "id": "call_17",
@@ -1395,6 +1414,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 8,
       "choices": [
         {
           "action": "land",
@@ -1480,7 +1500,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 8
+          },
           "name": "pass_priority"
         },
         "id": "call_19",
@@ -1643,6 +1665,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 9,
       "context": "T6 Beginning/Upkeep (TestPlayer)",
       "game_seq": 127,
       "message": "Cast spell without paying its mana cost (Crashing Footfalls)?",
@@ -1693,7 +1716,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 9
+          },
           "name": "pass_priority"
         },
         "id": "call_21",
@@ -1894,6 +1919,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 10,
       "choices": [
         {
           "action": "land",

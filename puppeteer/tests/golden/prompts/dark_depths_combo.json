@@ -53,7 +53,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 1
+          },
           "name": "pass_priority"
         },
         "id": "call_3",
@@ -93,7 +95,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 2
+          },
           "name": "pass_priority"
         },
         "id": "call_5",
@@ -133,7 +137,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 3
+          },
           "name": "pass_priority"
         },
         "id": "call_7",
@@ -184,7 +190,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 4
+          },
           "name": "pass_priority"
         },
         "id": "call_9",
@@ -316,6 +324,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 5,
       "choices": [
         {
           "action": "land",
@@ -407,7 +416,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 5
+          },
           "name": "pass_priority"
         },
         "id": "call_11",
@@ -557,6 +568,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 6,
       "choices": [
         {
           "action": "land",
@@ -648,7 +660,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 6
+          },
           "name": "pass_priority"
         },
         "id": "call_13",
@@ -791,6 +805,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 7,
       "choices": [
         {
           "action": "activate",
@@ -857,7 +872,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 7
+          },
           "name": "pass_priority"
         },
         "id": "call_15",
@@ -869,137 +886,8 @@
     "content": {
       "action_pending": true,
       "action_type": "GAME_CHOOSE_ABILITY",
-      "board": [
-        {
-          "battlefield": [
-            {
-              "counters": {
-                "ice": 10
-              },
-              "id": "_",
-              "name": "Dark Depths",
-              "rules": [
-                "{this} enters with ten ice counters on it.",
-                "{3}: Remove an ice counter from {this}.",
-                "When {this} has no ice counters on it, sacrifice it. If you do, create Marit Lage, a legendary 20/20 black Avatar creature token with flying and indestructible."
-              ],
-              "tapped": false
-            },
-            {
-              "id": "_",
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ],
-              "tapped": false
-            },
-            {
-              "id": "_",
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ],
-              "tapped": false
-            },
-            {
-              "id": "_",
-              "name": "Thespian's Stage",
-              "rules": [
-                "{T}: Add {C}.",
-                "{2}, {T}: {this} becomes a copy of target land, except it has this ability."
-              ],
-              "tapped": false
-            }
-          ],
-          "hand": [
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            }
-          ],
-          "hand_size": 6,
-          "is_active": true,
-          "is_you": true,
-          "library_size": 50,
-          "life": 20,
-          "name": "TestPlayer"
-        },
-        {
-          "graveyard": [
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ]
-            },
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ]
-            },
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ]
-            }
-          ],
-          "hand_size": 7,
-          "is_active": false,
-          "is_you": false,
-          "library_size": 50,
-          "life": 20,
-          "name": "Opponent"
-        }
-      ],
+      "board_cursor": 7,
+      "board_unchanged": true,
       "choices": [
         {
           "description": "1. {T}: Add {C}.",
@@ -1055,7 +943,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 7
+          },
           "name": "pass_priority"
         },
         "id": "call_17",
@@ -1067,137 +957,8 @@
     "content": {
       "action_pending": true,
       "action_type": "GAME_TARGET",
-      "board": [
-        {
-          "battlefield": [
-            {
-              "counters": {
-                "ice": 10
-              },
-              "id": "_",
-              "name": "Dark Depths",
-              "rules": [
-                "{this} enters with ten ice counters on it.",
-                "{3}: Remove an ice counter from {this}.",
-                "When {this} has no ice counters on it, sacrifice it. If you do, create Marit Lage, a legendary 20/20 black Avatar creature token with flying and indestructible."
-              ],
-              "tapped": false
-            },
-            {
-              "id": "_",
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ],
-              "tapped": false
-            },
-            {
-              "id": "_",
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ],
-              "tapped": false
-            },
-            {
-              "id": "_",
-              "name": "Thespian's Stage",
-              "rules": [
-                "{T}: Add {C}.",
-                "{2}, {T}: {this} becomes a copy of target land, except it has this ability."
-              ],
-              "tapped": false
-            }
-          ],
-          "hand": [
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            },
-            {
-              "id": "_",
-              "is_land": true,
-              "name": "Plains",
-              "rules": [
-                "{T}: Add {W}."
-              ]
-            }
-          ],
-          "hand_size": 6,
-          "is_active": true,
-          "is_you": true,
-          "library_size": 50,
-          "life": 20,
-          "name": "TestPlayer"
-        },
-        {
-          "graveyard": [
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ]
-            },
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ]
-            },
-            {
-              "id": "_",
-              "name": "Mountain",
-              "rules": [
-                "{T}: Add {R}."
-              ]
-            }
-          ],
-          "hand_size": 7,
-          "is_active": false,
-          "is_you": false,
-          "library_size": 50,
-          "life": 20,
-          "name": "Opponent"
-        }
-      ],
+      "board_cursor": 7,
+      "board_unchanged": true,
       "can_cancel": true,
       "choices": [
         {
@@ -1276,7 +1037,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 7
+          },
           "name": "pass_priority"
         },
         "id": "call_19",
@@ -1424,6 +1187,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 8,
       "can_cancel": false,
       "choices": [
         {
@@ -1486,7 +1250,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 8
+          },
           "name": "pass_priority"
         },
         "id": "call_21",
@@ -1661,6 +1427,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 9,
       "choices": [
         {
           "action": "land",
@@ -1752,7 +1519,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 9
+          },
           "name": "pass_priority"
         },
         "id": "call_23",
@@ -1920,6 +1689,7 @@
           "name": "Opponent"
         }
       ],
+      "board_cursor": 10,
       "choices": [
         {
           "choice_type": "attacker",
@@ -2186,7 +1956,9 @@
     "tool_calls": [
       {
         "function": {
-          "arguments": {},
+          "arguments": {
+            "board_cursor": 10
+          },
           "name": "pass_priority"
         },
         "id": "call_26",
