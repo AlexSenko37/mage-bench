@@ -5,7 +5,9 @@ Per-decision approach: sends each non-forced decision to Opus individually
 for high-quality blunder detection.
 
 Usage:
-    uv run --project puppeteer python scripts/analysis/blunder_analysis.py <game.json.gz>
+    uv run --project puppeteer python scripts/analysis/blunder_analysis.py <game.json.gz | game_id>
+
+Accepts either a file path or a bare game ID (e.g. game_20260214_185313_g1).
 
 Requires OPENROUTER_API_KEY environment variable.
 """
@@ -65,7 +67,15 @@ MAX_WORKERS = 50
 #      sizes, player counters, structured choice info (action, mana_cost, P/T, id)
 # v18: include stack targets in decision context (e.g. "Lightning Bolt -> Goblin Guide")
 # v19: clarify "Pick triggered ability" decisions are about ordering, not targeting
-BLUNDER_SCRIPT_VERSION = 19
+# v20: add explicit guidance about passing priority in postcombat main with
+#      sorcery-speed actions remaining (land drops, sorceries, creatures)
+# v21: fix snapshot lookup for events missing gameSeq (e.g. discard-to-hand-size),
+#      which were falling back to snapshot 0 and showing turn=? phase=? to the LLM
+# v22: filter subsequent_actions ("After:") to only show the deciding player's
+#      own actions, not opponent actions — prevents leaking future information
+#      about what the opponent did while still showing what the player followed
+#      up with (e.g. played a land, cast a spell)
+BLUNDER_SCRIPT_VERSION = 22
 
 # --- Prompt components ---
 
@@ -81,7 +91,11 @@ Here are some examples of the kinds of mistakes to flag:
 - Poor attack/block decisions, attacking into unfavorable blocks
 - Missing land drops, not using mana sinks at end of opponent's turn
 - Fundamentally wrong game plan decisions, not countering must-answer threats
-- Overextending into board wipes, running best threat into open counter mana"""
+- Overextending into board wipes, running best threat into open counter mana
+- Passing priority in the postcombat main phase (with nothing on the stack) when \
+there are still sorcery-speed actions available this turn — e.g. unplayed land drops, \
+castable creatures or sorceries in hand, planeswalker abilities to activate. Passing \
+here ends the turn and wastes those opportunities."""
 
 SHARED_SEVERITY = """\
 ## Severity Levels
@@ -603,8 +617,11 @@ def _format_decisions(decisions: list[dict]) -> str:
             )
         if d.get("reasoning"):
             lines.append(f"  Reasoning: {d['reasoning'][:500]}")
-        if d.get("subsequent_actions"):
-            lines.append(f"  After: {'; '.join(d['subsequent_actions'][:3])}")
+        # Show what the deciding player did next (but not opponent actions)
+        subsequent = d.get("subsequent_actions", [])
+        own_actions = [a for a in subsequent if a.startswith(deciding_player)]
+        if own_actions:
+            lines.append(f"  After: {'; '.join(own_actions)}")
         parts.append("\n".join(lines))
     return "\n\n".join(parts)
 
@@ -672,6 +689,9 @@ def _call_llm(
                 time.sleep(2 ** (attempt + 1))
             else:
                 raise
+
+
+_LLM_REQUIRED_FIELDS = {"severity", "description", "actionTaken", "betterLine"}
 
 
 def _parse_annotation(text: str) -> dict | None:
@@ -789,9 +809,59 @@ def _eval_one_decision(
     if label is None:
         label = f"decision_{decision['decision_index']}"
 
-    text, in_tok, out_tok = _call_llm(client, model, PER_DECISION_SYSTEM, user_msg)
-    cost = _compute_cost(prices, model, in_tok, out_tok)
-    print(f"  [{label}] {in_tok:,} in / {out_tok:,} out (${cost:.4f})")
+    max_attempts = 3
+    total_cost = 0.0
+    text = ""
+    in_tok = 0
+    out_tok = 0
+    ann: dict | None = None
+    parsed_ok = True
+
+    for attempt in range(max_attempts):
+        text, in_tok, out_tok = _call_llm(client, model, PER_DECISION_SYSTEM, user_msg)
+        attempt_cost = _compute_cost(prices, model, in_tok, out_tok)
+        total_cost += attempt_cost
+        suffix = f" (attempt {attempt + 1})" if attempt > 0 else ""
+        print(
+            f"  [{label}] {in_tok:,} in / {out_tok:,} out (${attempt_cost:.4f}){suffix}"
+        )
+
+        try:
+            ann = _parse_annotation(text)
+        except (json.JSONDecodeError, AssertionError) as e:
+            print(f"  WARNING: Failed to parse response for {label}: {e}")
+            print(f"    Raw response: {text[:200]!r}")
+            if attempt < max_attempts - 1:
+                import time
+
+                time.sleep(2)
+                continue
+            parsed_ok = False
+            ann = None
+            break
+
+        if ann is None:
+            break
+
+        # Validate LLM-generated fields are present
+        missing = _LLM_REQUIRED_FIELDS - set(ann.keys())
+        if not missing:
+            break
+        print(f"  WARNING: {label} missing fields {missing}, retrying...")
+        print(f"    Got: {json.dumps(ann)[:300]}")
+        if attempt < max_attempts - 1:
+            import time
+
+            time.sleep(2)
+            ann = None
+        else:
+            print(
+                f"  WARNING: {label} still missing fields after {max_attempts} attempts, skipping"
+            )
+            ann = None
+            break
+
+    cost = total_cost
 
     raw_record = {
         "decision_index": decision["decision_index"],
@@ -806,11 +876,7 @@ def _eval_one_decision(
         "cost_usd": cost,
     }
 
-    try:
-        ann = _parse_annotation(text)
-    except (json.JSONDecodeError, AssertionError) as e:
-        print(f"  WARNING: Failed to parse response for {label}: {e}")
-        print(f"    Raw response: {text[:200]!r}")
+    if not parsed_ok:
         return [], cost, False, raw_record
 
     if ann is None:
@@ -1125,8 +1191,27 @@ def main(gz_path: str) -> None:
     print(f"\nTotal cost: ${total_cost:.3f}")
 
 
+def resolve_game_path(arg: str) -> str:
+    """Resolve a game argument to a file path.
+
+    Accepts either:
+      - A file path (e.g. website/public/games/game_xxx.json.gz)
+      - A bare game ID (e.g. game_20260225_174042_g2)
+    """
+    from blunder_eval_common import game_path_for_id
+
+    p = Path(arg)
+    if p.exists():
+        return str(p)
+    # Treat as a game ID
+    return str(game_path_for_id(arg))
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <game.json.gz>", file=sys.stderr)
+        print(
+            f"Usage: {sys.argv[0]} <game.json.gz | game_id>",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    main(sys.argv[1])
+    main(resolve_game_path(sys.argv[1]))
