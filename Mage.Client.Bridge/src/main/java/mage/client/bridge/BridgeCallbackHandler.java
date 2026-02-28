@@ -1057,7 +1057,7 @@ public class BridgeCallbackHandler {
                     if ("declare_attackers".equals(combatPhase)) {
                         result.put("respond_with", "attackers=[\"p1\",...] or answer=true (confirm) or answer=false (skip)");
                     } else if ("declare_blockers".equals(combatPhase)) {
-                        result.put("respond_with", "blockers=[{\"id\":\"pN\",\"blocks\":\"pM\"},...] or answer=true (confirm) or answer=false (skip)");
+                        result.put("respond_with", "blockers=[\"pN:pM\",...] (blocker:attacker) or answer=true (confirm) or answer=false (skip)");
                     } else {
                         result.put("respond_with", "id=\"pN\" or index=N to play, or answer=false to pass");
                     }
@@ -2195,7 +2195,7 @@ public class BridgeCallbackHandler {
         var failed = new ArrayList<Map<String, Object>>();
 
         // Parse blocker assignments
-        // Expected: [{"id":"p5","blocks":"p1"},...]
+        // Expected: ["p5:p1","p6:p2"] (blocker_id:attacker_id)
         List<Map<String, String>> assignments;
         try {
             assignments = parseBlockerAssignments(blockersArray);
