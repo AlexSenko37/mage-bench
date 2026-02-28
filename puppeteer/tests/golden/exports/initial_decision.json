@@ -20,6 +20,45 @@
     }
   ],
   "cardImages": {},
+  "decisions": [
+    {
+      "actionResult": {},
+      "actionType": "GAME_TARGET",
+      "choiceCount": 2,
+      "choices": [
+        {
+          "id": "p1",
+          "index": 0,
+          "is_you": true,
+          "name": "TestPlayer",
+          "target_type": "player"
+        },
+        {
+          "id": "p2",
+          "index": 1,
+          "name": "Opponent",
+          "target_type": "player"
+        }
+      ],
+      "chosen": null,
+      "chosenArgs": {},
+      "index": 0,
+      "isForced": false,
+      "llmEventIndices": [
+        1
+      ],
+      "message": "Select a starting player",
+      "phase": null,
+      "player": "TestPlayer",
+      "responseType": "index",
+      "snapshotIndex": 0,
+      "step": null,
+      "subsequentActions": [
+        "TestPlayer wants to concede"
+      ],
+      "turn": 0
+    }
+  ],
   "deckType": "Constructed - Legacy",
   "gameOver": {
     "message": "Game ended",
@@ -96,7 +135,7 @@
         "stop_reason": "non_priority_action"
       },
       "seq": 2,
-      "tool": "",
+      "tool": "pass_priority",
       "type": "tool_call"
     },
     {
@@ -132,7 +171,7 @@
         "turn": 1
       },
       "seq": 3,
-      "tool": "",
+      "tool": "get_game_state",
       "type": "tool_call"
     },
     {
@@ -144,7 +183,7 @@
         "history": "No game events recorded yet."
       },
       "seq": 4,
-      "tool": "",
+      "tool": "get_game_history",
       "type": "tool_call"
     }
   ],
