@@ -1533,6 +1533,8 @@ public class BridgeCallbackHandler {
         if (interactionsThisTurn > maxInteractionsPerTurn) {
             logger.warn("[" + client.getUsername() + "] Loop detected (" + interactionsThisTurn
                 + " interactions this turn), auto-handling " + action.method().name());
+            logError("Loop detected (" + interactionsThisTurn
+                + " interactions this turn), auto-handling " + action.method().name());
             executeDefaultAction();
             result.put("success", true);
             result.put("action_taken", "auto_passed_loop_detected");
@@ -3091,6 +3093,8 @@ public class BridgeCallbackHandler {
                 if (interactionsThisTurn > maxInteractionsPerTurn) {
                     logger.warn("[" + client.getUsername() + "] Loop detected (" + interactionsThisTurn
                         + " interactions on turn " + lastTurnNumber + "), auto-passing " + method.name());
+                    logError("Loop detected (" + interactionsThisTurn
+                        + " interactions on turn " + lastTurnNumber + "), auto-passing " + method.name());
                     executeDefaultAction();
                     actionsPassed++;
                     continue;
@@ -4137,6 +4141,12 @@ public class BridgeCallbackHandler {
         if (cardView != null) {
             String serverShortId = cardView.getShortId();
             if (serverShortId != null && !serverShortId.isBlank()) {
+                // Detect server ID collision before register() overwrites the mapping
+                UUID existing = shortIds.tryResolve(serverShortId);
+                if (existing != null && !existing.equals(objectId)) {
+                    logError("Server short ID collision: " + serverShortId
+                        + " was mapped to " + existing + " but server now says " + objectId);
+                }
                 shortIds.register(objectId, serverShortId);
                 return serverShortId;
             }
@@ -4462,6 +4472,7 @@ public class BridgeCallbackHandler {
             }
         } catch (Exception e) {
             logger.error("[" + client.getUsername() + "] Error handling callback: " + callback.getMethod(), e);
+            logError("Error handling callback " + callback.getMethod() + ": " + e.getMessage());
         }
     }
 
