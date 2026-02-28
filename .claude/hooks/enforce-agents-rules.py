@@ -57,10 +57,8 @@ def check(command: str) -> None:
     # --- Expensive configs ---
 
     paid_configs = (
-        "commander-gauntlet", "commander-1v3",
-        "standard-gauntlet", "modern-gauntlet", "legacy-gauntlet",
-        "round-robin-1v1", "round-robin-commander",
-        "yente-1v1", "yente-commander",
+        "commander-1v3",
+        "round-robin-1v1", "round-robin-commander", "round-robin-jumpstart",
     )
     paid_pattern = "|".join(re.escape(c) for c in paid_configs)
     if re.search(rf"make\s+run\b.*CONFIG\s*=\s*({paid_pattern})\b", stripped):
