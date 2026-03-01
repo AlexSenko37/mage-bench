@@ -205,14 +205,50 @@
   width: 70px;
 }
 
+/* Library zone: card-back with count overlay */
+.library-zone {
+  padding: 0.3rem 0.4rem;
+}
+
+.library-card-back {
+  position: relative;
+  width: 70px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(150, 195, 205, 0.2);
+}
+
+.library-card-back-face {
+  width: 100%;
+  aspect-ratio: 146 / 204;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #3b1f0a 0%, #5a2d0c 25%, #4a1a08 50%, #6b340e 75%, #3b1f0a 100%);
+  background-size: 200% 200%;
+}
+
+.library-count {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
 /* Graveyard zone colored border */
 .graveyard-zone {
   border-bottom: 2px solid rgba(168, 85, 247, 0.3) !important;
 }
 
-/* Hand zone colored border */
+/* Hand zone: distinct background to differentiate from battlefield */
 .hand-zone {
   border-bottom: 2px solid rgba(59, 130, 246, 0.3) !important;
+  background: rgba(59, 130, 246, 0.06);
+  border-radius: 4px;
+  margin: 2px 0;
 }
 
 .zone-title {
@@ -382,23 +418,90 @@
   border-top: 1px dashed rgba(255, 255, 255, 0.06);
 }
 
-/* Stacked land card */
+/* Stacked land card (single) */
 .land-stack {
   position: relative;
 }
 
-.land-count-badge {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  background: rgba(0, 0, 0, 0.85);
-  color: #e0e0e0;
-  font-size: 0.55rem;
-  font-weight: 700;
-  padding: 1px 4px;
-  border-radius: 3px;
-  line-height: 1.2;
+/* Land stack group: overlapping cards stacked vertically */
+.land-stack-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 112px; /* reserve space for tapped cards (80px card rotated 90deg) */
+  align-items: center;
+}
+
+.land-stack-group .card-thumb {
+  width: 80px;
+}
+
+.land-stack-group .card-thumb {
+  position: relative;
+}
+
+.land-stack-group .card-thumb + .card-thumb {
+  margin-top: -98px;
+}
+
+.land-stack-group .card-thumb:hover {
+  z-index: 2;
+}
+
+.land-stack-group .card-thumb:first-child {
+  margin-top: 0;
+}
+
+/* Tapped lands in stacks: zero out rotation margins (but NOT margin-top, which is
+   set by the + .card-thumb overlap rule above) */
+.land-stack-group .card-thumb.tapped {
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+/* Ensure tapped cards still get the stack overlap (higher specificity than .tapped base rule) */
+.land-stack-group .card-thumb + .card-thumb.tapped {
+  margin-top: -98px;
+}
+
+/* Battlefield separator between creatures and artifacts/enchantments */
+.bf-separator {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Card with attachments (aura/equipment behind main card, name peeking out at top) */
+.card-with-attachments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Main card (last child) sits on top, overlapping attachments */
+.card-with-attachments .main-card {
+  z-index: 2;
+  position: relative;
+  margin-top: -98px;
+}
+
+/* Attachment cards (before main card) — name line peeks out at top */
+.card-with-attachments .attachment-card {
+  position: relative;
   z-index: 1;
+}
+
+/* Multiple attachments overlap each other too */
+.card-with-attachments .attachment-card + .attachment-card {
+  margin-top: -98px;
+}
+
+.card-with-attachments .attachment-card:hover {
+  z-index: 3;
 }
 
 /* Section titles */
