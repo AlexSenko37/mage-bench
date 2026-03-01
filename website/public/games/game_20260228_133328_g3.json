@@ -74930,64 +74930,7 @@
       }
     }
   ],
-  "errors": [
-    {
-      "ts": "13:40:51",
-      "player": "Grok4F Humble",
-      "source": "pilot",
-      "message": "Action failed: Object p6 not found in current choices",
-      "decisionIndex": 15
-    },
-    {
-      "ts": "13:53:43",
-      "player": "Grok4F Humble",
-      "source": "mcp",
-      "message": "choose_action failed: Index 2 is out of range (valid: 0-1). Call get_action_choices to see current options.",
-      "decisionIndex": 45
-    },
-    {
-      "ts": "13:53:43",
-      "player": "Grok4F Humble",
-      "source": "pilot",
-      "message": "Action failed: Index 2 is out of range (valid: 0-1). Call get_action_choices to see current options.",
-      "decisionIndex": 45
-    },
-    {
-      "ts": "13:38:29",
-      "player": "MiniMx Minimal",
-      "source": "pilot",
-      "message": "Action failed: Object p27 not found in current choices",
-      "decisionIndex": 8
-    },
-    {
-      "ts": "13:43:06",
-      "player": "MiniMx Minimal",
-      "source": "pilot",
-      "message": "Action failed: Object p15 not found in current choices",
-      "decisionIndex": 19
-    },
-    {
-      "ts": "13:59:12",
-      "player": "MiniMx Minimal",
-      "source": "pilot",
-      "message": "LLM request timed out after 120s [1]",
-      "decisionIndex": 49
-    },
-    {
-      "ts": "14:06:45",
-      "player": "MiniMx Minimal",
-      "source": "mcp",
-      "message": "choose_action failed: Index 4 is out of range (no choices loaded — call get_action_choices first). Call get_action_choices to see current options.",
-      "decisionIndex": 62
-    },
-    {
-      "ts": "14:06:45",
-      "player": "MiniMx Minimal",
-      "source": "pilot",
-      "message": "Action failed: Index 4 is out of range (no choices loaded — call get_action_choices first). Call get_action_choices to see current options.",
-      "decisionIndex": 62
-    }
-  ],
+  "errors": [],
   "annotations": [
     {
       "severity": "moderate",
