@@ -1198,17 +1198,51 @@
     return key.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   }
 
+  // ── Per-player turn counting ──
+
+  /**
+   * Pre-compute per-player turn numbers from snapshots.
+   * Returns an array where each index maps to the active player's
+   * individual turn number at that snapshot (e.g. "this is Player A's
+   * 3rd turn" even if the game turn counter says 5).
+   */
+  function computePlayerTurnNumbers(snapshots) {
+    var counts = {};  // player name -> turn count so far
+    var result = [];
+    var lastTurn = -1;
+    var lastPlayer = null;
+    for (var i = 0; i < snapshots.length; i++) {
+      var snap = snapshots[i];
+      var ap = snap.active_player;
+      var t = snap.turn;
+      if (ap && (t !== lastTurn || ap !== lastPlayer)) {
+        counts[ap] = (counts[ap] || 0) + 1;
+        lastTurn = t;
+        lastPlayer = ap;
+      }
+      result[i] = ap ? (counts[ap] || 0) : null;
+    }
+    return result;
+  }
+
   // ── Status line ──
 
-  function renderStatusLine(el, snap) {
+  function formatTurnLabel(playerTurn, activePlayer) {
+    if (!activePlayer && playerTurn == null) return "Pregame";
+    var turnNum = playerTurn != null ? "Turn " + playerTurn : "Turn ?";
+    if (activePlayer) return activePlayer + "'s " + turnNum;
+    return turnNum;
+  }
+
+  function renderStatusLine(el, snap, playerTurn) {
     if (!el || !snap) return;
-    var turn = snap.turn != null ? "Turn " + snap.turn : "Turn ?";
+    var effectiveTurn = playerTurn != null ? playerTurn : (snap.active_player ? snap.turn : null);
+    var turn = formatTurnLabel(effectiveTurn, snap.active_player);
     var phase = snap.phase || "?";
     var step = snap.step || "?";
     var phaseDisplay = step && step !== phase ? phase + " / " + step : phase;
-    var active = snap.active_player || "?";
     var priority = snap.priority_player || "?";
-    el.textContent = turn + " | " + phaseDisplay + " | Active: " + active + " | Priority: " + priority;
+    el.textContent = turn + " | " + phaseDisplay + " | Priority: " + priority;
   }
 
   // ── Diff computation ──
@@ -1463,6 +1497,7 @@
     renderPlayers: renderPlayers,
     renderStack: renderStack,
     renderStatusLine: renderStatusLine,
+    computePlayerTurnNumbers: computePlayerTurnNumbers,
     setupMousePreview: setupMousePreview,
     // Diffs
     computeDiff: computeDiff,
@@ -1474,6 +1509,7 @@
     computeCardFontSize: computeCardFontSize,
     // Phase formatting
     formatPhaseStep: formatPhaseStep,
+    formatTurnLabel: formatTurnLabel,
     // Constants
     PLAYER_COLORS: PLAYER_COLORS,
   };

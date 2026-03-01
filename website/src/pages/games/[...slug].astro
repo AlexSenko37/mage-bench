@@ -454,6 +454,7 @@ const { slug } = Astro.params;
     var playerMeta = {};
     var turnStartIndices = [];
     var phaseTransitions = [];
+    var playerTurnNumbers = [];  // per-snapshot player turn number
     var showLlm = true;
     var isCommander = false;
     var traceByTs = {};  // ts -> trace event lookup (kept for potential future use)
@@ -834,7 +835,7 @@ const { slug } = Astro.params;
         var phase = snap.phase || "";
         var step = snap.step || "";
         var phaseDisplay = step && step !== phase ? phase + " / " + step : phase;
-        phaseBar.textContent = "Turn " + snap.turn + " \u2014 " + phaseDisplay;
+        phaseBar.textContent = R.formatTurnLabel(playerTurnNumbers[index], snap.active_player) + " \u2014 " + phaseDisplay;
         playersGrid.insertBefore(phaseBar, playersGrid.children[insertIdx]);
       }
 
@@ -1025,7 +1026,7 @@ const { slug } = Astro.params;
         } else if (item.kind === "turn-sep") {
           el = document.createElement("div");
           el.className = "turn-separator";
-          el.textContent = "\u2014 Turn " + item.data.turn + " \u2014";
+          el.textContent = "\u2014 " + R.formatTurnLabel(item.data.playerTurn, item.data.active_player) + " \u2014";
         } else if (item.kind === "phase-sep") {
           el = document.createElement("div");
           el.className = "phase-separator";
@@ -1182,6 +1183,9 @@ const { slug } = Astro.params;
           });
         }
 
+        // Compute per-player turn numbers
+        playerTurnNumbers = R.computePlayerTurnNumbers(game.snapshots);
+
         // Build turn start indices
         var lastTurn = -1;
         game.snapshots.forEach(function (snap, i) {
@@ -1203,9 +1207,11 @@ const { slug } = Astro.params;
               ts: snap.ts || "",
               seq: snap.seq || 0,
               turn: snap.turn,
+              playerTurn: playerTurnNumbers[i],
               phase: snap.phase,
               step: snap.step,
               turnChanged: turnChanged,
+              active_player: snap.active_player,
             });
           }
         });
