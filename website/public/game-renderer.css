@@ -51,6 +51,11 @@
   .battlefield-zone {
     min-height: 120px;
   }
+
+  .battlefield-zone .cards-row,
+  .hand-zone .cards-row {
+    min-height: 0;
+  }
 }
 
 .player-card {
@@ -168,9 +173,11 @@
   min-width: 0;
 }
 
-/* Battlefield minimum height: space for creatures row + lands row */
-.battlefield-zone {
-  min-height: 240px;
+/* Battlefield rows always reserve space for one line of cards so height
+   doesn't jump when lands/creatures appear, disappear, or get tapped.
+   Tapped cards add 16px margin top+bottom (32px), so 113px + 32px = 145px. */
+.battlefield-zone .cards-row {
+  min-height: 145px;
 }
 
 /* Zones */
@@ -249,6 +256,11 @@
   background: rgba(59, 130, 246, 0.06);
   border-radius: 4px;
   margin: 2px 0;
+}
+
+/* Hand row reserves space for one line of small thumbnails (65px × 1.393 aspect + 2px border) */
+.hand-zone .cards-row {
+  min-height: 93px;
 }
 
 .zone-title {
@@ -416,6 +428,13 @@
   margin-top: 4px;
   padding-top: 4px;
   border-top: 1px dashed rgba(255, 255, 255, 0.06);
+  min-height: 150px; /* 145px base + 4px padding-top + 1px border-top */
+}
+
+/* Hide separator when land row is empty */
+.battlefield-zone .land-row:empty {
+  border-top: none;
+  padding-top: 0;
 }
 
 /* Stacked land card (single) */
