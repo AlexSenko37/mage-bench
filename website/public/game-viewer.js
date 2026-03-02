@@ -512,6 +512,9 @@
       // Stack
       R.renderStack(dom.stackSection, dom.stackCards, snap.stack, game.cardImages, dom.previewEls);
 
+      // Pending decisions for this snapshot
+      R.renderDecisions(dom.stackSection, snapshotDecisionMap[index] || [], playerColorMap);
+
       // Target arrows from stack items to their targets
       R.drawTargetArrows(dom.gameLeft);
 
@@ -884,6 +887,15 @@
         });
       }
     });
+
+    // Build snapshot -> decisions map
+    var snapshotDecisionMap = {};
+    (game.decisions || []).forEach(function (d) {
+      var si = d.snapshotIndex;
+      if (!snapshotDecisionMap[si]) snapshotDecisionMap[si] = [];
+      snapshotDecisionMap[si].push(d);
+    });
+
 
     // Set up transport
     dom.slider.max = String(game.snapshots.length - 1);
