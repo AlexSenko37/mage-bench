@@ -752,8 +752,11 @@ def _call_llm(
     system: str,
     user: str,
     retries: int = 3,
-) -> tuple[str, int, int]:
-    """Call LLM with retry on server errors. Returns (text, prompt_tokens, completion_tokens)."""
+) -> tuple[str, int, int, int]:
+    """Call LLM with retry on server errors.
+
+    Returns (text, prompt_tokens, completion_tokens, cached_tokens).
+    """
     import time
 
     for attempt in range(retries + 1):
@@ -761,7 +764,16 @@ def _call_llm(
             response = client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": system},
+                    {
+                        "role": "system",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": system,
+                                "cache_control": {"type": "ephemeral"},
+                            }
+                        ],
+                    },
                     {"role": "user", "content": user},
                 ],
                 max_tokens=16384,
@@ -770,7 +782,11 @@ def _call_llm(
             assert text is not None, "LLM returned no content"
             usage = response.usage
             assert usage is not None, "API response missing usage data"
-            return text, usage.prompt_tokens, usage.completion_tokens
+            cached = 0
+            ptd = usage.prompt_tokens_details
+            if ptd and getattr(ptd, "cached_tokens", None):
+                cached = ptd.cached_tokens
+            return text, usage.prompt_tokens, usage.completion_tokens, cached
         except Exception as e:
             err_str = str(e)
             retryable = (
@@ -860,6 +876,35 @@ def _write_annotations(gz_path: str, annotations: list) -> None:
         print(f"Annotations written to {gz_path}")
     finally:
         os.unlink(ann_path)
+
+
+def _append_blunder_stats(
+    *,
+    game_id: str,
+    decisions_analyzed: int,
+    total_prompt: int,
+    total_completion: int,
+    total_cached: int,
+    total_cost: float,
+) -> None:
+    """Append a run record to blunder-stats.jsonl for internals tracking."""
+    from datetime import datetime, timezone
+
+    stats_path = REPO_ROOT / "website" / "src" / "data" / "blunder-stats.jsonl"
+    record = {
+        "gameId": game_id,
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "version": BLUNDER_SCRIPT_VERSION,
+        "model": OPUS_MODEL,
+        "decisionsAnalyzed": decisions_analyzed,
+        "promptTokens": total_prompt,
+        "completionTokens": total_completion,
+        "cachedTokens": total_cached,
+        "costUsd": round(total_cost, 4),
+    }
+    with open(stats_path, "a") as f:
+        f.write(json.dumps(record) + "\n")
+    print(f"  Blunder stats appended to {stats_path}")
 
 
 def build_decision_prompt(
@@ -966,16 +1011,22 @@ def _eval_one_decision(
     text = ""
     in_tok = 0
     out_tok = 0
+    cached_tok = 0
     ann: dict | None = None
     parsed_ok = True
 
     for attempt in range(max_attempts):
-        text, in_tok, out_tok = _call_llm(client, model, PER_DECISION_SYSTEM, user_msg)
+        text, in_tok, out_tok, cached_tok = _call_llm(
+            client, model, PER_DECISION_SYSTEM, user_msg
+        )
         attempt_cost = _compute_cost(prices, model, in_tok, out_tok)
         total_cost += attempt_cost
         suffix = f" (attempt {attempt + 1})" if attempt > 0 else ""
+        cache_info = ""
+        if cached_tok > 0 and in_tok > 0:
+            cache_info = f" cache={cached_tok / in_tok * 100:.0f}%"
         print(
-            f"  [{label}] {in_tok:,} in / {out_tok:,} out (${attempt_cost:.4f}){suffix}"
+            f"  [{label}] {in_tok:,} in / {out_tok:,} out (${attempt_cost:.4f}){cache_info}{suffix}"
         )
 
         try:
@@ -1032,6 +1083,7 @@ def _eval_one_decision(
         "response": text,
         "prompt_tokens": in_tok,
         "completion_tokens": out_tok,
+        "cached_tokens": cached_tok,
         "cost_usd": cost,
     }
 
@@ -1293,7 +1345,14 @@ def main(gz_path: str) -> None:
             f"Too many parse failures: {parse_failures}/{len(non_forced)} decisions failed"
         )
 
-    print(f"\n  Total: {len(annotations)} annotation(s), ${total_cost:.3f}")
+    total_prompt = sum(r.get("prompt_tokens", 0) for r in raw_records)
+    total_completion = sum(r.get("completion_tokens", 0) for r in raw_records)
+    total_cached = sum(r.get("cached_tokens", 0) for r in raw_records)
+    cache_pct = total_cached / total_prompt * 100 if total_prompt > 0 else 0
+    print(
+        f"\n  Total: {len(annotations)} annotation(s), ${total_cost:.3f}"
+        f"  Cache: {total_cached:,}/{total_prompt:,} tokens ({cache_pct:.0f}%)"
+    )
 
     # Save raw LLM data to log directory (never overwrite — new file each run)
     if raw_records:
@@ -1332,6 +1391,14 @@ def main(gz_path: str) -> None:
     if not annotations:
         print("\nNo blunders found.")
         _write_annotations(gz_path, [])
+        _append_blunder_stats(
+            game_id=data["id"],
+            decisions_analyzed=len(non_forced),
+            total_prompt=total_prompt,
+            total_completion=total_completion,
+            total_cached=total_cached,
+            total_cost=total_cost,
+        )
         print(f"\nTotal cost: ${total_cost:.3f}")
         return
 
@@ -1352,6 +1419,16 @@ def main(gz_path: str) -> None:
 
     # Auto-ingest: add annotated decisions to ground truth for future eval
     _auto_ingest_ground_truth(data["id"], annotations, decisions, snapshots)
+
+    # Append run stats to blunder-stats.jsonl for internals tracking
+    _append_blunder_stats(
+        game_id=data["id"],
+        decisions_analyzed=len(non_forced),
+        total_prompt=total_prompt,
+        total_completion=total_completion,
+        total_cached=total_cached,
+        total_cost=total_cost,
+    )
 
     print(f"\nTotal cost: ${total_cost:.3f}")
 
