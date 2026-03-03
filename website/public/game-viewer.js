@@ -236,9 +236,7 @@
         var toolResults = [];
         var j = i + 1;
         while (j < events.length && events[j].type === "tool_call" && events[j].player === e.player) {
-          if (events[j].tool !== "send_chat_message") {
-            toolResults.push(events[j]);
-          }
+          toolResults.push(events[j]);
           j++;
         }
         var mergedSeq = e.gameSeq || (toolResults.length > 0 ? toolResults[0].gameSeq : 0) || 0;
@@ -255,10 +253,6 @@
         });
         i = j;
       } else if (e.type === "tool_call") {
-        if (e.tool === "send_chat_message") {
-          i++;
-          continue;
-        }
         merged.push({
           type: "llm_merged",
           ts: e.ts,
@@ -462,6 +456,40 @@
       // get_action_choices mapped to a decision: hide (choose_action shows the summary)
       if (decision && tc.tool === "get_action_choices") {
         return null;
+      }
+
+      // send_chat_message: show mcp badge + message text, raw call behind disclosure
+      if (tc.tool === "send_chat_message") {
+        var chatContainer = document.createElement("span");
+        chatContainer.className = "llm-decision-display";
+
+        var chatBadge = document.createElement("span");
+        chatBadge.className = "log-badge badge-mcp";
+        chatBadge.textContent = "mcp";
+        chatContainer.appendChild(chatBadge);
+
+        var chatText = document.createElement("span");
+        chatText.className = "decision-action-text";
+        chatText.textContent = "send_chat_message: " + ((tc.args && tc.args.message) || "");
+        chatContainer.appendChild(chatText);
+
+        var chatRaw = document.createElement("details");
+        chatRaw.className = "llm-tool-raw";
+        var chatRawSummary = document.createElement("summary");
+        chatRawSummary.textContent = "raw";
+        chatRaw.appendChild(chatRawSummary);
+        var chatRawInner = document.createElement("div");
+        var chatRawArgs = formatToolArgs(tc.args);
+        chatRawInner.innerHTML = '<div class="llm-tool-raw-call">' + escapeHtml(tc.tool) + "(" + escapeHtml(chatRawArgs) + ")</div>";
+        if (tc.result) {
+          var chatRawPre = document.createElement("pre");
+          chatRawPre.textContent = tryFormatJson(tc.result);
+          chatRawInner.appendChild(chatRawPre);
+        }
+        chatRaw.appendChild(chatRawInner);
+        chatContainer.appendChild(chatRaw);
+
+        return chatContainer;
       }
 
       // Default: original rendering for unmapped tool calls
