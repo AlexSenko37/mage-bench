@@ -4366,6 +4366,9 @@ public class BridgeCallbackHandler {
             callback.decompressData();
             UUID objectId = callback.getObjectId();
             ClientCallbackMethod method = callback.getMethod();
+            if (shouldIgnoreNonCurrentGameCallback(objectId, method)) {
+                return;
+            }
             lastCallbackReceivedAt = System.currentTimeMillis();
             lastCallbackGameId = objectId;
             if (ACTIONABLE_CALLBACKS.contains(method)) {
@@ -4611,6 +4614,52 @@ public class BridgeCallbackHandler {
             return picker.getMessage();
         }
         return "";
+    }
+
+    /**
+     * Ignore late callbacks from stale games in keepAlive mode.
+     *
+     * Without this guard, callbacks from an older game can overwrite pendingAction
+     * for the current game and strand pass_priority/choose_action waiting on the
+     * wrong game flow.
+     */
+    private boolean shouldIgnoreNonCurrentGameCallback(UUID callbackGameId, ClientCallbackMethod method) {
+        if (!mcpMode || callbackGameId == null) {
+            return false;
+        }
+
+        // START_GAME is intentionally excluded: it's the callback that
+        // *establishes* currentGameId, so filtering it would be circular.
+        boolean gameScoped = ACTIONABLE_CALLBACKS.contains(method)
+                || method == ClientCallbackMethod.GAME_INIT
+                || method == ClientCallbackMethod.GAME_OVER
+                || method == ClientCallbackMethod.GAME_UPDATE
+                || method == ClientCallbackMethod.GAME_UPDATE_AND_INFORM;
+        if (!gameScoped) {
+            return false;
+        }
+
+        UUID gameId = currentGameId;
+        if (gameId == null) {
+            // Expected window: after createFreshForNextGame() routes callbacks
+            // to this handler but before START_GAME fires to set currentGameId.
+            // GAME_UPDATE callbacks can arrive during this window and should be
+            // dropped — they're for the game that hasn't been established yet.
+            logger.warn("[" + client.getUsername() + "] Ignoring " + method
+                    + " for game " + callbackGameId + " (no currentGameId)");
+            return true;
+        }
+        if (!gameId.equals(callbackGameId)) {
+            logger.warn("[" + client.getUsername() + "] Ignoring " + method
+                    + " for non-current game " + callbackGameId + " (currentGameId=" + gameId + ")");
+            return true;
+        }
+        if (!activeGames.containsKey(callbackGameId)) {
+            logger.warn("[" + client.getUsername() + "] Ignoring " + method
+                    + " for inactive game " + callbackGameId + " (not in activeGames)");
+            return true;
+        }
+        return false;
     }
 
     /**
