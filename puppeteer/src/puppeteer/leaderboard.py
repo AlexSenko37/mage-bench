@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from puppeteer.harness_epoch import MIN_BLUNDER_VERSION, MIN_LEADERBOARD_EPOCH
+from puppeteer.harness_epoch import MIN_BLUNDER_VERSION
 
 _LOST_GAME_RE = re.compile(r"^(.+?) has lost the game\.$")
 
@@ -670,28 +670,19 @@ def generate_leaderboard_file(games_dir: Path, data_dir: Path, models_json: Path
             "winner": game.get("winner"),
             "players": players,
             "harnessEpoch": game.get("harnessEpoch"),
+            "season": game["season"],
         }
         if "annotations" in game:
             game_entry["annotations"] = game["annotations"]
         games_index.append(game_entry)
 
-    # Count games per epoch (all games, before filtering)
-    epoch_counts: dict[int, int] = {}
-    for g in games_index:
-        e = g["harnessEpoch"]
-        epoch_counts[e] = epoch_counts.get(e, 0) + 1
-
-    # Filter to current epoch for leaderboard ratings
-    rated_games = [g for g in games_index if g["harnessEpoch"] >= MIN_LEADERBOARD_EPOCH]
-    excluded_count = len(games_index) - len(rated_games)
-
     model_registry = load_model_registry(models_json)
-    format_results, ratings_by_game = generate_all_leaderboards(rated_games, model_registry, games_dir)
-
-    # Mark inactive models (not in the active pool)
     inactive_statuses = _load_inactive_statuses(models_json.parent / "presets.json")
-    if inactive_statuses is not None:
-        for fmt_data in format_results.values():
+
+    def _mark_inactive(fmt_results: dict[str, Any]) -> None:
+        if inactive_statuses is None:
+            return
+        for fmt_data in fmt_results.values():
             for model in fmt_data.get("models", []):
                 model_id = model["modelId"]
                 effort = model.get("reasoningEffort")
@@ -699,31 +690,55 @@ def generate_leaderboard_file(games_dir: Path, data_dir: Path, models_json: Path
                 if key in inactive_statuses:
                     model["inactive"] = inactive_statuses[key]
 
-    # Build output with backward-compatible top-level fields from combined (primary rating)
-    pool_combined = format_results.get("combined", {"generatedAt": "", "totalGames": 0, "models": []})
-    # Sum games across real pools (not combined, which double-counts)
-    total_games = sum(format_results[fmt].get("totalGames", 0) for fmt in _FORMAT_POOLS if fmt in format_results)
-    output = {
-        "generatedAt": pool_combined.get("generatedAt", ""),
-        "totalGames": total_games,
-        "models": pool_combined.get("models", []),
-        "formats": format_results,
-        "minEpoch": MIN_LEADERBOARD_EPOCH,
-        "minBlunderVersion": MIN_BLUNDER_VERSION,
-        "excludedGames": excluded_count,
-        "epochCounts": {str(e): c for e, c in sorted(epoch_counts.items())},
-    }
+    def _build_output(season_games: list[dict]) -> tuple[dict[str, Any], dict[str, Any]]:
+        fmt_results, ratings = generate_all_leaderboards(season_games, model_registry, games_dir)
+        _mark_inactive(fmt_results)
+        pool = fmt_results.get("combined", {"generatedAt": "", "totalGames": 0, "models": []})
+        total = sum(fmt_results[fmt].get("totalGames", 0) for fmt in _FORMAT_POOLS if fmt in fmt_results)
+        return {
+            "generatedAt": pool.get("generatedAt", ""),
+            "totalGames": total,
+            "models": pool.get("models", []),
+            "formats": fmt_results,
+            "minBlunderVersion": MIN_BLUNDER_VERSION,
+        }, ratings
 
-    # Write benchmark-results.json
+    # Group games by season and generate per-season leaderboard files
+    games_by_season: dict[int, list[dict]] = {}
+    for g in games_index:
+        games_by_season.setdefault(g["season"], []).append(g)
+
     data_dir.mkdir(parents=True, exist_ok=True)
+    all_ratings: dict[str, Any] = {}
+    available_seasons: list[int] = sorted(games_by_season.keys())
+
+    # Per-season files go to public/data/ for client-side fetch
+    public_data_dir = games_dir.parent / "data"
+    public_data_dir.mkdir(parents=True, exist_ok=True)
+
+    for season_num in available_seasons:
+        season_output, season_ratings = _build_output(games_by_season[season_num])
+        season_output["availableSeasons"] = available_seasons
+        season_path = public_data_dir / f"benchmark-results-season-{season_num}.json"
+        season_path.write_text(json.dumps(season_output, indent=2) + "\n")
+        all_ratings.update(season_ratings)
+
+    # Primary benchmark-results.json = all rated games (season >= 1)
+    rated_seasons = [s for s in available_seasons if s >= 1]
+    if len(rated_seasons) == 1 and rated_seasons[0] in games_by_season:
+        # Reuse already-computed result for the single rated season
+        output, ratings_by_game = _build_output(games_by_season[rated_seasons[0]])
+    else:
+        rated_games = [g for g in games_index if g["season"] >= 1]
+        output, ratings_by_game = _build_output(rated_games)
+    all_ratings.update(ratings_by_game)
+    output["availableSeasons"] = available_seasons
     output_path = data_dir / "benchmark-results.json"
     output_path.write_text(json.dumps(output, indent=2) + "\n")
 
     # Write ratings.json to public/data/
-    ratings_dir = games_dir.parent / "data"
-    ratings_dir.mkdir(parents=True, exist_ok=True)
-    ratings_path = ratings_dir / "ratings.json"
-    ratings_path.write_text(json.dumps(ratings_by_game, indent=2) + "\n")
+    ratings_path = public_data_dir / "ratings.json"
+    ratings_path.write_text(json.dumps(all_ratings, indent=2) + "\n")
 
     return output_path
 
@@ -892,7 +907,6 @@ def generate_model_stats(games_dir: Path, data_dir: Path, models_json: Path) -> 
 
     output: dict[str, Any] = {
         "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "minLeaderboardEpoch": MIN_LEADERBOARD_EPOCH,
         "models": models_out,
     }
 
@@ -1032,7 +1046,6 @@ def generate_internals_data(games_dir: Path, data_dir: Path, models_json: Path) 
 
     output: dict[str, Any] = {
         "generatedAt": datetime.now(timezone.utc).isoformat(),
-        "minLeaderboardEpoch": MIN_LEADERBOARD_EPOCH,
         "games": games_out,
     }
 
