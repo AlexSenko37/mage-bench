@@ -4415,8 +4415,8 @@ public class BridgeCallbackHandler {
                                 }
                             }
                         } catch (Exception e) {
-                            logger.error("[" + client.getUsername() + "] Target auto-select threw, falling through to pending action", e);
                             logError("Target auto-select exception: " + e.getMessage());
+                            logger.debug("[" + client.getUsername() + "] Target auto-select stack trace", e);
                         }
                         if (!targetAutoHandled) {
                             storePendingAction(objectId, method, callback);
@@ -4467,23 +4467,20 @@ public class BridgeCallbackHandler {
                                     }
                                 }
                                 session.sendPlayerUUID(objectId, selected);
-                                abilityAutoHandled = true;
                             } else {
                                 // No mana plan: let the LLM choose the ability
                                 storePendingAction(objectId, method, callback);
-                                abilityAutoHandled = true;
                             }
                         } else if (mcpMode) {
                             logger.warn("[" + client.getUsername() + "] Auto-selecting ability: no choices, sending null");
                             session.sendPlayerUUID(objectId, null);
-                            abilityAutoHandled = true;
                         } else {
                             handleGameChooseAbility(objectId, callback);
-                            abilityAutoHandled = true;
                         }
+                        abilityAutoHandled = true;
                     } catch (Exception e) {
-                        logger.error("[" + client.getUsername() + "] Ability auto-handler threw, falling through to pending action", e);
                         logError("Ability auto-handler exception: " + e.getMessage());
+                        logger.debug("[" + client.getUsername() + "] Ability auto-handler stack trace", e);
                     }
                     if (!abilityAutoHandled && mcpMode) {
                         storePendingAction(objectId, method, callback);
@@ -4516,8 +4513,8 @@ public class BridgeCallbackHandler {
                     try {
                         manaHandled = handleGamePlayManaAuto(objectId, callback);
                     } catch (Exception e) {
-                        logger.error("[" + client.getUsername() + "] Mana auto-handler threw, falling through to pending action", e);
                         logError("Mana auto-handler exception: " + e.getMessage());
+                        logger.debug("[" + client.getUsername() + "] Mana auto-handler stack trace", e);
                     }
                     if (!manaHandled) {
                         if (mcpMode) {
@@ -4573,8 +4570,8 @@ public class BridgeCallbackHandler {
                     logger.debug("[" + client.getUsername() + "] Unhandled callback: " + method);
             }
         } catch (Exception e) {
-            logger.error("[" + client.getUsername() + "] Error handling callback: " + callback.getMethod(), e);
             logError("Error handling callback " + callback.getMethod() + ": " + e.getMessage());
+            logger.debug("[" + client.getUsername() + "] Callback error stack trace", e);
             // If this was an actionable callback (one that requires a player response),
             // the server's game thread is now stuck in waitForResponse() forever because
             // no response was sent.  Signal playerDead so passPriority/chooseAction exit
