@@ -3153,9 +3153,12 @@ public class BridgeCallbackHandler {
                     GameView gv = (action.data() instanceof GameClientMessage)
                         ? ((GameClientMessage) action.data()).getGameView() : lastGameView;
                     PhaseStep step = gv != null ? gv.getStep() : null;
-                    if (step == PhaseStep.END_TURN || step == PhaseStep.CLEANUP) {
-                        // Reached end of turn — stop yielding, fall through to
-                        // playable-cards check so LLM can respond to end-step triggers
+                    int turnNum = gv != null ? gv.getTurn() : yieldStartTurn;
+                    if (step == PhaseStep.END_TURN || step == PhaseStep.CLEANUP
+                            || turnNum > yieldStartTurn) {
+                        // Reached end of turn (or the turn advanced without us seeing
+                        // END_TURN/CLEANUP because server-side skip settings auto-passed
+                        // those steps) — stop yielding, fall through to playable-cards check.
                         yieldUntilEndOfTurn = false;
                     } else {
                         // Not end of turn yet — auto-pass
