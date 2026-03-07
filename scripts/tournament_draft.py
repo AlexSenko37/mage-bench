@@ -143,11 +143,23 @@ def _format_pack_option(
     return "\n".join(lines)
 
 
-def build_draft_system_prompt(personality_suffix: str | None) -> str:
+def build_draft_system_prompt(
+    personality_suffix: str | None,
+    seed: int,
+    num_entrants: int,
+) -> str:
     """Build the system prompt for a draft pick."""
     prompt = (
         "You are drafting a Jumpstart deck for a Magic: The Gathering tournament.\n"
         "Jumpstart decks combine two 20-card half-deck packs into a 40-card deck.\n"
+        "You will make 2 picks to form your 40-card deck.\n"
+        "\n"
+        f"This is a straight (linear) draft with {num_entrants} players.\n"
+        f"Draft order: seeds 1, 2, ..., {num_entrants}, then 1, 2, ..., {num_entrants} again.\n"
+        "Higher seeds always pick first — there is no snake compensation.\n"
+        f"You are seed #{seed}.\n"
+        "\n"
+        "The full open pool of remaining packs is shown for each pick.\n"
         "Pick the pack that best complements your strategy."
     )
     if personality_suffix:
@@ -281,6 +293,20 @@ def _log_llm_call(
     log_file.flush()
 
 
+def _extract_content(message: object) -> tuple[str | None, str | None]:
+    """Extract (content, thinking) from an OpenAI chat completion message.
+
+    Strips whitespace and falls back to reasoning_content if content is empty.
+    """
+    content: str | None = getattr(message, "content", None)
+    if content is not None:
+        content = content.strip()
+    thinking: str | None = getattr(message, "reasoning_content", None)
+    if not content and thinking:
+        content = thinking.strip()
+    return content, thinking
+
+
 async def _llm_pick(
     client: AsyncOpenAI,
     model: str,
@@ -321,16 +347,7 @@ async def _llm_pick(
     )
 
     assert response.choices, f"LLM returned empty choices for model {model}"
-    content = response.choices[0].message.content
-    # OpenRouter returns extended thinking as `reasoning_content` for models
-    # that support it (Claude, Gemini thinking, etc.).
-    thinking: str | None = getattr(
-        response.choices[0].message, "reasoning_content", None
-    )
-    # When the model puts its answer only in the thinking block, `content`
-    # can be empty/"".  Fall back to thinking for parse_pick.
-    if not content:
-        content = thinking
+    content, thinking = _extract_content(response.choices[0].message)
     assert content, f"LLM returned empty content for model {model}"
 
     usage: dict = {}
@@ -369,14 +386,11 @@ async def _llm_pick(
         assert retry_response.choices, (
             f"LLM returned empty choices on retry for model {model}"
         )
-        retry_content = retry_response.choices[0].message.content
-        retry_thinking = getattr(
-            retry_response.choices[0].message, "reasoning_content", None
+        retry_content, retry_thinking = _extract_content(
+            retry_response.choices[0].message
         )
         if retry_thinking:
             thinking = retry_thinking
-        if not retry_content:
-            retry_content = retry_thinking
         assert retry_content, f"LLM returned empty content on retry for model {model}"
         if retry_response.usage:
             usage["prompt_tokens"] = usage.get("prompt_tokens", 0) + (
@@ -391,27 +405,70 @@ async def _llm_pick(
 
 
 async def run_draft(tournament: dict, tournament_path: Path) -> None:
-    """Run the full straight draft."""
-    assert "draft" not in tournament, (
-        "Tournament already has draft results. Delete the 'draft' key to re-run."
-    )
-
+    """Run the full straight draft, with resume support for partial drafts."""
     entrants = tournament["entrants"]
     num_entrants = len(entrants)
     entrants_by_seed = {e["seed"]: e for e in entrants}
+    order = draft_order(num_entrants)
 
-    # Load Jumpstart packs and open a fixed pool for the draft
+    # Early exit if draft is already complete
+    if "draft" in tournament:
+        existing_picks = tournament["draft"]["picks"]
+        if len(existing_picks) >= len(order) and tournament["draft"].get("decklists"):
+            print("Draft already complete. Nothing to do.")
+            return
+
+    # Load Jumpstart packs
     half_decks = load_jumpstart_themes(_ROOT)
-    pool_size = PACKS_PER_PLAYER * num_entrants
-    assert len(half_decks) >= pool_size, (
-        f"Need {pool_size} packs for draft but only {len(half_decks)} available"
-    )
-    pool = random.sample(half_decks, pool_size)
-    available_packs = {hd.theme: hd for hd in pool}
-    print(f"Opened {pool_size} packs for draft (from {len(half_decks)} total)")
+    half_decks_by_theme = {hd.theme: hd for hd in half_decks}
 
-    # Fetch oracle text only for the pool (not all 93 packs)
-    oracle = _fetch_oracle_texts(pool)
+    picks: list[dict]
+    start_idx: int
+    entrant_picks: dict[int, list[HalfDeck]] = {seed: [] for seed in entrants_by_seed}
+    cumulative_cost = 0.0
+
+    # Resume support: detect partial draft and reconstruct state
+    if "draft" in tournament:
+        picks = tournament["draft"]["picks"]
+
+        # Reconstruct pool from saved theme list
+        pool_themes = tournament["draft"]["pool"]
+        available_packs = {t: half_decks_by_theme[t] for t in pool_themes}
+
+        for pick in picks:
+            entrant_picks[pick["seed"]].append(available_packs[pick["picked"]])
+            del available_packs[pick["picked"]]
+            cumulative_cost += pick.get("cost_usd", 0)
+
+        start_idx = len(picks)
+        print(
+            f"Resuming draft from pick {start_idx + 1}/{len(order)} "
+            f"({start_idx} picks completed, ${cumulative_cost:.4f} spent)"
+        )
+    else:
+        # Fresh draft — sample a random pool
+        pool_size = PACKS_PER_PLAYER * num_entrants
+        assert len(half_decks) >= pool_size, (
+            f"Need {pool_size} packs for draft but only {len(half_decks)} available"
+        )
+        pool = random.sample(half_decks, pool_size)
+        available_packs = {hd.theme: hd for hd in pool}
+
+        picks = []
+        start_idx = 0
+
+        tournament["draft"] = {
+            "packs_per_player": PACKS_PER_PLAYER,
+            "pool": sorted(available_packs.keys()),
+            "picks": picks,
+            "decklists": {},
+        }
+        # Flush immediately so the pool is saved even if we crash on pick 1
+        tournament_path.write_text(json.dumps(tournament, indent=2) + "\n")
+        print(f"Opened {pool_size} packs for draft (from {len(half_decks)} total)")
+
+    # Fetch oracle text for remaining packs
+    oracle = _fetch_oracle_texts(list(available_packs.values()))
 
     # Fetch prices for cost tracking
     prices = load_prices()
@@ -451,22 +508,10 @@ async def run_draft(tournament: dict, tournament_path: Path) -> None:
                 max_retries=1,
             )
 
-    # Straight draft
-    order = draft_order(num_entrants)
-    picks: list[dict] = []
-    entrant_picks: dict[int, list[HalfDeck]] = {seed: [] for seed in entrants_by_seed}
-    cumulative_cost = 0.0
-
-    # Initialize draft data so partial results survive ctrl-c
-    tournament["draft"] = {
-        "packs_per_player": PACKS_PER_PLAYER,
-        "pool": sorted(available_packs.keys()),
-        "picks": picks,
-        "decklists": {},
-    }
-
     with open(log_path, "a") as log_file:
         for pick_idx, seed in enumerate(order):
+            if pick_idx < start_idx:
+                continue
             round_num = 1 if pick_idx < num_entrants else 2
             entrant = entrants_by_seed[seed]
 
@@ -478,7 +523,7 @@ async def run_draft(tournament: dict, tournament_path: Path) -> None:
 
             # Build prompts
             already_picked = entrant_picks[seed][0] if entrant_picks[seed] else None
-            system_prompt = build_draft_system_prompt(prompt_suffix)
+            system_prompt = build_draft_system_prompt(prompt_suffix, seed, num_entrants)
             user_prompt = build_draft_user_prompt(
                 round_num, options, oracle, already_picked
             )
