@@ -330,6 +330,16 @@
 
     // ── Mark current decision ──
 
+    function handleDecisions(decisions, snapIdx) {
+      if (decisions.length === 0) {
+        dom.verdictStatus.textContent = "No decision at snapshot " + snapIdx;
+      } else if (decisions.length === 1) {
+        loadDetail(decisions[0].decision_index);
+      } else {
+        showDisambiguation(decisions);
+      }
+    }
+
     function markCurrentDecision() {
       if (!viewer) return;
       var snapIdx = viewer.getCurrentIndex();
@@ -338,14 +348,19 @@
       fetchJson(API_PREFIX + "/decisions-at-snapshot/" + slug + "/" + snapIdx)
         .then(function (decisions) {
           if (decisions.length === 0) {
+            // No exact match — try the most recent decision before this snapshot
+            var prevSnap = viewer.getNearestDecisionSnapshot
+              ? viewer.getNearestDecisionSnapshot(snapIdx)
+              : null;
+            if (prevSnap != null) {
+              dom.verdictStatus.textContent = "No decision at snapshot " + snapIdx + ", trying " + prevSnap + "...";
+              return fetchJson(API_PREFIX + "/decisions-at-snapshot/" + slug + "/" + prevSnap)
+                .then(function (fallbackDecisions) { handleDecisions(fallbackDecisions, snapIdx); });
+            }
             dom.verdictStatus.textContent = "No decision at snapshot " + snapIdx;
             return;
           }
-          if (decisions.length === 1) {
-            loadDetail(decisions[0].decision_index);
-            return;
-          }
-          showDisambiguation(decisions);
+          handleDecisions(decisions, snapIdx);
         })
         .catch(function (e) {
           dom.verdictStatus.textContent = "Error: " + e.message;
