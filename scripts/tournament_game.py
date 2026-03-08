@@ -23,7 +23,15 @@ from puppeteer.config import (
     load_models,
     load_personalities,
 )
-from scripts.export_game import WEBSITE_GAMES_DIR, export_game, read_game_winner
+from puppeteer.orchestrator import (
+    AnnotationFailure,
+    clean_stale_h2_locks,
+    compile_project,
+    refresh_observer_resources,
+    resolve_annotation_failures,
+    upload_and_export,
+)
+from scripts.export_game import read_game_winner
 from scripts.generate_leaderboard import generate_all_website_data
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -135,57 +143,14 @@ def _advance_round(rounds: list[dict], round_idx: int) -> None:
         match["seed_b"] = winners[i * 2 + 1]
 
 
-def find_next_match(tournament: dict) -> tuple[dict, dict] | None:
-    """Find the next unplayed match in the tournament bracket.
-
-    All rounds are pre-generated at init time. When a round completes,
-    the next round's matchups are filled in from the winners.
-
-    Returns (round_dict, match_dict) for the next match to play, or None if
-    the tournament is complete.
-
-    Modifies tournament["rounds"] in place.
-    """
-    rounds = tournament["rounds"]
-
-    # Generate full bracket if needed
-    if not rounds:
-        _init_bracket(tournament)
-
-    for i, current_round in enumerate(rounds):
-        matches = current_round["matches"]
-
-        # Check if this round is complete
-        all_complete = all(m["winner_seed"] is not None for m in matches)
-        if all_complete:
-            # If there's a next round, advance matchups
-            if i + 1 < len(rounds) and rounds[i + 1]["matches"][0]["seed_a"] is None:
-                _advance_round(rounds, i)
-            continue
-
-        # Find first unplayed match with known seeds
-        for match in matches:
-            if match["winner_seed"] is None and match["seed_a"] is not None:
-                return current_round, match
-
-        # Seeds not yet determined (earlier round incomplete)
-        break
-
-    # Check if tournament is complete (all rounds done)
-    final_round = rounds[-1]
-    if final_round["matches"][0]["winner_seed"] is not None:
-        return None
-
-    return None
-
-
 def find_ready_matches(tournament: dict) -> list[tuple[dict, dict]]:
     """Find all playable matches in the current round.
 
     Returns a list of (round_dict, match_dict) tuples for matches
-    that have known seeds but no winner yet. Unlike find_next_match()
-    which returns only the first, this returns all of them so they
-    can be run in parallel.
+    that have known seeds but no winner yet. Advances completed rounds
+    and initializes brackets as needed.
+
+    Modifies tournament["rounds"] in place.
     """
     rounds = tournament["rounds"]
 
@@ -208,6 +173,12 @@ def find_ready_matches(tournament: dict) -> list[tuple[dict, dict]]:
         return ready
 
     return []
+
+
+def find_next_match(tournament: dict) -> tuple[dict, dict] | None:
+    """Find the next unplayed match. Returns (round_dict, match_dict) or None."""
+    ready = find_ready_matches(tournament)
+    return ready[0] if ready else None
 
 
 # -- Deck file management --
@@ -330,28 +301,34 @@ def _run_single_game(
     seed_a: int,
     seed_b: int,
     quiet: bool = False,
+    skip_compile: bool = False,
 ) -> tuple[Path, int]:
     """Run a single game between two seeds. Returns (game_dir, winner_seed).
 
     Args:
         quiet: If True, suppress live output (used for parallel matches).
+        skip_compile: If True, pass --skip-compile to orchestrator (caller already compiled).
     """
     config_path = build_game_config(tournament, seed_a, seed_b, _ROOT)
 
+    cmd = [
+        "uv",
+        "run",
+        "--project",
+        "puppeteer",
+        "python",
+        "-m",
+        "puppeteer",
+        "--observer",
+        "--record",
+        "--config",
+        str(config_path),
+    ]
+    if skip_compile:
+        cmd.append("--skip-compile")
+
     proc = subprocess.Popen(
-        [
-            "uv",
-            "run",
-            "--project",
-            "puppeteer",
-            "python",
-            "-m",
-            "puppeteer",
-            "--observer",
-            "--record",
-            "--config",
-            str(config_path),
-        ],
+        cmd,
         cwd=_ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -374,10 +351,8 @@ def _run_single_game(
         f"Orchestrator exited with code {rc}\n"
         f"Output (last 2000 chars):\n{output[-2000:]}"
     )
-    assert game_dir is not None, (
-        "Could not find 'Game logs:' in orchestrator output.\n"
-        f"Output (last 2000 chars):\n{output[-2000:]}"
-    )
+    if game_dir is None:
+        game_dir = _parse_game_dir(output)
 
     winner_name = read_game_winner(game_dir)
     assert winner_name is not None, (
@@ -394,6 +369,8 @@ def _run_match_on(
     round_dict: dict,
     match: dict,
     quiet: bool = False,
+    skip_compile: bool = False,
+    deferred_failures: list[AnnotationFailure] | None = None,
 ) -> None:
     """Run a specific match (best-of-N series)."""
     seed_a = match["seed_a"]
@@ -419,7 +396,7 @@ def _run_match_on(
             )
 
         game_dir, winner_seed = _run_single_game(
-            tournament, seed_a, seed_b, quiet=quiet
+            tournament, seed_a, seed_b, quiet=quiet, skip_compile=skip_compile
         )
         wins[winner_seed] += 1
 
@@ -433,9 +410,14 @@ def _run_match_on(
         # Save after each game so partial series survive crashes
         _save_tournament(tournament, tournament_path)
 
-        # Export now that bracket contains the game_id (orchestrator skips
-        # export for tournament games to avoid the race condition)
-        export_game(game_dir, WEBSITE_GAMES_DIR)
+        # Upload to YouTube + export + blunder analysis (orchestrator skips
+        # these for tournament games; we handle it here after the bracket
+        # JSON is updated so the export finds the tournament context)
+        upload_and_export(
+            game_dir,
+            _ROOT,
+            deferred_failures=deferred_failures,
+        )
 
         winner_display = entrants_by_seed[winner_seed]["display_name"]
         print(
@@ -522,6 +504,19 @@ def main() -> int:
         run_match(tournament, tournament_path)
         return 0
 
+    # Pre-compile once so parallel subprocesses can skip compilation.
+    # This avoids 4 concurrent Maven builds fighting over the same build dir,
+    # and prevents H2 lock file races between sibling processes.
+    parallel = games_to_play > 1
+    if parallel:
+        print("\nPre-compiling before parallel execution...")
+        assert compile_project(_ROOT, observer=True), "Compilation failed"
+        assert refresh_observer_resources(_ROOT), "Observer resource refresh failed"
+
+        # Clean stale H2 lock files once before spawning parallel servers
+        clean_stale_h2_locks(_ROOT)
+
+    deferred_failures: list[AnnotationFailure] = []
     matches_played = 0
     while matches_played < games_to_play:
         ready = find_ready_matches(tournament)
@@ -536,7 +531,14 @@ def main() -> int:
             # Single match — run with live output
             round_dict, match = batch[0]
             _save_tournament(tournament, tournament_path)
-            _run_match_on(tournament, tournament_path, round_dict, match)
+            _run_match_on(
+                tournament,
+                tournament_path,
+                round_dict,
+                match,
+                skip_compile=parallel,
+                deferred_failures=deferred_failures,
+            )
         else:
             # Multiple matches — run in parallel
             _save_tournament(tournament, tournament_path)
@@ -552,6 +554,8 @@ def main() -> int:
                         round_dict,
                         match,
                         quiet=True,
+                        skip_compile=True,
+                        deferred_failures=deferred_failures,
                     ): match
                     for round_dict, match in batch
                 }
@@ -559,6 +563,9 @@ def main() -> int:
                     future.result()  # re-raise any exceptions
 
         matches_played += batch_size
+
+    # Resolve any deferred annotation failures
+    resolve_annotation_failures(deferred_failures, _ROOT)
 
     generate_all_website_data()
     return 0

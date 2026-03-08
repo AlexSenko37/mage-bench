@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from puppeteer.orchestrator import _save_youtube_url, _update_website_youtube_url, _upload_and_export
+from puppeteer.orchestrator import _save_youtube_url, _update_website_youtube_url, upload_and_export
 from scripts.upload_youtube import _build_description, _build_title
 
 
@@ -179,7 +179,7 @@ def test_upload_and_export_returns_zero_without_api_key():
             export_path.parent.mkdir(parents=True)
             export_path.write_text("{}")
             mock_export.return_value = export_path
-            result = _upload_and_export(game_dir, project_root)
+            result = upload_and_export(game_dir, project_root)
     assert result == 0.0
 
 
@@ -201,5 +201,5 @@ def test_upload_and_export_skips_youtube_without_recording():
             export_path.parent.mkdir(parents=True)
             export_path.write_text("{}")
             mock_export.return_value = export_path
-            _upload_and_export(game_dir, project_root)
+            upload_and_export(game_dir, project_root)
         mock_yt.assert_not_called()

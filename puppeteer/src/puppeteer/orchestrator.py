@@ -472,6 +472,11 @@ def parse_args() -> Config:
         action="store_true",
         help="Enable DEBUG-level logging (verbose MCP details, process management)",
     )
+    parser.add_argument(
+        "--skip-compile",
+        action="store_true",
+        help="Skip compilation (caller already compiled)",
+    )
     args = parser.parse_args()
 
     # Determine record output path
@@ -486,6 +491,7 @@ def parse_args() -> Config:
         record_output=record_output,
         num_games=args.games,
         debug=args.debug,
+        skip_compile=args.skip_compile,
     )
 
 
@@ -524,6 +530,14 @@ def refresh_observer_resources(project_root: Path) -> bool:
         cwd=project_root,
     )
     return result.returncode == 0
+
+
+def clean_stale_h2_locks(project_root: Path) -> None:
+    """Remove stale H2 lock files left by previously killed server processes."""
+    db_dir = project_root / "Mage.Server" / "db"
+    for lock_file in db_dir.glob("*.lock.db"):
+        logger.info("Removing stale DB lock file: %s", lock_file)
+        lock_file.unlink()
 
 
 def start_server(
@@ -928,7 +942,7 @@ def _update_website_youtube_url(game_dir: Path, url: str, project_root: Path) ->
 
 
 @dataclass
-class _AnnotationFailure:
+class AnnotationFailure:
     """A game that was exported but failed annotation, pending user decision."""
 
     tmp_path: Path
@@ -985,7 +999,7 @@ def _finalize_export(tmp_path: Path, final_path: Path) -> None:
     logger.info("  Exported for website: %s (%d KB)", final_path, size_kb)
 
 
-def _resolve_annotation_failures(failures: list[_AnnotationFailure], project_root: Path) -> None:
+def resolve_annotation_failures(failures: list[AnnotationFailure], project_root: Path) -> None:
     """Prompt the user about each deferred annotation failure."""
     if not failures:
         return
@@ -1009,11 +1023,11 @@ def _resolve_annotation_failures(failures: list[_AnnotationFailure], project_roo
             break
 
 
-def _upload_and_export(
+def upload_and_export(
     game_dir: Path,
     project_root: Path,
     *,
-    deferred_failures: list[_AnnotationFailure] | None = None,
+    deferred_failures: list[AnnotationFailure] | None = None,
     post_game_failures: list[str] | None = None,
 ) -> float:
     """Upload recording to YouTube and export for website.
@@ -1077,7 +1091,7 @@ def _upload_and_export(
     # Annotation failed after retries
     if deferred_failures is not None:
         # Batch mode: defer to end
-        deferred_failures.append(_AnnotationFailure(tmp_path, final_path, err, game_id))
+        deferred_failures.append(AnnotationFailure(tmp_path, final_path, err, game_id))
         logger.info("  Deferred annotation failure for %s (will ask at end)", game_id)
         return 0.0
 
@@ -1361,7 +1375,7 @@ def _finalize_game(
     project_root: Path,
     spectator_rc: int,
     *,
-    deferred_failures: list[_AnnotationFailure] | None = None,
+    deferred_failures: list[AnnotationFailure] | None = None,
     post_game_failures: list[str] | None = None,
 ) -> tuple[float, float]:
     """Post-game processing for a single game session.
@@ -1378,7 +1392,7 @@ def _finalize_game(
         logger.warning("  %sFailed to merge game log: %s", game_label, e)
     pilot_cost = _print_game_summary(session.game_dir)
     if not session.config.skip_post_game_prompts:
-        blunder_cost = _upload_and_export(
+        blunder_cost = upload_and_export(
             session.game_dir,
             project_root,
             deferred_failures=deferred_failures,
@@ -1448,15 +1462,18 @@ def main() -> int:
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # Compile if needed
-        if not compile_project(project_root, observer=config.observer):
-            logger.error("Compilation failed")
-            return 1
-
-        if config.observer:
-            logger.info("Refreshing observer resources...")
-            if not refresh_observer_resources(project_root):
-                logger.error("Failed to refresh observer resources")
+        if config.skip_compile:
+            logger.info("Skipping compilation (--skip-compile)")
+        else:
+            if not compile_project(project_root, observer=config.observer):
+                logger.error("Compilation failed")
                 return 1
+
+            if config.observer:
+                logger.info("Refreshing observer resources...")
+                if not refresh_observer_resources(project_root):
+                    logger.error("Failed to refresh observer resources")
+                    return 1
 
         # Find available port
         logger.info("Finding available port starting from %d...", config.start_port)
@@ -1485,10 +1502,10 @@ def main() -> int:
 
         # Remove stale H2 lock files left by previously killed server processes.
         # A leftover lock file blocks the new server from opening the card DB.
-        db_dir = project_root / "Mage.Server" / "db"
-        for lock_file in db_dir.glob("*.lock.db"):
-            logger.info("Removing stale DB lock file: %s", lock_file)
-            lock_file.unlink()
+        # Skip when --skip-compile is set: the caller handles cleanup once
+        # before spawning parallel instances (avoids deleting a sibling's lock).
+        if not config.skip_compile:
+            clean_stale_h2_locks(project_root)
 
         # Start server
         logger.info("Starting XMage server...")
@@ -1570,7 +1587,7 @@ def main() -> int:
         post_game_failures: list[str] = []
         if batch:
             results = _wait_for_all_games(sessions, pm)
-            deferred: list[_AnnotationFailure] = []
+            deferred: list[AnnotationFailure] = []
             for session in sessions:
                 spectator_rc = results.get(session.index, -1)
                 pilot_costs[session.index], blunder_costs[session.index] = _finalize_game(
@@ -1580,7 +1597,7 @@ def main() -> int:
                     deferred_failures=deferred,
                     post_game_failures=post_game_failures,
                 )
-            _resolve_annotation_failures(deferred, project_root)
+            resolve_annotation_failures(deferred, project_root)
         else:
             # Single game: use existing wait logic
             session = sessions[0]
