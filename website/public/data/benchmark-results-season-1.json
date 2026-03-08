@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-07T01:56:15.988874+00:00",
+  "generatedAt": "2026-03-08T04:48:13.726427+00:00",
   "totalGames": 208,
   "models": [
     {
@@ -564,7 +564,7 @@
   ],
   "formats": {
     "jumpstart": {
-      "generatedAt": "2026-03-07T01:56:15.985368+00:00",
+      "generatedAt": "2026-03-08T04:48:13.722981+00:00",
       "totalGames": 84,
       "models": [
         {
@@ -1112,7 +1112,7 @@
       ]
     },
     "standard": {
-      "generatedAt": "2026-03-07T01:56:15.986067+00:00",
+      "generatedAt": "2026-03-08T04:48:13.723695+00:00",
       "totalGames": 56,
       "models": [
         {
@@ -1505,7 +1505,7 @@
       ]
     },
     "modern": {
-      "generatedAt": "2026-03-07T01:56:15.986336+00:00",
+      "generatedAt": "2026-03-08T04:48:13.723950+00:00",
       "totalGames": 17,
       "models": [
         {
@@ -1802,7 +1802,7 @@
       ]
     },
     "legacy": {
-      "generatedAt": "2026-03-07T01:56:15.986602+00:00",
+      "generatedAt": "2026-03-08T04:48:13.724207+00:00",
       "totalGames": 17,
       "models": [
         {
@@ -2113,7 +2113,7 @@
       ]
     },
     "commander": {
-      "generatedAt": "2026-03-07T01:56:15.987149+00:00",
+      "generatedAt": "2026-03-08T04:48:13.724774+00:00",
       "totalGames": 34,
       "exhibition": true,
       "models": [
@@ -2555,7 +2555,7 @@
       ]
     },
     "combined": {
-      "generatedAt": "2026-03-07T01:56:15.988874+00:00",
+      "generatedAt": "2026-03-08T04:48:13.726427+00:00",
       "totalGames": 174,
       "models": [
         {
