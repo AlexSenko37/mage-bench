@@ -424,18 +424,18 @@ const hasDraft = !!tournament.draft;
                       </div>
                     );
                   })}
-                  {/* Champion */}
-                  {(() => {
-                    const finalMatch = bracket.finals.matches[0];
-                    const champion = finalMatch?.winner_seed ? entrantsBySeed[finalMatch.winner_seed] : null;
-                    return champion ? (
-                      <div class="champion-card">
-                        <span class="champion-trophy">&#127942;</span>
-                        <span class="champion-name">{champion.display_name}</span>
-                      </div>
-                    ) : null;
-                  })()}
                 </div>
+                {/* Champion */}
+                {(() => {
+                  const finalMatch = bracket.finals.matches[0];
+                  const champion = finalMatch?.winner_seed ? entrantsBySeed[finalMatch.winner_seed] : null;
+                  return champion ? (
+                    <div class="champion-card">
+                      <span class="champion-trophy">&#127942;</span>
+                      <span class="champion-name">{champion.display_name}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
               <div class="bracket-conn-col bracket-conn-col-right">
                 <div class="bracket-conn-item" />
@@ -444,11 +444,13 @@ const hasDraft = !!tournament.draft;
 
             {/* Right half: SF <- QF <- R1 (reversed order in DOM) */}
             <div class="bracket-half bracket-half-right">
-              {[...bracket.rightRounds].reverse().map((round: any, ri: number) => (
+              {(() => {
+                const reversed = [...bracket.rightRounds].reverse();
+                return reversed.map((round: any, ri: number) => (
                 <>
-                  {ri < bracket.rightRounds.length - 1 && (
+                  {ri > 0 && (
                     <div class="bracket-conn-col bracket-conn-col-right">
-                      {Array.from({ length: round.matches.length }).map((_: any) => (
+                      {Array.from({ length: reversed[ri - 1].matches.length }).map((_: any) => (
                         <div class="bracket-conn-item" />
                       ))}
                     </div>
@@ -509,7 +511,8 @@ const hasDraft = !!tournament.draft;
                     </div>
                   </div>
                 </>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         </div>
@@ -669,9 +672,9 @@ const hasDraft = !!tournament.draft;
   }
 
   .bracket-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
     padding-bottom: 1rem;
+    max-width: 100%;
   }
 
   .bracket-two-sided {
@@ -729,6 +732,7 @@ const hasDraft = !!tournament.draft;
 
   .bracket-match-wrap {
     padding: 0 0.5rem;
+    position: relative;
   }
 
   .bracket-match {
@@ -837,6 +841,10 @@ const hasDraft = !!tournament.draft;
     gap: 3px;
     justify-content: center;
     margin-top: 4px;
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    top: 100%;
   }
 
   .series-game {
@@ -961,6 +969,16 @@ const hasDraft = !!tournament.draft;
     background: linear-gradient(var(--border-default), var(--border-default)) left center / 50% 2px no-repeat;
   }
 
+  /* Center connectors: straight lines (1 match → 1 match, no merge) */
+  .bracket-center > .bracket-conn-col .bracket-conn-item::before,
+  .bracket-center > .bracket-conn-col .bracket-conn-item::after {
+    display: none;
+  }
+
+  .bracket-center > .bracket-conn-col .bracket-conn-item {
+    background: linear-gradient(var(--border-default), var(--border-default)) center / 100% 2px no-repeat;
+  }
+
   .bracket-champion .round-matches {
     justify-content: center;
   }
@@ -977,6 +995,7 @@ const hasDraft = !!tournament.draft;
 
   .champion-trophy {
     font-size: 1.2rem;
+    line-height: 1;
   }
 
   .champion-name {
@@ -1360,6 +1379,28 @@ const hasDraft = !!tournament.draft;
     }
   }
 </style>
+
+<script is:inline>
+  (function() {
+    var scroll = document.querySelector('.bracket-horizontal .bracket-scroll');
+    var bracket = scroll && scroll.querySelector('.bracket-two-sided');
+    if (!scroll || !bracket) return;
+    bracket.style.transformOrigin = 'top left';
+    function update() {
+      bracket.style.transform = 'none';
+      scroll.style.height = '';
+      var natural = bracket.scrollWidth;
+      var available = scroll.clientWidth;
+      if (natural === 0 || available === 0) return;
+      var scale = Math.min(1, available / natural);
+      if (scale < 1) {
+        bracket.style.transform = 'scale(' + scale + ')';
+      }
+      scroll.style.height = bracket.scrollHeight * scale + 'px';
+    }
+    new ResizeObserver(update).observe(scroll);
+  })();
+</script>
 
 <script is:inline define:vars={{ tournamentGames }}>
   var DECK_TYPE_FORMATS = {
