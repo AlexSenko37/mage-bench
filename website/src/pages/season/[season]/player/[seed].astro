@@ -1,0 +1,762 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import SeasonNav from '../../../../components/SeasonNav.astro';
+import { loadAllGames } from '../../../../utils/load-games';
+import fs from 'node:fs';
+import path from 'node:path';
+
+function assert(cond: any, msg: string): asserts cond {
+  if (!cond) throw new Error(msg);
+}
+
+export function getStaticPaths() {
+  const data = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'src', 'data', 'benchmark-results.json'), 'utf-8')
+  );
+  const seasons: number[] = data.availableSeasons ?? [];
+  const paths: any[] = [];
+
+  for (const s of seasons) {
+    const tp = path.join(process.cwd(), '..', 'data', 'tournaments', `season-${s}.json`);
+    if (!fs.existsSync(tp)) continue;
+    const tournament = JSON.parse(fs.readFileSync(tp, 'utf-8'));
+    for (const e of tournament.entrants) {
+      paths.push({ params: { season: String(s), seed: String(e.seed) } });
+    }
+  }
+  return paths;
+}
+
+const { season, seed } = Astro.params;
+const seasonNum = parseInt(season!, 10);
+const seedNum = parseInt(seed!, 10);
+
+const tournamentPath = path.join(process.cwd(), '..', 'data', 'tournaments', `season-${seasonNum}.json`);
+const tournament = JSON.parse(fs.readFileSync(tournamentPath, 'utf-8'));
+
+const personalitiesPath = path.join(process.cwd(), '..', 'puppeteer', 'personalities.json');
+let personalities: Record<string, any> = {};
+if (fs.existsSync(personalitiesPath)) {
+  personalities = JSON.parse(fs.readFileSync(personalitiesPath, 'utf-8'));
+}
+
+const entrantsBySeed: Record<number, any> = {};
+for (const e of tournament.entrants) {
+  entrantsBySeed[e.seed] = e;
+}
+
+const entrant = entrantsBySeed[seedNum];
+assert(entrant, `No entrant with seed ${seedNum}`);
+
+const personality = personalities[entrant.personality];
+const hasDraft = !!tournament.draft;
+
+function cleanThemeName(name: string): string {
+  return name.replace(/^J22 /, '');
+}
+
+// Parse decklist
+const deckInfo = tournament.draft?.decklists?.[String(seedNum)];
+const cards = deckInfo?.cards?.map((c: string) => {
+  const m = c.match(/^(\d+)\s+\[(\w+):(\w+)\]\s+(.+)$/);
+  if (!m) return { count: 1, set: '', num: '', name: c };
+  return { count: parseInt(m[1]), set: m[2], num: m[3], name: m[4] };
+}) || [];
+
+const totalCards = cards.reduce((s: number, c: any) => s + c.count, 0);
+
+// Build championship record: find all matches this player was in
+interface MatchRecord {
+  round: number;
+  roundName: string;
+  matchNum: number;
+  opponentSeed: number;
+  won: boolean;
+  gamesWon: number;
+  gamesLost: number;
+  gameIds: string[];
+}
+
+const matchRecords: MatchRecord[] = [];
+let eliminated = false;
+let bestRound = '';
+
+for (const round of (tournament.rounds || [])) {
+  for (const match of round.matches) {
+    if (match.seed_a !== seedNum && match.seed_b !== seedNum) continue;
+    const opponentSeed = match.seed_a === seedNum ? match.seed_b : match.seed_a;
+    const won = match.winner_seed === seedNum;
+    let gamesWon = 0;
+    let gamesLost = 0;
+    const gameIds: string[] = [];
+    for (const g of (match.games || [])) {
+      gameIds.push(g.game_id);
+      if (g.winner_seed === seedNum) gamesWon++;
+      else gamesLost++;
+    }
+    matchRecords.push({
+      round: round.round,
+      roundName: round.name,
+      matchNum: match.match,
+      opponentSeed,
+      won,
+      gamesWon,
+      gamesLost,
+      gameIds,
+    });
+    if (!won) {
+      eliminated = true;
+      bestRound = round.name;
+    }
+  }
+}
+
+if (!eliminated && matchRecords.length > 0) {
+  bestRound = 'Champion';
+}
+
+const totalGamesWon = matchRecords.reduce((s, m) => s + m.gamesWon, 0);
+const totalGamesLost = matchRecords.reduce((s, m) => s + m.gamesLost, 0);
+const matchesWon = matchRecords.filter(m => m.won).length;
+const matchesLost = matchRecords.filter(m => !m.won).length;
+
+// Load game metadata for enrichment
+const allGames = loadAllGames().filter(g => (g.season ?? 0) === seasonNum);
+const gameMeta: Record<string, any> = {};
+for (const g of allGames) {
+  gameMeta[g.id as string] = g;
+}
+
+// Build scryfall identifiers for the client-side visual decklist
+const scryfallIds = cards
+  .filter((c: any) => c.set && c.num)
+  .map((c: any) => ({ set: c.set.toLowerCase(), collector_number: c.num, count: c.count, name: c.name }));
+---
+
+<Base title={`${entrant.display_name} — Season ${seasonNum}`} wide>
+  <SeasonNav season={seasonNum} active="entrants" hasTournament={true} hasDraft={hasDraft} />
+
+  <div class="player-page">
+    <a href={`/season/${seasonNum}/entrants`} class="back-link">&larr; Back to entrants</a>
+
+    <div class="player-header">
+      <span class="player-seed">#{seedNum}</span>
+      <div class="player-header-info">
+        <h1 class="player-name">{entrant.display_name}</h1>
+        <div class="player-meta">
+          <span class="player-personality">{entrant.personality}</span>
+          <span class="player-model">{entrant.model}</span>
+        </div>
+      </div>
+    </div>
+
+    {personality?.prompt_suffix && (
+      <div class="personality-quote">"{personality.prompt_suffix}"</div>
+    )}
+
+    <div class="player-stats-bar">
+      <div class="stat-item">
+        <span class="stat-value">{entrant.combined_elo}</span>
+        <span class="stat-label">Elo</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{bestRound || 'N/A'}</span>
+        <span class="stat-label">Result</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{matchesWon}–{matchesLost}</span>
+        <span class="stat-label">Matches</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{totalGamesWon}–{totalGamesLost}</span>
+        <span class="stat-label">Games</span>
+      </div>
+    </div>
+
+    {matchRecords.length > 0 && (
+      <section class="section">
+        <h2 class="section-heading">Championship Run</h2>
+        <div class="matches-list">
+          {matchRecords.map((m) => {
+            const opponent = entrantsBySeed[m.opponentSeed];
+            return (
+              <div class:list={['match-row', { won: m.won, lost: !m.won }]}>
+                <div class="match-round">{m.roundName}</div>
+                <div class="match-details">
+                  <span class="match-result">{m.won ? 'W' : 'L'}</span>
+                  <span class="match-score">{m.gamesWon}–{m.gamesLost}</span>
+                  <span class="match-vs">vs</span>
+                  <a href={`/season/${seasonNum}/player/${m.opponentSeed}`} class="match-opponent">
+                    <span class="opponent-seed">#{m.opponentSeed}</span>
+                    {opponent?.display_name}
+                  </a>
+                </div>
+                <div class="match-games">
+                  {m.gameIds.map((gid, i) => {
+                    const meta = gameMeta[gid];
+                    return (
+                      <a href={`/games/${gid}`} class="game-link">
+                        Game {i + 1}
+                        {meta?.totalTurns && <span class="game-turns">{meta.totalTurns}t</span>}
+                      </a>
+                    );
+                  })}
+                  <a href={`/season/${seasonNum}/match/r${m.round}m${m.matchNum}`} class="match-detail-link">
+                    Match details &rarr;
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+  </div>
+
+  {deckInfo && (
+    <section class="deck-section">
+      <h2 class="section-heading">Decklist</h2>
+      <div class="deck-header">
+        <span class="deck-name">{deckInfo.half_decks.map((h: string) => cleanThemeName(h)).join(' + ')}</span>
+        <span class="deck-count">{totalCards} cards</span>
+      </div>
+
+      <div class="visual-deck" id="visual-deck">
+        <div class="deck-loading">Loading cards...</div>
+      </div>
+    </section>
+  )}
+
+</Base>
+
+<script is:inline define:vars={{ scryfallIds }}>
+  // Fetch card images from Scryfall and render visual deck grouped by mana value
+  (function() {
+    var deckEl = document.getElementById('visual-deck');
+    if (!deckEl || !scryfallIds || scryfallIds.length === 0) {
+      if (deckEl) deckEl.innerHTML = '';
+      return;
+    }
+
+    // Deduplicate identifiers for the API (same card from same set)
+    var seen = {};
+    var identifiers = [];
+    for (var i = 0; i < scryfallIds.length; i++) {
+      var key = scryfallIds[i].set + ':' + scryfallIds[i].collector_number;
+      if (!seen[key]) {
+        seen[key] = true;
+        identifiers.push({ set: scryfallIds[i].set, collector_number: scryfallIds[i].collector_number });
+      }
+    }
+
+    fetch('https://api.scryfall.com/cards/collection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifiers: identifiers }),
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.data) { deckEl.innerHTML = ''; return; }
+
+        // Build lookup: set:num -> { cmc, image_url }
+        var cardInfo = {};
+        for (var j = 0; j < data.data.length; j++) {
+          var card = data.data[j];
+          var k = card.set + ':' + card.collector_number;
+          var img = card.image_uris ? card.image_uris.normal : null;
+          if (!img && card.card_faces && card.card_faces[0]) {
+            img = card.card_faces[0].image_uris ? card.card_faces[0].image_uris.normal : null;
+          }
+          var typeLine = card.type_line || '';
+          var isLandType = typeLine.split('//')[0].indexOf('Land') !== -1;
+          cardInfo[k] = { cmc: card.cmc || 0, image: img, name: card.name, isLand: isLandType };
+        }
+
+        // Group cards by CMC; lands go in their own group keyed as 'L'
+        var groups = {};
+        for (var m = 0; m < scryfallIds.length; m++) {
+          var c = scryfallIds[m];
+          var ck = c.set + ':' + c.collector_number;
+          var info = cardInfo[ck];
+          if (!info || !info.image) continue;
+          var groupKey = info.isLand ? 'L' : String(Math.min(Math.floor(info.cmc), 7));
+          if (!groups[groupKey]) groups[groupKey] = [];
+          for (var n = 0; n < c.count; n++) {
+            groups[groupKey].push({ image: info.image, name: info.name, cmc: info.cmc });
+          }
+        }
+
+        // Sort within each group by cmc then name
+        for (var gk in groups) {
+          groups[gk].sort(function(a, b) {
+            if (a.cmc !== b.cmc) return a.cmc - b.cmc;
+            return a.name.localeCompare(b.name);
+          });
+        }
+
+        // Determine column order: 0,1,2,...,7, then Lands
+        var colKeys = [];
+        for (var x = 0; x <= 7; x++) {
+          if (groups[String(x)]) colKeys.push(String(x));
+        }
+        if (groups['L']) colKeys.push('L');
+
+        // For lands, deduplicate to show count badges instead of stacking 14 identical Forests
+        if (groups['L']) {
+          var landCounts = {};
+          var landOrder = [];
+          for (var li = 0; li < groups['L'].length; li++) {
+            var lc = groups['L'][li];
+            if (!landCounts[lc.image]) {
+              landCounts[lc.image] = { image: lc.image, name: lc.name, count: 0 };
+              landOrder.push(lc.image);
+            }
+            landCounts[lc.image].count++;
+          }
+          var deduped = [];
+          for (var lo = 0; lo < landOrder.length; lo++) {
+            deduped.push(landCounts[landOrder[lo]]);
+          }
+          groups['L'] = deduped;
+        }
+
+        // Render columns
+        var html = '';
+        var totalLands = 0;
+        for (var ci = 0; ci < colKeys.length; ci++) {
+          var colKey = colKeys[ci];
+          var colCards = groups[colKey];
+          var isLandCol = colKey === 'L';
+          if (isLandCol) {
+            for (var tl = 0; tl < colCards.length; tl++) totalLands += colCards[tl].count;
+          }
+          var colCount = isLandCol ? totalLands : colCards.length;
+          var label = isLandCol ? 'Lands' : (colKey === '7' ? '7+' : colKey);
+          html += '<div class="deck-col">';
+          html += '<div class="deck-col-header"><span class="deck-col-label">' + label + '</span>';
+          html += '<span class="deck-col-count">' + colCount + '</span></div>';
+          html += '<div class="deck-col-stack">';
+          for (var si = 0; si < colCards.length; si++) {
+            var sc = colCards[si];
+            var hasCount = isLandCol && sc.count > 1;
+            if (hasCount) {
+              html += '<div class="deck-col-card-wrap">';
+            }
+            html += '<img class="deck-col-card" src="' + sc.image + '" alt="' + sc.name.replace(/"/g, '&quot;') + '" loading="lazy" />';
+            if (hasCount) {
+              html += '<span class="card-count-badge">&times;' + sc.count + '</span>';
+              html += '</div>';
+            }
+          }
+          html += '</div></div>';
+        }
+        deckEl.innerHTML = html;
+      })
+      .catch(function() {
+        deckEl.innerHTML = '';
+      });
+  })();
+</script>
+
+<style>
+  .player-page {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1rem 0;
+  }
+
+  .back-link {
+    display: inline-block;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    transition: color 0.15s;
+  }
+
+  .back-link:hover {
+    color: var(--text-primary);
+  }
+
+  .player-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .player-seed {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-secondary);
+    flex-shrink: 0;
+  }
+
+  .player-header-info {
+    min-width: 0;
+  }
+
+  .player-name {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .player-meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    margin-top: 0.25rem;
+  }
+
+  .player-personality {
+    color: var(--accent-primary);
+    font-weight: 600;
+    text-transform: capitalize;
+    font-size: 0.9rem;
+  }
+
+  .player-model {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  .personality-quote {
+    color: var(--text-muted);
+    font-family: var(--font-prose);
+    font-style: italic;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border-default);
+  }
+
+  .player-stats-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .stat-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    background: var(--bg-surface);
+  }
+
+  .stat-item + .stat-item {
+    border-left: 1px solid var(--border-default);
+  }
+
+  .stat-value {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.15rem;
+  }
+
+  .section {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-heading {
+    font-family: var(--font-heading);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Championship run */
+  .matches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .match-row {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: border-color 0.15s;
+  }
+
+  .match-row.won {
+    border-left: 3px solid var(--color-success);
+  }
+
+  .match-row.lost {
+    border-left: 3px solid var(--color-danger);
+  }
+
+  .match-round {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+
+  .match-details {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .match-result {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 1rem;
+    min-width: 1.2rem;
+  }
+
+  .match-row.won .match-result {
+    color: var(--color-success);
+  }
+
+  .match-row.lost .match-result {
+    color: var(--color-danger);
+  }
+
+  .match-score {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .match-vs {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .match-opponent {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: color 0.15s;
+  }
+
+  .match-opponent:hover {
+    color: var(--accent-primary);
+  }
+
+  .opponent-seed {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+  }
+
+  .match-games {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .game-link {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.15rem 0.5rem;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .game-link:hover {
+    color: var(--text-primary);
+    background: var(--border-default);
+  }
+
+  .game-turns {
+    color: var(--text-muted);
+    margin-left: 0.25rem;
+  }
+
+  .match-detail-link {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .match-detail-link:hover {
+    color: var(--accent-primary);
+  }
+
+  /* Decklist */
+  .deck-section {
+    max-width: 64rem;
+    margin: 0 auto 2.5rem;
+  }
+
+  .deck-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .deck-name {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--accent-secondary);
+  }
+
+  .deck-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .deck-loading {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 2rem 0;
+  }
+
+  /* Visual deck - card images stacked by CMC */
+  :global(.visual-deck) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  :global(.deck-col) {
+    flex: 1 1 0;
+    min-width: 90px;
+    max-width: 160px;
+  }
+
+  :global(.deck-col-header) {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-bottom: 0.4rem;
+    padding-left: 0.15rem;
+  }
+
+  :global(.deck-col-label) {
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+  }
+
+  :global(.deck-col-count) {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  :global(.deck-col-stack) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.deck-col-card) {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    display: block;
+    /* Overlap: hide ~77% of card height. Card aspect ratio is 488:680 ≈ 1:1.393
+       So 77% of height = 77% × 1.393 × width ≈ 107% of width */
+    margin-top: -107%;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  :global(.deck-col-card:first-child) {
+    margin-top: 0;
+  }
+
+  :global(.deck-col-card:hover) {
+    transform: scale(2.2);
+    transform-origin: top center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    border-radius: 8px;
+  }
+
+  :global(.deck-col-card-wrap) {
+    position: relative;
+  }
+
+  :global(.deck-col-card-wrap) :global(.deck-col-card) {
+    margin-top: 0;
+  }
+
+  :global(.deck-col-card-wrap:hover) {
+    z-index: 100;
+  }
+
+  :global(.deck-col-card-wrap + .deck-col-card-wrap),
+  :global(.deck-col-card + .deck-col-card-wrap),
+  :global(.deck-col-card-wrap + .deck-col-card) {
+    margin-top: -107%;
+  }
+
+  :global(.card-count-badge) {
+    position: absolute;
+    top: 4%;
+    right: 5%;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    line-height: 1.2;
+    z-index: 5;
+  }
+
+  @media (max-width: 600px) {
+    .player-header {
+      gap: 0.75rem;
+    }
+
+    .player-seed {
+      font-size: 1.5rem;
+    }
+
+    .player-name {
+      font-size: 1.2rem;
+    }
+
+    .stat-value {
+      font-size: 0.95rem;
+    }
+
+    :global(.deck-col) {
+      min-width: 70px;
+      max-width: 120px;
+    }
+  }
+</style>
