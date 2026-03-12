@@ -1,8 +1,15 @@
+import asyncio
+
+import pytest
+
 from tests.golden_helpers import (
+    _CapturedPilotRequest,
     _is_short_id,
     _json_diff,
     _normalize_embedded_json,
     _normalize_prompt_for_golden,
+    _pilot_script_from_replay_script,
+    _ScriptedChatCompletions,
     _strip_volatile,
 )
 
@@ -81,13 +88,51 @@ def test_normalize_prompt_preserves_game_seq():
     assert normalized[0]["content"] == {"game_seq": 77, "id": "_", "nested": {"game_seq": 12}}
 
 
+def test_pilot_script_from_replay_script_drops_initial_prefetch_call():
+    script = [
+        {"name": "pass_priority", "arguments": {}},
+        {"name": "choose_action", "arguments": {"choice": "0"}},
+        {"name": "get_game_state", "arguments": {}},
+    ]
+
+    assert _pilot_script_from_replay_script(script) == script[1:]
+
+
+def test_pilot_script_from_replay_script_requires_initial_plain_pass_priority():
+    with pytest.raises(AssertionError, match="must start with pass_priority"):
+        _pilot_script_from_replay_script([{"name": "get_game_state", "arguments": {}}])
+
+    with pytest.raises(AssertionError, match="pass_priority\\(\\{\\}\\)"):
+        _pilot_script_from_replay_script([{"name": "pass_priority", "arguments": {"until": "my_turn"}}])
+
+
+@pytest.mark.asyncio
+async def test_scripted_chat_completion_captures_terminal_request():
+    capture = _CapturedPilotRequest()
+    completions = _ScriptedChatCompletions([{"name": "choose_action", "arguments": {"choice": "0"}}], capture)
+
+    first_messages = [{"role": "user", "content": "before scripted tool call"}]
+    second_messages = [{"role": "user", "content": "after scripted tool call"}]
+
+    response = await completions.create(messages=first_messages)
+    assert response.choices[0].message.tool_calls[0].function.name == "choose_action"
+    assert capture.last_messages == first_messages
+    assert capture.post_script_messages is None
+
+    with pytest.raises(asyncio.CancelledError):
+        await completions.create(messages=second_messages)
+
+    assert capture.last_messages == second_messages
+    assert capture.post_script_messages == second_messages
+
+
 def test_strip_volatile_sorts_llm_events_by_seq_player():
     data = {
         "llmEvents": [
-            {"ts": "2025-01-01T00:00:00.000002", "player": "B", "seq": 2, "type": "llm_response"},
-            {"ts": "2025-01-01T00:00:00.000003", "player": "A", "seq": 2, "type": "llm_response"},
-            {"ts": "2025-01-01T00:00:00.000001", "player": "A", "seq": 1, "type": "game_start"},
-            {"ts": "2025-01-01T00:00:00.000000", "player": "B", "seq": 1, "type": "game_start"},
+            {"ts": "2025-01-01T00:00:00.000002", "latencyMs": 17, "player": "B", "seq": 2, "type": "llm_response"},
+            {"ts": "2025-01-01T00:00:00.000003", "latencyMs": 9, "player": "A", "seq": 2, "type": "llm_response"},
+            {"ts": "2025-01-01T00:00:00.000001", "latencyMs": 44, "player": "A", "seq": 1, "type": "game_start"},
+            {"ts": "2025-01-01T00:00:00.000000", "latencyMs": 3, "player": "B", "seq": 1, "type": "game_start"},
         ],
         "llmTrace": [
             {"ts": "2025-01-01T00:00:00.000001", "player": "B", "seq": 1},
@@ -97,9 +142,10 @@ def test_strip_volatile_sorts_llm_events_by_seq_player():
 
     _strip_volatile(data)
 
-    # Sorted by (seq, player); ts stripped before sorting (it's volatile)
+    # Sorted by (seq, player); wall-clock timing stripped before sorting.
     events = data["llmEvents"]
     assert all("ts" not in e for e in events)
+    assert all("latencyMs" not in e for e in events)
     assert [(e["player"], e["seq"]) for e in events] == [
         ("A", 1),
         ("B", 1),
