@@ -41,6 +41,30 @@ window.GameList = {
       return DECK_TYPE_FORMATS[deckType] || "commander";
     }
 
+    function setCountedLabel(el, labelText, count) {
+      el.textContent = "";
+      el.appendChild(document.createTextNode(labelText + " "));
+      var countSpan = document.createElement("span");
+      countSpan.className = "tab-count";
+      countSpan.textContent = "(" + count + ")";
+      el.appendChild(countSpan);
+    }
+
+    function setGameReplayHref(el, gameId) {
+      if (typeof gameId !== "string" || gameId.length === 0) {
+        throw new Error("Game is missing a valid id");
+      }
+      el.setAttribute("href", "/games/" + encodeURIComponent(gameId));
+    }
+
+    function parseHttpUrl(rawUrl, fieldName) {
+      var parsed = new URL(rawUrl, window.location.origin);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new Error(fieldName + " must use http or https, got " + parsed.protocol);
+      }
+      return parsed.toString();
+    }
+
     function getFilters() {
       var params = new URLSearchParams(window.location.search);
       return {
@@ -106,7 +130,7 @@ window.GameList = {
         chip.textContent = "Season " + filters.season;
         var btn = document.createElement("button");
         btn.className = "filter-chip-remove";
-        btn.innerHTML = "&times;";
+        btn.textContent = "×";
         btn.onclick = function () {
           var f = getFilters();
           f.season = "";
@@ -123,7 +147,7 @@ window.GameList = {
         formatChip.textContent = FORMAT_DISPLAY[filters.format] || filters.format;
         const formatBtn = document.createElement("button");
         formatBtn.className = "filter-chip-remove";
-        formatBtn.innerHTML = "&times;";
+        formatBtn.textContent = "×";
         formatBtn.onclick = function () {
           var f = getFilters();
           f.format = "";
@@ -144,7 +168,7 @@ window.GameList = {
         modelChip.textContent = modelDisplay;
         const modelBtn = document.createElement("button");
         modelBtn.className = "filter-chip-remove";
-        modelBtn.innerHTML = "&times;";
+        modelBtn.textContent = "×";
         modelBtn.onclick = function () {
           var f = getFilters();
           f.model = "";
@@ -176,7 +200,7 @@ window.GameList = {
 
     function renderGameCard(game) {
       var a = document.createElement("a");
-      a.href = "/games/" + game.id;
+      setGameReplayHref(a, game.id);
       a.className = "game-card";
 
       var ts = game.timestamp || "";
@@ -345,7 +369,7 @@ window.GameList = {
       }
       if (game.youtubeUrl) {
         var ytLink = document.createElement("a");
-        ytLink.href = game.youtubeUrl;
+        ytLink.href = parseHttpUrl(game.youtubeUrl, "youtubeUrl");
         ytLink.target = "_blank";
         ytLink.rel = "noopener";
         ytLink.className = "yt-link";
@@ -398,7 +422,7 @@ window.GameList = {
         var btn = document.createElement("button");
         btn.className = "season-filter-btn" + (filters.season === String(s) ? " active" : "");
         var seasonLabel = "Season " + s;
-        btn.innerHTML = seasonLabel + ' <span class="tab-count">(' + counts[s] + ")</span>";
+        setCountedLabel(btn, seasonLabel, counts[s]);
         btn.dataset.season = String(s);
         btn.onclick = function () {
           var f = getFilters(); f.season = String(s); setFilters(f); renderAll();
@@ -435,7 +459,7 @@ window.GameList = {
       activeFormats.forEach(function (fmt) {
         var btn = document.createElement("button");
         btn.className = "format-tab" + (filters.format === fmt ? " active" : "");
-        btn.innerHTML = (FORMAT_DISPLAY[fmt] || fmt) + ' <span class="tab-count">(' + counts[fmt] + ")</span>";
+        setCountedLabel(btn, FORMAT_DISPLAY[fmt] || fmt, counts[fmt]);
         btn.onclick = function () {
           var f = getFilters(); f.format = fmt; setFilters(f); renderAll();
         };
@@ -493,7 +517,7 @@ window.GameList = {
         var slash = displayName.indexOf("/");
         if (slash !== -1) displayName = displayName.substring(slash + 1);
         if (meta.effort) displayName += " (" + meta.effort + ")";
-        btn.innerHTML = displayName + ' <span class="tab-count">(' + counts[key] + ")</span>";
+        setCountedLabel(btn, displayName, counts[key]);
         btn.onclick = function () {
           var f = getFilters();
           if (f.model === meta.model && (f.effort || "") === meta.effort) {
