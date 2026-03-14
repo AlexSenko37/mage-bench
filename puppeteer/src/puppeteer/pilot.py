@@ -20,8 +20,10 @@ from puppeteer.config import load_prompts
 from puppeteer.decision_renderer import BASIC_LAND_NAMES, render_decision
 from puppeteer.game_log import GameLogWriter
 from puppeteer.llm_cost import (
-    DEFAULT_BASE_URL,
+    DEFAULT_LLM_PROVIDER,
+    SUPPORTED_LLM_PROVIDERS,
     get_model_price,
+    llm_base_url,
     load_prices,
     required_api_key_env,
     write_cost_file,
@@ -1352,7 +1354,7 @@ async def run_pilot(
     deck_path: Path | None = None,
     api_key: str = "",
     model: str = DEFAULT_MODEL,
-    base_url: str = DEFAULT_BASE_URL,
+    provider: str = DEFAULT_LLM_PROVIDER,
     system_prompt: str = "",
     game_dir: Path | None = None,
     max_interactions_per_turn: int | None = None,
@@ -1363,9 +1365,10 @@ async def run_pilot(
     cache_control: dict | None = None,
 ) -> None:
     """Run the pilot client."""
+    base_url = llm_base_url(provider)
     logger.info("[pilot] Starting for %s@%s:%s", username, server, port)
     logger.info("[pilot] Model: %s", model)
-    logger.info("[pilot] Base URL: %s", base_url)
+    logger.info("[pilot] Provider: %s", provider)
     if reasoning_effort:
         logger.info("[pilot] Reasoning effort: %s", reasoning_effort)
     if tools is not None:
@@ -1376,6 +1379,11 @@ async def run_pilot(
         logger.info("[pilot] Provider order: %s", provider_order)
     if cache_control:
         logger.debug("[pilot] Prompt cache_control: %s", cache_control)
+    if provider != DEFAULT_LLM_PROVIDER:
+        assert ignore_providers is None, (
+            f"ignore_providers requires provider={DEFAULT_LLM_PROVIDER!r}, got {provider!r}"
+        )
+        assert provider_order is None, f"provider_order requires provider={DEFAULT_LLM_PROVIDER!r}, got {provider!r}"
 
     # Initialize OpenAI-compatible client
     llm_client = AsyncOpenAI(
@@ -1482,9 +1490,9 @@ def main() -> int:
     parser.add_argument("--username", default="Pilot", help="Player username")
     parser.add_argument("--project-root", type=Path, help="Project root directory")
     parser.add_argument("--deck", type=Path, help="Path to deck file (.dck)")
-    parser.add_argument("--api-key", default="", help="API key (prefer OPENROUTER_API_KEY env var)")
+    parser.add_argument("--api-key", default="", help="API key (prefer provider-specific env vars)")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"LLM model (default: {DEFAULT_MODEL})")
-    parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help=f"API base URL (default: {DEFAULT_BASE_URL})")
+    parser.add_argument("--provider", choices=SUPPORTED_LLM_PROVIDERS, default=DEFAULT_LLM_PROVIDER)
     parser.add_argument("--system-prompt", default="", help="Custom system prompt")
     parser.add_argument("--game-dir", type=Path, help="Game directory for cost file output")
     parser.add_argument("--max-interactions-per-turn", type=int, help="Loop detection threshold (default 25)")
@@ -1505,11 +1513,14 @@ def main() -> int:
         elif project_root.name == "puppeteer":
             project_root = project_root.parent
 
-    # API key: CLI arg > provider-specific env var based on base URL.
-    required_key_env = required_api_key_env(args.base_url)
-    api_key = args.api_key or os.environ.get(required_key_env, "")
+    # API key: CLI arg > provider-specific env var based on provider.
+    api_key = args.api_key
+    required_key_env = ""
     if not api_key.strip():
-        logger.error("[pilot] Missing API key for %s", args.base_url)
+        required_key_env = required_api_key_env(args.provider)
+        api_key = os.environ.get(required_key_env, "")
+    if not api_key.strip():
+        logger.error("[pilot] Missing API key for provider %s", args.provider)
         logger.error("[pilot] Set %s or pass --api-key.", required_key_env)
         return 2
 
@@ -1524,6 +1535,13 @@ def main() -> int:
     ignore_providers = args.ignore_providers.split(",") if args.ignore_providers else None
     provider_order = args.provider_order.split(",") if args.provider_order else None
     cache_control = json.loads(args.cache_control) if args.cache_control else None
+    if args.provider != DEFAULT_LLM_PROVIDER:
+        if ignore_providers:
+            logger.error("[pilot] --ignore-providers requires --provider=%s", DEFAULT_LLM_PROVIDER)
+            return 2
+        if provider_order:
+            logger.error("[pilot] --provider-order requires --provider=%s", DEFAULT_LLM_PROVIDER)
+            return 2
 
     try:
         asyncio.run(
@@ -1535,7 +1553,7 @@ def main() -> int:
                 deck_path=args.deck,
                 api_key=api_key,
                 model=args.model,
-                base_url=args.base_url,
+                provider=args.provider,
                 system_prompt=system_prompt,
                 game_dir=args.game_dir,
                 prices=prices,
