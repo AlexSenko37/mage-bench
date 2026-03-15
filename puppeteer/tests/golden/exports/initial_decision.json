@@ -132,6 +132,7 @@
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 49,
+  "id": "initial_decision",
   "llmEvents": [
     {
       "availableTools": [

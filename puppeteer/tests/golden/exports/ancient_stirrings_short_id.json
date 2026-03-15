@@ -1075,6 +1075,7 @@
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 49,
+  "id": "ancient_stirrings",
   "llmEvents": [
     {
       "availableTools": [

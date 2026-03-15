@@ -1061,6 +1061,7 @@
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 49,
+  "id": "emancipation_angel_trigger",
   "llmEvents": [
     {
       "availableTools": [

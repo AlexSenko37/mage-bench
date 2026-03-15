@@ -2529,6 +2529,7 @@
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 49,
+  "id": "dark_depths_combo",
   "llmEvents": [
     {
       "availableTools": [

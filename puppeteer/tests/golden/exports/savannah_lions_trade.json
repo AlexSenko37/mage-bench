@@ -1316,6 +1316,7 @@
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 49,
+  "id": "savannah_lions_trade",
   "llmEvents": [
     {
       "availableTools": [
