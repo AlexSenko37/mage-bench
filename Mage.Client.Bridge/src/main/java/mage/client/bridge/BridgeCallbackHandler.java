@@ -4952,7 +4952,7 @@ public class BridgeCallbackHandler {
                     break;
 
                 case END_GAME_INFO:
-                    logger.info("[" + client.getUsername() + "] End game info received");
+                    handleEndGameInfo(objectId);
                     break;
 
                 case CHATMESSAGE:
@@ -5886,6 +5886,24 @@ public class BridgeCallbackHandler {
         session.sendPlayerString(gameId, result);
     }
 
+    /**
+     * Shared cleanup for game-end handlers: remove from active tracking,
+     * wake action waiters, and leave the game chat.
+     *
+     * @return true if the game was still in activeGames (i.e. not yet cleaned up)
+     */
+    private boolean cleanupGame(UUID gameId) {
+        boolean wasActive = activeGames.remove(gameId) != null;
+        synchronized (actionLock) {
+            actionLock.notifyAll();
+        }
+        UUID chatId = gameChatIds.remove(gameId);
+        if (chatId != null) {
+            session.leaveChat(chatId);
+        }
+        return wasActive;
+    }
+
     private void handleGameOver(UUID gameId, ClientCallback callback) {
         GameClientMessage message = (GameClientMessage) callback.getData();
 
@@ -5904,14 +5922,7 @@ public class BridgeCallbackHandler {
         // Do not pull bridge events synchronously from the callback thread.
         // The server caches them during removeGame(), and currentPlayerId lets
         // postgame get_game_history calls fetch them after activeGames clears.
-        activeGames.remove(gameId);
-        synchronized (actionLock) {
-            actionLock.notifyAll();
-        }
-        UUID chatId = gameChatIds.remove(gameId);
-        if (chatId != null) {
-            session.leaveChat(chatId);
-        }
+        cleanupGame(gameId);
         logger.info("[" + client.getUsername() + "] Game over: " + message.getMessage());
 
         if (keepAliveAfterGame) {
@@ -5927,6 +5938,38 @@ public class BridgeCallbackHandler {
             client.stop();
         } else if (activeGames.isEmpty()) {
             logger.info("[" + client.getUsername() + "] No more active games, stopping client");
+            client.stop();
+        }
+    }
+
+    /**
+     * Safety net for dropped GAME_OVER callbacks.
+     *
+     * The server dispatches END_GAME_INFO after GAME_OVER (via
+     * GameController.endGame → tableManager.endGame → match.endGame →
+     * fireGameEndInfo).  In the normal case handleGameOver() already cleaned
+     * up and every operation below is an idempotent no-op.
+     *
+     * If GAME_OVER was lost (Session lock timeout, callback delivery failure),
+     * this ensures the bridge still detects the game ended instead of spinning
+     * in passPriority indefinitely.
+     */
+    private void handleEndGameInfo(UUID gameId) {
+        boolean wasActive = cleanupGame(gameId);
+        if (!wasActive) {
+            logger.info("[" + client.getUsername() + "] End game info received for game " + gameId);
+            return;
+        }
+        // GAME_OVER was missed — perform the shutdown that handleGameOver would have done.
+        logger.warn("[" + client.getUsername() + "] END_GAME_INFO cleaning up game " + gameId
+            + " (GAME_OVER was likely dropped)");
+        if (keepAliveAfterGame) {
+            gameFinishedLatch.countDown();
+        } else if (mcpMode) {
+            logger.info("[" + client.getUsername() + "] END_GAME_INFO stopping client (MCP mode, missed GAME_OVER)");
+            client.stop();
+        } else if (activeGames.isEmpty() && gameEverStarted) {
+            logger.info("[" + client.getUsername() + "] END_GAME_INFO stopping client (no more active games, missed GAME_OVER)");
             client.stop();
         }
     }
