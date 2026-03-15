@@ -717,10 +717,17 @@ class BridgeManager:
         if self.is_healthy():
             return
         print(f"{self._label.title()} unhealthy, restarting JVM...", flush=True)
-        self.stop()
-        time.sleep(self._SERVER_CLEANUP_DELAY)
-        with timed_phase("session", f"{self._label}_jvm_restart"):
-            self.start()
+        self.restart()
+
+    def restart(self) -> None:
+        """Restart the bridge JVM and validate that the next game starts cleanly."""
+        try:
+            self.stop()
+            time.sleep(self._SERVER_CLEANUP_DELAY)
+            with timed_phase("session", f"{self._label}_jvm_restart"):
+                self.start()
+        except (AssertionError, OSError, RuntimeError, subprocess.SubprocessError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"{self._label.title()} restart failed") from exc
         self._needs_reconnect_validation = True
 
 
@@ -1255,6 +1262,8 @@ def run_golden_scenario(
     bridge_a_log_offsets = bridge_a.capture_log_offsets()
     bridge_b_log_offsets = bridge_b.capture_log_offsets()
 
+    replay_errors: list[tuple[str, Exception]] = []
+
     try:
         with timed_phase(golden_name, "spectator_command"):
             table_id = _send_spectator_command(
@@ -1313,7 +1322,6 @@ def run_golden_scenario(
 
         # Run player A's scripted production pilot and player B concurrently
         prompt_a: list[dict] | None = None
-        replay_errors: list[tuple[str, Exception]] = []
 
         def _replay_a() -> None:
             nonlocal prompt_a
@@ -1392,15 +1400,59 @@ def run_golden_scenario(
 
     finally:
         # Defensive concede on both bridges so they're ready for the next test.
-        # _run_pilot_on_bridge already concedes on success, but if it failed
-        # mid-script, we need this safety net.
-        for session in [session_a, session_b]:
+        # If a replay worker or cleanup RPC already left a keepAlive bridge in a
+        # terminal state, restart it so the cleanup path does not mask the real
+        # scenario outcome or poison the next test.
+        primary_exc = sys.exc_info()[1]
+        cleanup_restarts: list[BridgeManager] = []
+        cleanup_restart_failures: list[tuple[str, RuntimeError]] = []
+        replay_error_by_label = {label: exc for label, exc in replay_errors}
+        for label, session, bridge in [
+            ("player_a", session_a, bridge_a),
+            ("player_b", session_b, bridge_b),
+        ]:
+            replay_exc = replay_error_by_label.get(label)
+            if replay_exc is not None:
+                print(
+                    "  "
+                    f"[{golden_name}] Skipping defensive concede for {label}: "
+                    f"replay already failed with {replay_exc}",
+                    flush=True,
+                )
+                cleanup_restarts.append(bridge)
+                continue
             try:
                 session.call_tool("concede", timeout=DEFENSIVE_CONCEDE_TIMEOUT_SECONDS)
-            except RuntimeError:
-                pass
+            except RuntimeError as exc:
+                print(
+                    f"  [{golden_name}] Cleanup concede failed for {label}: {exc}. Restarting {bridge._label}.",
+                    flush=True,
+                )
+                cleanup_restarts.append(bridge)
+
         bridge_a.write_test_log_snapshots(golden_name, bridge_a_log_offsets)
         bridge_b.write_test_log_snapshots(golden_name, bridge_b_log_offsets)
+
+        for bridge in cleanup_restarts:
+            try:
+                bridge.restart()
+            except RuntimeError as exc:
+                print(
+                    f"  [{golden_name}] Restart failed for {bridge._label}: {exc}",
+                    flush=True,
+                )
+                cleanup_restart_failures.append((bridge._label, exc))
+
+        if cleanup_restart_failures:
+            details = "; ".join(f"{label}: {exc}" for label, exc in cleanup_restart_failures)
+            if primary_exc is not None:
+                primary_exc.add_note(
+                    f"Cleanup restart failures while preserving the primary scenario exception: {details}"
+                )
+            else:
+                raise RuntimeError(
+                    f"Golden cleanup restart failed after scenario success: {details}"
+                ) from cleanup_restart_failures[0][1]
 
 
 def _write_game_meta(
