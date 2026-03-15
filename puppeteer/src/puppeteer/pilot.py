@@ -218,6 +218,15 @@ def _build_pilot_decision(data: dict) -> dict:
     if pilot_ctx:
         decision["pilotContext"] = pilot_ctx
 
+    # Multi-amount items (e.g. combat damage distribution targets)
+    items = data.get("items")
+    if items:
+        decision["items"] = items
+        if "total_min" in data:
+            decision["totalMin"] = data["total_min"]
+        if "total_max" in data:
+            decision["totalMax"] = data["total_max"]
+
     return decision
 
 
