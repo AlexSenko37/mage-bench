@@ -254,6 +254,41 @@
 
   // ── DOM construction ──
 
+  /** Hydrate an already-prerendered viewer skeleton (built at SSR time). */
+  function hydrateDOM(container) {
+    return {
+      // Transport
+      btnPrev: container.querySelector("#btn-prev"),
+      btnNext: container.querySelector("#btn-next"),
+      btnAuto: container.querySelector("#btn-auto"),
+      slider: container.querySelector("#slider"),
+      snapshotJump: container.querySelector("#snapshot-jump"),
+      snapTotal: container.querySelector(".snap-total"),
+      // Display
+      playersGrid: container.querySelector("#players-grid"),
+      stackSection: container.querySelector("#stack-section"),
+      stackCards: container.querySelector("#stack-cards"),
+      actionList: container.querySelector("#action-list"),
+      gameLeft: container.querySelector("#game-left"),
+      // Preview
+      previewEls: {
+        container: container.querySelector("#card-preview"),
+        image: container.querySelector("#preview-image"),
+        name: container.querySelector("#preview-name"),
+        cost: container.querySelector("#preview-cost"),
+        type: container.querySelector("#preview-type"),
+        stats: container.querySelector("#preview-stats"),
+        rules: container.querySelector("#preview-rules"),
+      },
+      // Filters
+      filterLlmEl: container.querySelector("#filter-llm"),
+      filterGameEl: container.querySelector("#filter-game"),
+      filterChatEl: container.querySelector("#filter-chat"),
+      filterAnnotationsEl: container.querySelector("#filter-annotations"),
+      sliderContainer: container.querySelector("#slider-container"),
+    };
+  }
+
   function buildDOM(container) {
     container.innerHTML = "";
 
@@ -351,9 +386,11 @@
     options = options || {};
     var initialSnapshot = options.initialSnapshot || 0;
     var onSnapshotChange = options.onSnapshotChange || null;
+    var precomputedCosts = options.runningCostBySnapshot || null;
 
-    // Build DOM
-    var dom = buildDOM(container);
+    // Detect prerendered DOM (built at SSR time) vs fresh construction
+    var prerendered = container.querySelector("#action-list[data-prerendered]") != null;
+    var dom = prerendered ? hydrateDOM(container) : buildDOM(container);
 
     // State
     var currentIndex = 0;
@@ -644,6 +681,44 @@
       return div;
     }
 
+    // ── Prerendered log: show/hide entries instead of rebuilding ──
+
+    function updateLogVisibility(index) {
+      var entries = dom.actionList.children;
+      var prevSeq = index > 0 ? game.snapshots[index - 1].seq : 0;
+
+      for (var i = 0; i < entries.length; i++) {
+        var el = entries[i];
+        var firstSnap = parseInt(el.dataset.firstSnap || "0", 10);
+        var kind = el.dataset.kind || "";
+
+        var visible = firstSnap <= index;
+        if (visible && kind === "llm" && !filterLlm) visible = false;
+        if (visible && kind === "game" && !filterGame) visible = false;
+        if (visible && kind === "chat" && !filterChat) visible = false;
+        if (visible && kind === "annotation" && !filterAnnotations) visible = false;
+        if (visible && (kind === "turn-sep" || kind === "phase-sep") && !filterGame) visible = false;
+
+        el.classList.toggle("hidden", !visible);
+
+        // Light styling for game actions between prevSnap and curSnap
+        if (kind === "game" && el.dataset.seq) {
+          var seq = parseInt(el.dataset.seq, 10);
+          el.style.color = (seq > prevSeq) ? "#e0e0f0" : "";
+        }
+      }
+
+      // Sync height and auto-scroll
+      setTimeout(function () {
+        var leftHeight = dom.gameLeft.offsetHeight;
+        var headerHeight = dom.actionList.parentElement.offsetHeight - dom.actionList.offsetHeight;
+        var targetHeight = Math.max(400, leftHeight - headerHeight);
+        dom.actionList.style.maxHeight = targetHeight + "px";
+        dom.actionList.style.minHeight = targetHeight + "px";
+        dom.actionList.scrollTop = dom.actionList.scrollHeight;
+      }, 50);
+    }
+
     function renderAnnotationMarkers(annotations, totalSnapshots) {
       var existing = dom.sliderContainer.querySelector(".annotation-markers");
       if (existing) existing.remove();
@@ -695,19 +770,27 @@
       var diffs = R.computeDiff(prevSnap, snap);
 
       // Compute running cost up to current snapshot
-      if (game.llmEvents && game.llmEvents.length > 0) {
+      if (precomputedCosts && precomputedCosts[index]) {
+        // Use precomputed costs (actions/llmEvents stripped from inline JSON)
+        var runningCost = precomputedCosts[index];
+        (game.players || []).forEach(function (p) {
+          if (playerMeta[p.name]) {
+            playerMeta[p.name].totalCostUsd = runningCost[p.name] || 0;
+          }
+        });
+      } else if (game.llmEvents && game.llmEvents.length > 0) {
         var costNextSnap = index < game.snapshots.length - 1 ? game.snapshots[index + 1] : null;
         var costCutoffTs = costNextSnap ? (costNextSnap.ts || "") : "";
-        var runningCost = {};
+        var runningCostLegacy = {};
         game.llmEvents.forEach(function (e) {
           if (costCutoffTs && e.ts >= costCutoffTs) return;
           if (e.costUsd && e.player) {
-            runningCost[e.player] = (runningCost[e.player] || 0) + e.costUsd;
+            runningCostLegacy[e.player] = (runningCostLegacy[e.player] || 0) + e.costUsd;
           }
         });
         (game.players || []).forEach(function (p) {
           if (playerMeta[p.name]) {
-            playerMeta[p.name].totalCostUsd = runningCost[p.name] || 0;
+            playerMeta[p.name].totalCostUsd = runningCostLegacy[p.name] || 0;
           }
         });
       }
@@ -744,7 +827,12 @@
       // Target arrows from stack items to their targets
       R.drawTargetArrows(dom.gameLeft);
 
-      // Action log: show full accumulated log up to current snapshot
+      // Action log
+      if (prerendered) {
+        updateLogVisibility(index);
+      } else {
+
+      // Legacy path: rebuild action log from scratch
       dom.actionList.innerHTML = "";
       var prevSeq = index > 0 ? game.snapshots[index - 1].seq : 0;
       var curSeq = snap.seq;
@@ -992,6 +1080,8 @@
         dom.actionList.style.minHeight = targetHeight + "px";
         dom.actionList.scrollTop = dom.actionList.scrollHeight;
       }, 50);
+
+      } // end legacy action log path
 
       // Update transport
       dom.slider.value = String(index);
