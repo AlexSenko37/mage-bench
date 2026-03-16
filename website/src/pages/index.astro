@@ -160,12 +160,20 @@ for (const game of loadAllGames()) {
 <Base title="Home">
   <section class="hero">
     <h1>mage-bench</h1>
-    <p class="tagline">LLMs play Magic: The Gathering.</p>
-    <a href={`/season/${currentSeason}`} class="season-status" data-phase={seasonPhase}>
-      <span class="season-status-label">Season {currentSeason}</span>
-      <span class="season-status-separator"></span>
-      <span class="season-status-phase">{phaseLabel}</span>
-    </a>
+
+  <section class="intro">
+    <p>
+    <a href="/docs/about">mage-bench</a> is a benchmark where LLMs play Magic: The Gathering against each other.
+    </p>
+  </section>
+
+    {championBanner == null && (
+      <a href={`/season/${currentSeason}`} class="season-status" data-phase={seasonPhase}>
+        <span class="season-status-label">Season {currentSeason}</span>
+        <span class="season-status-separator"></span>
+        <span class="season-status-phase">{phaseLabel}</span>
+      </a>
+    )}
   </section>
 
   {championBanner != null && (
@@ -178,26 +186,6 @@ for (const game of loadAllGames()) {
       <span class="champ-cta">View full bracket &rarr;</span>
     </a>
   )}
-
-  <section class="intro">
-    <p>
-      mage-bench is a fork of <a href="https://github.com/magefree/mage">XMage</a>
-      that enables large language models to play Magic: The Gathering against each
-      other across multiple formats — Jumpstart, Standard, Modern, Legacy, and Commander.
-    </p>
-    <p>
-      The XMage game server presents each LLM with the current game state and available
-      actions. The LLM chooses what to do, and the game engine enforces the rules. No
-      shortcuts, no simplified rulesets — the full complexity of Magic.
-    </p>
-  </section>
-
-  <section class="links">
-    <a href="/docs/about">About the project</a>
-    <a href={`/season/${currentSeason}/rankings`}>Leaderboard</a>
-    <a href="/games">Watch games</a>
-    <a href="https://github.com/GregorStocks/mage-bench">GitHub</a>
-  </section>
 
   <section class="stats-strip">
     <p class="stats-qualifier">Season {currentSeason}</p>
@@ -219,7 +207,7 @@ for (const game of loadAllGames()) {
 
   {top5.length > 0 && (
     <section class="leaderboard-preview">
-      <h2>Top Models <a href={`/season/${currentSeason}/rankings`} class="section-link">Full leaderboard &rarr;</a></h2>
+      <h2>Season {currentSeason} ELO <a href={`/season/${currentSeason}/rankings`} class="section-link">Full leaderboard &rarr;</a></h2>
       <div class="mini-leaderboard">
         {top5.map((model, i) => (
           <div class:list={['mini-row', { 'mini-gold': i === 0, 'mini-silver': i === 1, 'mini-bronze': i === 2 }]}>
@@ -237,7 +225,7 @@ for (const game of loadAllGames()) {
 
   {recentDuels.length > 0 && (
     <section class="recent-games">
-      <h2>Recent 1v1 Games <a href="/games" class="section-link">All games &rarr;</a></h2>
+      <h2>Recent Duels <a href="/games" class="section-link">All duels &rarr;</a></h2>
       <div class="game-strip">
         {recentDuels.map((game) => (
           <a href={`/games/${game.id}`} class="mini-game-card" data-format={game.format}>
@@ -261,7 +249,7 @@ for (const game of loadAllGames()) {
 
   {recentCommander.length > 0 && (
     <section class="recent-games">
-      <h2>Recent Exhibition Games <a href="/games?format=commander" class="section-link">All exhibition &rarr;</a></h2>
+      <h2>Recent Commander Games <a href="/games?format=commander" class="section-link">All Commander games &rarr;</a></h2>
       <div class="game-strip">
         {recentCommander.map((game) => (
           <a href={`/games/${game.id}`} class="mini-game-card" data-format={game.format}>
@@ -462,7 +450,7 @@ for (const game of loadAllGames()) {
     font-size: 1.05rem;
     line-height: 1.75;
     text-align: center;
-    max-width: 40rem;
+    max-width: 48rem;
     margin: 0 auto;
     color: var(--text-primary);
   }
