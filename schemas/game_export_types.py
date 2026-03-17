@@ -11,7 +11,7 @@ from pathlib import Path
 from collections.abc import Callable
 from typing import Literal, TypeAlias
 
-from typing_extensions import NotRequired, TypeIs, TypedDict
+from typing_extensions import NotRequired, TypeGuard, TypeIs, TypedDict
 
 JsonObject: TypeAlias = dict[str, object]
 
@@ -100,21 +100,43 @@ _LLM_EVENT_TYPES = {
 }
 
 
-class Player(TypedDict):
+class _PlayerRequired(TypedDict):
     name: str
-    type: str
     toolCallsOk: int
     toolCallsFailed: int
     thinkingTimeSecs: float
+
+
+class _PlayerOptionalFields(TypedDict, total=False):
+    deckName: str
+    deckStrategy: str
+    commander: str
+    reasoningEffort: str
+    totalCostUsd: float
+    placement: int
+    tools: list[str]
+    timedOut: bool
+
+
+class Player(_PlayerRequired, _PlayerOptionalFields):
+    type: str
     model: NotRequired[str]
-    deckName: NotRequired[str]
-    deckStrategy: NotRequired[str]
-    commander: NotRequired[str]
-    reasoningEffort: NotRequired[str]
-    totalCostUsd: NotRequired[float]
-    placement: NotRequired[int]
-    tools: NotRequired[list[str]]
-    timedOut: NotRequired[bool]
+
+
+class PilotPlayer(_PlayerRequired, _PlayerOptionalFields):
+    """Pilot player with required model field.  Narrowed via is_pilot_player()."""
+
+    type: Literal["pilot"]
+    model: str
+
+
+def is_pilot_player(player: Player) -> TypeGuard[PilotPlayer]:
+    """Narrow a Player to PilotPlayer.  Crashes if type is pilot but model is missing."""
+    if player["type"] != "pilot":
+        return False
+    model = player.get("model")
+    assert isinstance(model, str) and model, f"pilot player missing model: {player!r}"
+    return True
 
 
 class SnapshotPlayer(TypedDict):
@@ -601,6 +623,8 @@ def _is_player(value: object, source: str) -> TypeIs[Player]:
         _require_str_list(obj["tools"], f"{source}.tools")
     if "timedOut" in obj:
         _require_bool(obj["timedOut"], f"{source}.timedOut")
+    if obj["type"] == "pilot":
+        _require_non_empty_str(_require_key(obj, "model", source), f"{source}.model")
     return True
 
 
@@ -1041,6 +1065,7 @@ __all__ = [
     "MultiAmountItem",
     "Permanent",
     "PilotContext",
+    "PilotPlayer",
     "Player",
     "Snapshot",
     "SnapshotPlayer",
@@ -1050,6 +1075,7 @@ __all__ = [
     "ToolCallEvent",
     "is_built_game_export",
     "is_game_export",
+    "is_pilot_player",
     "load_built_game_export",
     "load_game_export",
     "require_built_game_export",

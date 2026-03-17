@@ -32,6 +32,7 @@ from schemas.game_export_types import (
     MultiAmountItem,
     Permanent,
     PilotContext,
+    PilotPlayer,
     Player,
     Snapshot,
     SnapshotPlayer,
@@ -39,6 +40,8 @@ from schemas.game_export_types import (
     StackTarget,
     StallEvent,
     ToolCallEvent,
+    _is_player,
+    is_pilot_player,
     load_built_game_export,
     load_game_export,
     require_built_game_export,
@@ -226,6 +229,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 3,
                     "toolCallsFailed": 1,
                     "thinkingTimeSecs": 12.5,
@@ -271,6 +275,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 3,
                     "toolCallsFailed": 1,
                     "thinkingTimeSecs": 12.5,
@@ -324,6 +329,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 3,
                     "toolCallsFailed": 1,
                     "thinkingTimeSecs": 12.5,
@@ -361,6 +367,11 @@ class TestExportSchema:
             required_override=set(schema["required"]) - {"annotations", "blunderScriptVersion"},
         )
         _assert_typed_dict_matches_schema(Player, schema=defs["Player"])
+        _assert_typed_dict_matches_schema(
+            PilotPlayer,
+            schema=defs["Player"],
+            required_override=set(defs["Player"].get("required", [])) | {"model"},
+        )
         _assert_typed_dict_matches_schema(Snapshot, schema=defs["Snapshot"])
         _assert_typed_dict_matches_schema(SnapshotPlayer, schema=defs["SnapshotPlayer"])
         _assert_typed_dict_matches_schema(CombatGroup, schema=defs["CombatGroup"])
@@ -419,6 +430,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 3,
                     "toolCallsFailed": 1,
                     "thinkingTimeSecs": 12.5,
@@ -443,6 +455,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 0,
                     "toolCallsFailed": 0,
                     "thinkingTimeSecs": 0.0,
@@ -473,6 +486,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 1,
                     "toolCallsFailed": 0,
                     "thinkingTimeSecs": 2.0,
@@ -497,6 +511,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 1,
                     "toolCallsFailed": 0,
                     "thinkingTimeSecs": 2.0,
@@ -522,6 +537,7 @@ class TestExportSchema:
                 {
                     "name": "Alice",
                     "type": "pilot",
+                    "model": "test/model",
                     "toolCallsOk": 0,
                     "toolCallsFailed": 0,
                     "thinkingTimeSecs": 0.0,
@@ -552,3 +568,84 @@ class TestExportSchema:
         assert game["decisions"][0]["actionType"] == ""
         assert game["decisions"][0]["responseType"] == ""
         assert game["decisions"][0]["message"] == ""
+
+    def test_v8_schema_rejects_pilot_without_model(self) -> None:
+        validator = jsonschema.Draft7Validator(_load_schema(8))
+        v8 = _minimal_export(
+            8,
+            season=1,
+            tournament=None,
+            players=[
+                {
+                    "name": "Alice",
+                    "type": "pilot",
+                    "toolCallsOk": 0,
+                    "toolCallsFailed": 0,
+                    "thinkingTimeSecs": 0.0,
+                }
+            ],
+        )
+        errors = list(validator.iter_errors(v8))
+        assert errors, "v8 schema should reject pilot player without model"
+
+    def test_v8_schema_accepts_cpu_without_model(self) -> None:
+        validator = jsonschema.Draft7Validator(_load_schema(8))
+        v8 = _minimal_export(
+            8,
+            season=1,
+            tournament=None,
+            players=[
+                {
+                    "name": "Bot",
+                    "type": "cpu",
+                    "toolCallsOk": 0,
+                    "toolCallsFailed": 0,
+                    "thinkingTimeSecs": 0.0,
+                }
+            ],
+        )
+        errors = list(validator.iter_errors(v8))
+        assert errors == [], f"v8 schema should accept cpu player without model: {errors}"
+
+    def test_is_pilot_player_narrows_pilot(self) -> None:
+        player: Player = {
+            "name": "Alice",
+            "type": "pilot",
+            "model": "test/model",
+            "toolCallsOk": 0,
+            "toolCallsFailed": 0,
+            "thinkingTimeSecs": 0.0,
+        }
+        assert is_pilot_player(player)
+
+    def test_is_pilot_player_rejects_cpu(self) -> None:
+        player: Player = {
+            "name": "Bot",
+            "type": "cpu",
+            "toolCallsOk": 0,
+            "toolCallsFailed": 0,
+            "thinkingTimeSecs": 0.0,
+        }
+        assert not is_pilot_player(player)
+
+    def test_is_pilot_player_crashes_on_pilot_without_model(self) -> None:
+        player: Player = {
+            "name": "Alice",
+            "type": "pilot",
+            "toolCallsOk": 0,
+            "toolCallsFailed": 0,
+            "thinkingTimeSecs": 0.0,
+        }
+        with pytest.raises(AssertionError, match="pilot player missing model"):
+            is_pilot_player(player)
+
+    def test_validator_rejects_pilot_without_model(self) -> None:
+        player = {
+            "name": "Alice",
+            "type": "pilot",
+            "toolCallsOk": 0,
+            "toolCallsFailed": 0,
+            "thinkingTimeSecs": 0.0,
+        }
+        with pytest.raises(AssertionError, match="model"):
+            _is_player(player, "test")
