@@ -394,11 +394,14 @@ def _build_java_cmd(
     system_props: dict[str, str],
     *,
     max_heap: str | None = None,
+    max_metaspace: str | None = None,
 ) -> list[str]:
     """Build a ``java -cp`` command with JVM flags and system properties."""
     jvm_flags = ["--add-opens=java.base/java.io=ALL-UNNAMED"]
     if max_heap is not None:
         jvm_flags.append(f"-Xmx{max_heap}")
+    if max_metaspace is not None:
+        jvm_flags.append(f"-XX:MaxMetaspaceSize={max_metaspace}")
     if sys.platform == "darwin":
         jvm_flags.append("-Dapple.awt.UIElement=true")
     cmd = ["java", *jvm_flags]
@@ -515,14 +518,12 @@ class BridgeManager:
         server: str,
         port: int,
         project_root: Path,
-        allowed_sets: str,
         username: str = "TestPlayer",
         label: str = "bridge",
     ) -> None:
         self._server = server
         self._port = port
         self._project_root = project_root
-        self._allowed_sets = allowed_sets
         self._username = username
         self._label = label
         self.session: BridgeSession | None = None
@@ -659,7 +660,6 @@ class BridgeManager:
                 "xmage.bridge.mcpPort": str(mcp_port),
                 "xmage.bridge.username": self._username,
                 "xmage.bridge.bridgelog": str(bridge_event_log),
-                "xmage.sets.allowed": self._allowed_sets,
             },
             max_heap="256m",
         )

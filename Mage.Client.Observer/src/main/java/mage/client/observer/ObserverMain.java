@@ -1,5 +1,6 @@
 package mage.client.observer;
 
+import mage.cards.repository.CardScanner;
 import mage.client.MageFrame;
 import mage.client.dialog.PreferencesDialog;
 import mage.client.util.EDTExceptionHandler;
@@ -113,6 +114,13 @@ public class ObserverMain {
         LOGGER.info("Default charset: " + Charset.defaultCharset());
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> LOGGER.fatal(null, e));
+
+        // Skip bulk card database scanning. The MageFrame constructor calls
+        // CardScanner.scan() on empty DBs, which loads all ~30K card classes
+        // and consumes hundreds of MB of metaspace. The observer only needs
+        // cards from the decks it imports — CardRepository.findCard() lazily
+        // loads individual cards on demand.
+        CardScanner.scanned = true;
 
         SwingUtilities.invokeLater(() -> {
             // Parse command line args
