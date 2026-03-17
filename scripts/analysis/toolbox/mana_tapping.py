@@ -94,15 +94,15 @@ def analyze_game(gz_path: str) -> list[PlayerStats]:
                     ps.mana_plan_success += 1
                 else:
                     ps.mana_plan_failed += 1
-                    error = result.get("error", "")
+                    error = result.get("error")
                     if error:
                         ps.mana_plan_errors.append(error[:150])
 
             if args.get("auto_tap") is True:
                 ps.auto_tap_used += 1
 
-            action_taken = str(result.get("action_taken", ""))
-            if "cancelled_spell" in action_taken:
+            action_taken = result.get("action_taken")
+            if action_taken and "cancelled_spell" in str(action_taken):
                 ps.spells_cancelled += 1
 
         # --- get_action_choices: track GAME_PLAY_MANA and GAME_CHOOSE_ABILITY ---
@@ -110,10 +110,10 @@ def analyze_game(gz_path: str) -> list[PlayerStats]:
             result_str = e["result"]
             try:
                 result = json.loads(result_str)
-            except (json.JSONDecodeError, TypeError):
+            except json.JSONDecodeError:
                 continue
 
-            action_type = result.get("action_type", "")
+            action_type = result.get("action_type")
 
             if action_type == "GAME_PLAY_MANA":
                 ps.mana_deferred += 1
@@ -143,12 +143,12 @@ def _track_followup(
             result_str = ev["result"]
             try:
                 result = json.loads(result_str)
-            except (json.JSONDecodeError, TypeError):
+            except json.JSONDecodeError:
                 setattr(ps, f"{prefix}_failed", getattr(ps, f"{prefix}_failed") + 1)
                 return
             if result.get("success"):
-                action = str(result.get("action_taken", ""))
-                if "cancelled_spell" in action:
+                action = result.get("action_taken")
+                if action and "cancelled_spell" in str(action):
                     if prefix == "mana_deferred":
                         ps.mana_deferred_cancelled += 1
                     else:

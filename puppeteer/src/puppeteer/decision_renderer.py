@@ -165,7 +165,7 @@ def _render_decision_block(
     # Message and choices/items
     choices = decision["choices"]
     items = decision.get("items")
-    lines.append(f"  Message: {message}")
+    lines.append(f"  Message: {message if message else ''}")
     if items:
         total_min = decision.get("totalMin")
         total_max = decision.get("totalMax")
@@ -196,7 +196,7 @@ def _render_decision_block(
         lines.append(f"  Choices ({len(choices)}): {', '.join(choice_descs)}")
 
     # Triggered ability note
-    if "Pick triggered ability" in message:
+    if message and "Pick triggered ability" in message:
         lines.append(
             "  NOTE: This decision only determines the order triggered abilities"
             " are placed on the stack. Targets are chosen in separate decisions."
@@ -639,7 +639,7 @@ def _render_card_reference(
                 continue
             for c in zone_cards:
                 if isinstance(c, dict):
-                    name = c.get("name", "")
+                    name = c.get("name")
                     if name:
                         names.add(name)
                 elif isinstance(c, str) and c:
@@ -663,10 +663,10 @@ def _render_card_reference(
         oracle = oracle_texts.get(name)
         if not oracle:
             continue
-        mana_cost = oracle.get("mana_cost", "")
-        type_line = oracle.get("type_line", "")
-        oracle_text = oracle.get("oracle_text", "")
-        pt = oracle.get("power_toughness", "")
+        mana_cost = oracle.get("mana_cost")
+        type_line = oracle.get("type_line")
+        oracle_text = oracle.get("oracle_text")
+        pt = oracle.get("power_toughness")
         if not pt and oracle.get("power") is not None:
             pt = f"{oracle['power']}/{oracle['toughness']}"
 

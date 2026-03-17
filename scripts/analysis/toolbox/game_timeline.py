@@ -164,13 +164,15 @@ def is_mana_event(event: LlmEvent) -> bool:
 
         # Any tool result with mana-related action_type or chat
         if tool in ("get_action_choices", "choose_action", "pass_priority"):
+            if result_str is None:
+                return False
             try:
                 result = json.loads(result_str)
-            except (json.JSONDecodeError, TypeError):
+            except json.JSONDecodeError:
                 return False
             if not isinstance(result, dict):
                 return False
-            action_type = result.get("action_type", "")
+            action_type = result.get("action_type")
             if isinstance(action_type, str) and action_type in MANA_KEYWORDS:
                 return True
             recent_chat = result.get("recent_chat")
@@ -263,19 +265,21 @@ def fmt_result(tool: str, result_str: str, verbose: bool = False) -> str:
             parts.append("(no action pending)")
         else:
             at = result.get("action_type", "?")
-            msg = result.get("message", "")
+            msg = result.get("message")
             choices = result.get("choices")
-            assert isinstance(msg, str), f"message must be a string, got {msg!r}"
-            parts.append(f"{at}: {msg[:80]}")
+            assert msg is None or isinstance(msg, str), (
+                f"message must be a string, got {msg!r}"
+            )
+            parts.append(f"{at}: {msg[:80]}" if msg else f"{at}")
             if isinstance(choices, list) and choices and verbose:
                 for c in choices[:8]:
                     if not isinstance(c, dict):
                         continue
                     name = c.get("name", c.get("description", "?"))
                     idx = c.get("index", "?")
-                    cid = c.get("id", "")
-                    action = c.get("action", "")
-                    mc = c.get("mana_cost", "")
+                    cid = c.get("id")
+                    action = c.get("action")
+                    mc = c.get("mana_cost")
                     extra = f" ({action})" if action else ""
                     extra += f" {mc}" if mc else ""
                     parts.append(f"  [{idx}]{' ' + cid if cid else ''} {name}{extra}")
@@ -316,11 +320,16 @@ def print_event(
     verbose: bool,
 ) -> bool:
     """Print a single event. Returns True if printed."""
-    ts = event.get("ts", "")
-    assert isinstance(ts, str), f"event ts must be a string when present, got {ts!r}"
+    ts = event.get("ts")
+    assert ts is None or isinstance(ts, str), (
+        f"event ts must be a string when present, got {ts!r}"
+    )
     player = event["player"]
     # Short timestamp (just time portion)
-    ts_short = ts.split("T")[-1][:12] if "T" in ts else ts[:12]
+    if ts:
+        ts_short = ts.split("T")[-1][:12] if "T" in ts else ts[:12]
+    else:
+        ts_short = ""
     context = find_context_for_event(snapshots, event)
 
     is_mana = is_mana_event(event)
@@ -336,7 +345,9 @@ def print_event(
         latency = event.get("latencyMs", 0)
 
         args_fmt = fmt_args(tool, args)
-        result_fmt = fmt_result(tool, result_str, verbose=verbose)
+        result_fmt = fmt_result(
+            tool, result_str if result_str is not None else "", verbose=verbose
+        )
 
         print(f"{ts_short} {context:<30} {player:<25} {prefix}{tool}({args_fmt})")
         print(f"{'':>12} {'':>30} {'':>25}   -> {result_fmt}")
@@ -345,7 +356,7 @@ def print_event(
         return True
 
     if event["type"] == "llm_response":
-        reasoning = event.get("reasoning", "")
+        reasoning = event.get("reasoning")
         tool_calls = event.get("toolCalls")
         usage = event.get("usage")
         cost = event.get("costUsd", 0)
@@ -393,12 +404,14 @@ def print_event(
         return True
 
     if event["type"] == "context_reset":
-        detail = str(event.get("reason", ""))[:100]
+        reason = event.get("reason")
+        detail = str(reason)[:100] if reason is not None else ""
         print(f"{ts_short} {context:<30} {player:<25} *** CONTEXT_RESET: {detail} ***")
         return True
 
     if event["type"] == "llm_error":
-        detail = str(event.get("errorMessage", ""))[:100]
+        error_msg = event.get("errorMessage")
+        detail = str(error_msg)[:100] if error_msg is not None else ""
         print(f"{ts_short} {context:<30} {player:<25} *** LLM_ERROR: {detail} ***")
         return True
 

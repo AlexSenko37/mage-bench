@@ -38,7 +38,9 @@ class YouTubeUploadError(RuntimeError):
 
 def _format_label(meta: dict) -> str:
     """Derive a human-readable format label from game metadata."""
-    deck_type = meta.get("deck_type", "")
+    deck_type = meta.get("deck_type")
+    if not deck_type:
+        return "Commander"
     return _DECK_TYPE_TO_FORMAT.get(deck_type, "Commander")
 
 
@@ -76,7 +78,10 @@ def _deck_display_name(player: dict, deck_type: str) -> str | None:
     """
     if deck_type in _COMMANDER_DECK_TYPES:
         return _extract_commander(player)
-    return _deck_name_from_path(player.get("deck_path", ""))
+    deck_path = player.get("deck_path")
+    if not deck_path:
+        return None
+    return _deck_name_from_path(deck_path)
 
 
 def _build_title(meta: dict) -> str:
@@ -85,14 +90,14 @@ def _build_title(meta: dict) -> str:
     Format: "mage-bench Format: Name (Deck) vs Name (Deck) vs ..."
     Truncated to 100 chars (YouTube limit).
     """
-    deck_type = meta.get("deck_type", "")
+    deck_type = meta.get("deck_type")
     players = meta.get("players")
     parts = []
     if players is None:
         players = []
     for p in players:
         name = p.get("name", "?")
-        deck_name = _deck_display_name(p, deck_type)
+        deck_name = _deck_display_name(p, deck_type if deck_type else "")
         if deck_name:
             parts.append(f"{name} ({deck_name})")
         else:
@@ -113,7 +118,7 @@ def _build_description(meta: dict, game_dir: Path) -> str:
     game_id = game_dir.name
     game_url = f"https://mage-bench.com/games/{game_id}"
 
-    deck_type = meta.get("deck_type", "")
+    deck_type = meta.get("deck_type")
     fmt = _format_label(meta)
     lines = [f"AI models play {fmt} (Magic: The Gathering) via mage-bench.", ""]
 
@@ -121,8 +126,8 @@ def _build_description(meta: dict, game_dir: Path) -> str:
     if players is None:
         players = []
     for p in players:
-        deck_name = _deck_display_name(p, deck_type)
-        model = p.get("model", "")
+        deck_name = _deck_display_name(p, deck_type if deck_type else "")
+        model = p.get("model")
         name = p.get("name", "?")
         parts = [name]
         if deck_name:

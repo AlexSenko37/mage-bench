@@ -173,7 +173,7 @@ def _collect_card_names(snapshots: list[dict]) -> tuple[set[str], set[str]]:
         if stack is not None:
             for item in stack:
                 if isinstance(item, dict):
-                    name = item.get("name", "")
+                    name = item.get("name")
                     if name and "ability" not in name.lower():
                         if " Token" in name or " token" in name:
                             tokens.add(name)
@@ -191,7 +191,7 @@ def _collect_card_names(snapshots: list[dict]) -> tuple[set[str], set[str]]:
                 if zone_cards is not None:
                     for card in zone_cards:
                         if isinstance(card, dict):
-                            name = card.get("name", "")
+                            name = card.get("name")
                         elif isinstance(card, str):
                             name = card
                         else:
@@ -269,7 +269,7 @@ def _extract_commander(player_meta: dict) -> str | None:
     return None
 
 
-def _deck_name_from_path(deck_path: str) -> str | None:
+def _deck_name_from_path(deck_path: str | None) -> str | None:
     """Derive human-readable deck name from file path stem."""
     if not deck_path:
         return None
@@ -293,7 +293,7 @@ def _deck_display_name(player_meta: dict, deck_type: str) -> str | None:
     # Legacy fallback for old game_metas
     if deck_type in _COMMANDER_DECK_TYPES:
         return _extract_commander(player_meta)
-    return _deck_name_from_path(player_meta.get("deck_path", ""))
+    return _deck_name_from_path(player_meta.get("deck_path"))
 
 
 def compute_thinking_time(llm_events: list[dict]) -> dict[str, float]:
@@ -307,11 +307,11 @@ def compute_thinking_time(llm_events: list[dict]) -> dict[str, float]:
     """
     thinking: dict[str, float] = {}
     for i in range(len(llm_events) - 1):
-        player = llm_events[i].get("player", "")
+        player = llm_events[i].get("player")
         if not player:
             continue
-        ts_a = llm_events[i].get("ts", "")
-        ts_b = llm_events[i + 1].get("ts", "")
+        ts_a = llm_events[i].get("ts")
+        ts_b = llm_events[i + 1].get("ts")
         if not ts_a or not ts_b:
             continue
         try:
@@ -331,13 +331,13 @@ def compute_tool_call_counts(llm_events: list[dict]) -> dict[str, tuple[int, int
     for event in llm_events:
         if event.get("type") != "tool_call":
             continue
-        player = event.get("player", "")
+        player = event.get("player")
         if not player:
             continue
 
         ok, failed = player_tool_calls.get(player, (0, 0))
         is_failure = False
-        result_str = event.get("result", "")
+        result_str = event.get("result")
         if result_str:
             try:
                 result_obj = json.loads(result_str)
@@ -383,8 +383,8 @@ def _read_llm_events(
             except json.JSONDecodeError:
                 continue
 
-            event_type = raw.get("type", "")
-            player = raw.get("player", "")
+            event_type = raw["type"]
+            player = raw.get("player")
 
             # Track per-player cost from game_end or cumulative_cost_usd
             if event_type == "game_end" and "total_cost_usd" in raw:
@@ -401,7 +401,7 @@ def _read_llm_events(
 
             # Build the exported event with camelCase keys
             exported: dict = {
-                "ts": raw.get("ts", ""),
+                "ts": raw.get("ts"),
                 "seq": raw.get("seq"),
                 "player": player,
                 "type": event_type,
@@ -412,12 +412,14 @@ def _read_llm_events(
             game_seq = raw.get("game_seq")
 
             if event_type == "game_start":
-                exported["model"] = raw.get("model", "")
+                model = raw.get("model")
+                if model is not None:
+                    exported["model"] = model
                 available_tools = raw.get("available_tools")
                 if available_tools is not None:
                     exported["availableTools"] = available_tools
             elif event_type == "llm_response":
-                exported["reasoning"] = raw.get("reasoning", "")
+                exported["reasoning"] = raw.get("reasoning")
                 if raw.get("thinking"):
                     exported["thinking"] = raw["thinking"]
                 if raw.get("tool_calls"):
@@ -435,19 +437,19 @@ def _read_llm_events(
                 if "cost_usd" in raw:
                     exported["costUsd"] = raw["cost_usd"]
             elif event_type == "tool_call":
-                exported["tool"] = raw.get("tool", "")
+                exported["tool"] = raw["tool"]
                 assert "arguments" in raw, f"tool_call event missing arguments: {raw!r}"
                 arguments = raw["arguments"]
                 assert isinstance(arguments, dict), (
                     f"tool_call arguments must be an object, got {arguments!r}"
                 )
                 exported["args"] = arguments
-                exported["result"] = raw.get("result", "")
+                exported["result"] = raw["result"]
                 if "latency_ms" in raw:
                     exported["latencyMs"] = raw["latency_ms"]
                 # Extract game_seq from result JSON if not already a top-level field
                 if game_seq is None:
-                    result_str = raw.get("result", "")
+                    result_str = raw["result"]
                     if result_str:
                         try:
                             result_obj = json.loads(result_str)
@@ -461,12 +463,12 @@ def _read_llm_events(
                 if last_tools is not None:
                     exported["lastTools"] = last_tools
             elif event_type == "context_reset":
-                exported["reason"] = raw.get("reason", "")
+                exported["reason"] = raw["reason"]
             elif event_type == "llm_error":
-                exported["errorType"] = raw.get("error_type", "")
-                exported["errorMessage"] = raw.get("error_message", "")
+                exported["errorType"] = raw["error_type"]
+                exported["errorMessage"] = raw["error_message"]
             elif event_type == "auto_pilot_mode":
-                exported["reason"] = raw.get("reason", "")
+                exported["reason"] = raw["reason"]
 
             if game_seq is not None:
                 exported["gameSeq"] = game_seq
@@ -474,7 +476,7 @@ def _read_llm_events(
             events.append(exported)
 
     # Sort by timestamp
-    events.sort(key=lambda e: e.get("ts", ""))
+    events.sort(key=lambda e: e["ts"] if e.get("ts") is not None else "")
 
     player_tool_calls = compute_tool_call_counts(events)
     player_thinking = compute_thinking_time(events)
@@ -531,7 +533,7 @@ def _read_server_events(
             actions.append(
                 {
                     "seq": event.get("seq", 0),
-                    "message": _strip_html(event.get("message", "")),
+                    "message": _strip_html(event["message"]),
                 }
             )
         elif event_type == "turn_change":
@@ -557,7 +559,7 @@ def _read_server_events(
         elif event_type == "game_end":
             game_over = {
                 "seq": event.get("seq", 0),
-                "message": event.get("winner", "") or "Game ended",
+                "message": event.get("winner") or "Game ended",
             }
             winner = event.get("winner")
             if "state" in event:
@@ -568,11 +570,13 @@ def _read_server_events(
     return snapshots, actions, game_over, winner
 
 
-def _parse_json(s: str) -> dict:
+def _parse_json(s: str | None) -> dict:
     """Parse a JSON string, returning {} on failure."""
+    if s is None:
+        return {}
     try:
         parsed = json.loads(s)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError:
         return {}
     assert isinstance(parsed, dict), (
         f"tool result must be a JSON object, got {parsed!r}"
@@ -594,7 +598,7 @@ def _is_decision_source(event: dict) -> bool:
     tool = event.get("tool")
     if tool not in ("pass_priority", "get_action_choices", "choose_action"):
         return False
-    result = _parse_json(event.get("result", ""))
+    result = _parse_json(event.get("result"))
     return bool(result.get("action_pending"))
 
 
@@ -608,7 +612,7 @@ def _is_v1_decision_source(event: dict) -> bool:
         return False
     if event.get("tool") != "get_action_choices":
         return False
-    result = _parse_json(event.get("result", ""))
+    result = _parse_json(event.get("result"))
     action_pending = result.get("action_pending", True)
     assert isinstance(action_pending, bool), (
         f"get_action_choices action_pending must be a bool, got {action_pending!r}"
@@ -652,7 +656,7 @@ def _follows_failed_choose_action_retry(
     if source_event.get("tool") != "choose_action":
         return False
 
-    player = source_event.get("player", "")
+    player = source_event["player"]
     scan_start = 0
     for prev_idx in range(source_idx - 1, -1, -1):
         prev_event_idx, prev_source = decision_sources[prev_idx]
@@ -665,7 +669,7 @@ def _follows_failed_choose_action_retry(
         if ev.get("player") != player:
             continue
         if ev.get("type") == "tool_call" and ev.get("tool") == "choose_action":
-            if _is_failed_choose_action_result(_parse_json(ev.get("result", ""))):
+            if _is_failed_choose_action_result(_parse_json(ev.get("result"))):
                 return True
         if is_v2 and _is_decision_source(ev):
             break
@@ -693,7 +697,7 @@ def _collect_decision_sources(
         if source_event.get("tool") != "choose_action":
             decision_sources.append((event_idx, source_event))
             continue
-        player = source_event.get("player", "")
+        player = source_event["player"]
         if _follows_failed_choose_action_retry(
             llm_events, candidate_sources, source_idx, is_v2
         ) and not _has_followup_choose_action(llm_events, event_idx, player, is_v2):
@@ -752,8 +756,8 @@ def _resolve_chosen_index(
                 return ci
     # Fallback: parse trailing integer from action_taken.
     # Handles selected_0, selected_target_1, selected_ability_0, etc.
-    taken = action_result.get("action_taken", "")
-    if taken.startswith("selected"):
+    taken = action_result.get("action_taken")
+    if taken and taken.startswith("selected"):
         try:
             return int(taken.rsplit("_", 1)[1])
         except (ValueError, IndexError):
@@ -776,7 +780,7 @@ def _find_snapshot_index_by_ts(snapshots: list[dict], ts: str) -> int | None:
     """Find the index of the nearest snapshot at or before the given timestamp."""
     best: int | None = None
     for i, snap in enumerate(snapshots):
-        if snap.get("ts", "") <= ts:
+        if (snap["ts"] if "ts" in snap else "") <= ts:
             best = i
         else:
             break
@@ -809,7 +813,7 @@ def _extract_pilot_context(choices_result: dict) -> dict:
                 if hand is not None:
                     for card in hand:
                         if isinstance(card, dict) and card.get("playable"):
-                            card_id = card.get("id", "")
+                            card_id = card.get("id")
                             if card_id:
                                 playable_ids.append(card_id)
     if playable_ids:
@@ -835,8 +839,8 @@ def _find_spell_cancelled_seqs(llm_events: list[dict]) -> list[tuple[str, int]]:
     for i, ev in enumerate(llm_events):
         if ev.get("type") != "tool_call":
             continue
-        player = ev.get("player", "")
-        result_str = ev.get("result", "")
+        player = ev["player"]
+        result_str = ev["result"]
         if "[System] Spell cancelled" not in result_str:
             last_idx[player] = i
             continue
@@ -876,8 +880,8 @@ def _mark_rolled_back_casts(
                 continue
             if d.get("castRolledBack"):
                 break
-            msg = d.get("message", "")
-            if msg.startswith(_CAST_PROMPT_PREFIXES):
+            msg = d.get("message")
+            if msg and msg.startswith(_CAST_PROMPT_PREFIXES):
                 d["castRolledBack"] = True
                 break
 
@@ -892,7 +896,7 @@ _PASS_ALLOWED_PREFIXES = (
 )
 
 
-def _is_forced(response_type: str, message: str, choices: list) -> bool:
+def _is_forced(response_type: str | None, message: str | None, choices: list) -> bool:
     """Determine if a decision is truly forced (no meaningful choice).
 
     Boolean questions always have yes/no.
@@ -904,7 +908,7 @@ def _is_forced(response_type: str, message: str, choices: list) -> bool:
     if n == 0:
         return True
     if n == 1:
-        return not message.startswith(_PASS_ALLOWED_PREFIXES)
+        return not (message and message.startswith(_PASS_ALLOWED_PREFIXES))
     return False
 
 
@@ -926,15 +930,22 @@ def _build_decisions(
     decisions: list[dict] = []
 
     for ds_idx, (event_idx, source_event) in enumerate(decision_sources):
-        choices_result = _parse_json(source_event.get("result", ""))
-        player = source_event.get("player", "")
+        choices_result = _parse_json(source_event.get("result"))
+        player = source_event["player"]
 
         available_choices = choices_result.get("choices")
         if available_choices is None:
             available_choices = []
-        response_type = choices_result.get("response_type", "")
-        action_type = choices_result.get("action_type", "")
-        message = choices_result.get("message", "")
+        response_type = choices_result.get("response_type")
+        action_type = choices_result.get("action_type")
+        message = choices_result.get("message")
+        # Schema requires strings — normalize None to "" for optional fields
+        if response_type is None:
+            response_type = ""
+        if action_type is None:
+            action_type = ""
+        if message is None:
+            message = ""
 
         # Collect llmEventIndices and find choose_action
         llm_event_indices: list[int] = [event_idx]
@@ -959,7 +970,7 @@ def _build_decisions(
                     f"choose_action args must be an object, got {raw_args!r}"
                 )
                 chosen_args = raw_args
-                action_result = _parse_json(ev.get("result", ""))
+                action_result = _parse_json(ev.get("result"))
                 chosen_index = _resolve_chosen_index(
                     chosen_args, available_choices, action_result
                 )
@@ -981,7 +992,7 @@ def _build_decisions(
         if choices_seq:
             snap_idx = _find_snapshot_index_by_seq(snapshots, choices_seq)
         else:
-            choices_ts = source_event.get("ts", "")
+            choices_ts = source_event.get("ts")
             snap_idx = (
                 _find_snapshot_index_by_ts(snapshots, choices_ts)
                 if choices_ts
@@ -1067,14 +1078,14 @@ def _link_errors_to_decisions(
     # Build per-player sorted list of (HH:MM:SS, decision_index)
     player_decisions: dict[str, list[tuple[str, int]]] = {}
     for d in decisions:
-        player = d.get("player", "")
+        player = d["player"]
         indices = d.get("llmEventIndices")
         if not indices:
             continue
         source_event = llm_events[indices[0]]
         # Extract HH:MM:SS from ISO timestamp (e.g. "2026-02-28T13:38:35.408-08:00")
-        ts_iso = source_event.get("ts", "")
-        if len(ts_iso) >= 19 and ts_iso[10] == "T":
+        ts_iso = source_event.get("ts")
+        if ts_iso and len(ts_iso) >= 19 and ts_iso[10] == "T":
             ts_hms = ts_iso[11:19]
         else:
             continue
@@ -1083,10 +1094,12 @@ def _link_errors_to_decisions(
     # Lists are already in chronological order (decisions built from sorted events)
 
     for err in errors:
-        err_ts = err.get("ts", "")
+        err_ts = err.get("ts")
         if not err_ts:
             continue
-        player = err.get("player", "")
+        player = err.get("player")
+        if not player:
+            continue
         pd = player_decisions.get(player)
         if not pd:
             continue
@@ -1145,7 +1158,8 @@ def build_export(game_dir: Path) -> BuiltGameExport:
     # Fallback for interrupted games where game_end wasn't written
     if not winner:
         for a in actions:
-            m = WON_GAME_RE.match(a.get("message", ""))
+            msg = a.get("message")
+            m = WON_GAME_RE.match(msg) if msg else None
             if m:
                 winner = m.group(1)
                 break
@@ -1154,7 +1168,8 @@ def build_export(game_dir: Path) -> BuiltGameExport:
     player_names = [p.get("name", "?") for p in meta["players"]]
     eliminations = []
     for a in actions:
-        m = LOST_GAME_RE.match(a.get("message", ""))
+        msg = a.get("message")
+        m = LOST_GAME_RE.match(msg) if msg else None
         if m:
             eliminations.append(m.group(1))
     placements: dict[str, int] = {}
@@ -1178,7 +1193,8 @@ def build_export(game_dir: Path) -> BuiltGameExport:
     # Detect timer timeout losses
     timed_out_players: set[str] = set()
     for a in actions:
-        m = TIMED_OUT_RE.match(a.get("message", ""))
+        msg = a.get("message")
+        m = TIMED_OUT_RE.match(msg) if msg else None
         if m:
             timed_out_players.add(m.group(1))
 
@@ -1230,7 +1246,7 @@ def build_export(game_dir: Path) -> BuiltGameExport:
     output: dict = {
         "version": 8,
         "id": game_id,
-        "timestamp": meta.get("timestamp", ""),
+        "timestamp": meta["timestamp"] if "timestamp" in meta else "",
         "gameType": game_type,
         "deckType": deck_type,
         "totalTurns": total_turns,
@@ -1243,7 +1259,7 @@ def build_export(game_dir: Path) -> BuiltGameExport:
         "llmEvents": llm_events,
         "gameOver": game_over,
         "harnessEpoch": harness_epoch,
-        "youtubeUrl": meta.get("youtube_url", ""),
+        "youtubeUrl": meta["youtube_url"] if "youtube_url" in meta else "",
     }
 
     # Season and tournament fields, added in v4

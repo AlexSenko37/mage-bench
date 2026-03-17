@@ -141,7 +141,8 @@ def _find_snapshot_index(snapshots: Sequence[Snapshot], ts: str) -> int | None:
     """
     best: int | None = None
     for i, snap in enumerate(snapshots):
-        snap_ts = snap.get("ts", "")
+        _snap_ts = snap.get("ts")
+        snap_ts = _snap_ts if _snap_ts is not None else ""
         if snap_ts <= ts:
             best = i
         else:
@@ -165,11 +166,13 @@ def _find_snapshot_index_by_seq(snapshots: Sequence[Snapshot], seq: int) -> int 
     return best
 
 
-def _parse_choices_result(result_str: str) -> JsonObject:
+def _parse_choices_result(result_str: str | None) -> JsonObject:
     """Parse the result of a get_action_choices tool call."""
+    if result_str is None:
+        return {}
     try:
         parsed = json.loads(result_str)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError:
         return {}
     assert isinstance(parsed, dict), (
         f"get_action_choices result must be a JSON object, got {parsed!r}"
@@ -177,11 +180,13 @@ def _parse_choices_result(result_str: str) -> JsonObject:
     return parsed
 
 
-def _parse_action_result(result_str: str) -> JsonObject:
+def _parse_action_result(result_str: str | None) -> JsonObject:
     """Parse the result of a choose_action tool call."""
+    if result_str is None:
+        return {}
     try:
         parsed = json.loads(result_str)
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError:
         return {}
     assert isinstance(parsed, dict), (
         f"choose_action result must be a JSON object, got {parsed!r}"
@@ -247,11 +252,12 @@ def _resolve_chosen_index(
                 return ci
     # Fallback: parse trailing integer from action_taken.
     # Handles selected_0, selected_target_1, selected_ability_0, etc.
-    taken = action_result.get("action_taken", "")
-    assert isinstance(taken, str), (
-        f"action_taken must be a string when present, got {taken!r}"
-    )
-    if taken.startswith("selected"):
+    taken = action_result.get("action_taken")
+    if taken is not None:
+        assert isinstance(taken, str), (
+            f"action_taken must be a string when present, got {taken!r}"
+        )
+    if isinstance(taken, str) and taken.startswith("selected"):
         try:
             return int(taken.rsplit("_", 1)[1])
         except (ValueError, IndexError):
@@ -360,10 +366,11 @@ def _extract_decisions_v1(data: BuiltGameExport) -> list[dict[str, object]]:
         if not choices_result.get("action_pending", True):
             continue
 
-        choices_ts = choices_event.get("ts", "")
-        assert isinstance(choices_ts, str), (
-            f"choices event ts must be a string when present, got {choices_ts!r}"
-        )
+        choices_ts = choices_event.get("ts")
+        if choices_ts is not None:
+            assert isinstance(choices_ts, str), (
+                f"choices event ts must be a string when present, got {choices_ts!r}"
+            )
         player = choices_event["player"]
 
         # Parse available choices
@@ -374,20 +381,34 @@ def _extract_decisions_v1(data: BuiltGameExport) -> list[dict[str, object]]:
             )
         else:
             available_choices = []
-        response_type = choices_result.get("response_type", "")
-        action_type = choices_result.get("action_type", "")
-        message = choices_result.get("message", "")
-        combat_phase = choices_result.get("combat_phase", "")
-        assert isinstance(response_type, str), (
-            f"response_type must be a string, got {response_type!r}"
-        )
-        assert isinstance(action_type, str), (
-            f"action_type must be a string, got {action_type!r}"
-        )
-        assert isinstance(message, str), f"message must be a string, got {message!r}"
-        assert isinstance(combat_phase, str), (
-            f"combat_phase must be a string when present, got {combat_phase!r}"
-        )
+        response_type = choices_result.get("response_type")
+        action_type = choices_result.get("action_type")
+        message = choices_result.get("message")
+        combat_phase = choices_result.get("combat_phase")
+        if response_type is not None:
+            assert isinstance(response_type, str), (
+                f"response_type must be a string, got {response_type!r}"
+            )
+        else:
+            response_type = ""
+        if action_type is not None:
+            assert isinstance(action_type, str), (
+                f"action_type must be a string, got {action_type!r}"
+            )
+        else:
+            action_type = ""
+        if message is not None:
+            assert isinstance(message, str), (
+                f"message must be a string, got {message!r}"
+            )
+        else:
+            message = ""
+        if combat_phase is not None:
+            assert isinstance(combat_phase, str), (
+                f"combat_phase must be a string when present, got {combat_phase!r}"
+            )
+        else:
+            combat_phase = ""
 
         combat_raw = choices_result.get("combat")
         combat = combat_raw if isinstance(combat_raw, list) else []
@@ -415,7 +436,7 @@ def _extract_decisions_v1(data: BuiltGameExport) -> list[dict[str, object]]:
                 continue
 
             if ev["type"] == "llm_response" and not reasoning:
-                reasoning_raw = ev.get("reasoning", "")
+                reasoning_raw = ev.get("reasoning")
                 assert isinstance(reasoning_raw, str) or reasoning_raw is None, (
                     f"reasoning must be a string when present, got {reasoning_raw!r}"
                 )
@@ -427,10 +448,12 @@ def _extract_decisions_v1(data: BuiltGameExport) -> list[dict[str, object]]:
                 chosen_index = _resolve_chosen_index(
                     chosen_args, available_choices, action_result
                 )
-                action_ts = ev.get("ts", "")
-                assert isinstance(action_ts, str), (
-                    f"choose_action ts must be a string when present, got {action_ts!r}"
-                )
+                action_ts_val = ev.get("ts")
+                if action_ts_val is not None:
+                    assert isinstance(action_ts_val, str), (
+                        f"choose_action ts must be a string when present, got {action_ts_val!r}"
+                    )
+                    action_ts = action_ts_val
                 if _is_failed_choose_action_result(action_result):
                     continue
                 break
@@ -441,35 +464,39 @@ def _extract_decisions_v1(data: BuiltGameExport) -> list[dict[str, object]]:
 
         # Find nearest snapshot (None if decision precedes all snapshots,
         # e.g. play/draw choice before hands are dealt)
-        snap_idx = _find_snapshot_index(snapshots, choices_ts)
+        snap_idx = _find_snapshot_index(snapshots, choices_ts) if choices_ts else None
         game_state = (
             _summarize_snapshot(snapshots[snap_idx]) if snap_idx is not None else {}
         )
 
         # Collect subsequent game actions (between this decision and next)
-        next_choices_ts = ""
+        next_choices_ts: str | None = None
         if ce_idx + 1 < len(choices_events):
-            next_choices_ts = choices_events[ce_idx + 1][1].get("ts", "")
-            assert isinstance(next_choices_ts, str), (
-                f"next choices ts must be a string when present, got {next_choices_ts!r}"
-            )
+            next_choices_ts = choices_events[ce_idx + 1][1].get("ts")
+            if next_choices_ts is not None:
+                assert isinstance(next_choices_ts, str), (
+                    f"next choices ts must be a string when present, got {next_choices_ts!r}"
+                )
 
         subsequent: list[str] = []
         if action_ts:
             for a in actions:
-                a_ts = a.get("ts", "")
-                assert isinstance(a_ts, str), (
-                    f"action ts must be a string when present, got {a_ts!r}"
-                )
-                if a_ts <= (action_ts or choices_ts):
+                a_ts = a.get("ts")
+                if a_ts is not None:
+                    assert isinstance(a_ts, str), (
+                        f"action ts must be a string when present, got {a_ts!r}"
+                    )
+                compare_ts = action_ts if action_ts else choices_ts
+                if a_ts is None or compare_ts is None or a_ts <= compare_ts:
                     continue
                 if next_choices_ts and a_ts > next_choices_ts:
                     break
-                message_raw = a.get("message", "")
-                assert isinstance(message_raw, str), (
-                    f"action message must be a string when present, got {message_raw!r}"
-                )
-                subsequent.append(message_raw)
+                message_raw = a.get("message")
+                if message_raw is not None:
+                    assert isinstance(message_raw, str), (
+                        f"action message must be a string when present, got {message_raw!r}"
+                    )
+                    subsequent.append(message_raw)
                 if len(subsequent) >= 5:
                     break
 
@@ -545,20 +572,34 @@ def _extract_decisions_v2(data: BuiltGameExport) -> list[dict[str, object]]:
             )
         else:
             available_choices = []
-        response_type = choices_result.get("response_type", "")
-        action_type = choices_result.get("action_type", "")
-        message = choices_result.get("message", "")
-        combat_phase = choices_result.get("combat_phase", "")
-        assert isinstance(response_type, str), (
-            f"response_type must be a string, got {response_type!r}"
-        )
-        assert isinstance(action_type, str), (
-            f"action_type must be a string, got {action_type!r}"
-        )
-        assert isinstance(message, str), f"message must be a string, got {message!r}"
-        assert isinstance(combat_phase, str), (
-            f"combat_phase must be a string when present, got {combat_phase!r}"
-        )
+        response_type = choices_result.get("response_type")
+        action_type = choices_result.get("action_type")
+        message = choices_result.get("message")
+        combat_phase = choices_result.get("combat_phase")
+        if response_type is not None:
+            assert isinstance(response_type, str), (
+                f"response_type must be a string, got {response_type!r}"
+            )
+        else:
+            response_type = ""
+        if action_type is not None:
+            assert isinstance(action_type, str), (
+                f"action_type must be a string, got {action_type!r}"
+            )
+        else:
+            action_type = ""
+        if message is not None:
+            assert isinstance(message, str), (
+                f"message must be a string, got {message!r}"
+            )
+        else:
+            message = ""
+        if combat_phase is not None:
+            assert isinstance(combat_phase, str), (
+                f"combat_phase must be a string when present, got {combat_phase!r}"
+            )
+        else:
+            combat_phase = ""
 
         combat_raw = choices_result.get("combat")
         combat = combat_raw if isinstance(combat_raw, list) else []
@@ -587,7 +628,7 @@ def _extract_decisions_v2(data: BuiltGameExport) -> list[dict[str, object]]:
                 continue
 
             if ev["type"] == "llm_response" and not reasoning:
-                reasoning_raw = ev.get("reasoning", "")
+                reasoning_raw = ev.get("reasoning")
                 assert isinstance(reasoning_raw, str) or reasoning_raw is None, (
                     f"reasoning must be a string when present, got {reasoning_raw!r}"
                 )
@@ -599,10 +640,12 @@ def _extract_decisions_v2(data: BuiltGameExport) -> list[dict[str, object]]:
                 chosen_index = _resolve_chosen_index(
                     chosen_args, available_choices, action_result
                 )
-                action_ts = ev.get("ts", "")
-                assert isinstance(action_ts, str), (
-                    f"choose_action ts must be a string when present, got {action_ts!r}"
-                )
+                action_ts_val = ev.get("ts")
+                if action_ts_val is not None:
+                    assert isinstance(action_ts_val, str), (
+                        f"choose_action ts must be a string when present, got {action_ts_val!r}"
+                    )
+                    action_ts = action_ts_val
                 game_seq_raw = ev.get("gameSeq", action_seq)
                 if isinstance(game_seq_raw, int) and not isinstance(game_seq_raw, bool):
                     action_seq = game_seq_raw
@@ -627,10 +670,11 @@ def _extract_decisions_v2(data: BuiltGameExport) -> list[dict[str, object]]:
         if choices_seq:
             snap_idx = _find_snapshot_index_by_seq(snapshots, choices_seq)
         else:
-            choices_ts = source_event.get("ts", "")
-            assert isinstance(choices_ts, str), (
-                f"source event ts must be a string when present, got {choices_ts!r}"
-            )
+            choices_ts = source_event.get("ts")
+            if choices_ts is not None:
+                assert isinstance(choices_ts, str), (
+                    f"source event ts must be a string when present, got {choices_ts!r}"
+                )
             snap_idx = (
                 _find_snapshot_index(snapshots, choices_ts) if choices_ts else None
             )
@@ -749,20 +793,22 @@ def _find_spell_cancelled_events(
         player = ev["player"]
         result_str = ev["result"]
         if "[System] Spell cancelled" not in result_str:
-            ts_raw = ev.get("ts", "")
-            assert isinstance(ts_raw, str), (
-                f"event ts must be a string when present, got {ts_raw!r}"
-            )
-            last_ts[player] = ts_raw
+            ts_raw = ev.get("ts")
+            if ts_raw is not None:
+                assert isinstance(ts_raw, str), (
+                    f"event ts must be a string when present, got {ts_raw!r}"
+                )
+                last_ts[player] = ts_raw
             continue
         try:
             result = json.loads(result_str)
         except (json.JSONDecodeError, TypeError):
-            ts_raw = ev.get("ts", "")
-            assert isinstance(ts_raw, str), (
-                f"event ts must be a string when present, got {ts_raw!r}"
-            )
-            last_ts[player] = ts_raw
+            ts_raw = ev.get("ts")
+            if ts_raw is not None:
+                assert isinstance(ts_raw, str), (
+                    f"event ts must be a string when present, got {ts_raw!r}"
+                )
+                last_ts[player] = ts_raw
             continue
         if not isinstance(result, dict):
             continue
@@ -772,18 +818,26 @@ def _find_spell_cancelled_events(
         for msg in recent_chat:
             if "[System] Spell cancelled" in str(msg):
                 # Use the previous event's timestamp (when the cast was attempted)
-                ev_ts_raw = ev.get("ts", "")
-                assert isinstance(ev_ts_raw, str), (
-                    f"event ts must be a string when present, got {ev_ts_raw!r}"
-                )
-                ts = last_ts.get(player, ev_ts_raw)
+                ev_ts_raw = ev.get("ts")
+                if ev_ts_raw is not None:
+                    assert isinstance(ev_ts_raw, str), (
+                        f"event ts must be a string when present, got {ev_ts_raw!r}"
+                    )
+                if player in last_ts:
+                    ts = last_ts[player]
+                elif ev_ts_raw is not None:
+                    assert isinstance(ev_ts_raw, str)
+                    ts = ev_ts_raw
+                else:
+                    break
                 cancelled.append((player, ts))
                 break
-        ts_raw = ev.get("ts", "")
-        assert isinstance(ts_raw, str), (
-            f"event ts must be a string when present, got {ts_raw!r}"
-        )
-        last_ts[player] = ts_raw
+        ts_raw = ev.get("ts")
+        if ts_raw is not None:
+            assert isinstance(ts_raw, str), (
+                f"event ts must be a string when present, got {ts_raw!r}"
+            )
+            last_ts[player] = ts_raw
     return cancelled
 
 
@@ -806,16 +860,16 @@ def _mark_rolled_back_casts(
             if d["player"] != player:
                 continue
             # Skip decisions after the cancel event
-            action_ts_raw = d.get("action_ts", "")
+            action_ts_raw = d["action_ts"]
             assert isinstance(action_ts_raw, str), (
-                f"action_ts must be a string when present, got {action_ts_raw!r}"
+                f"action_ts must be a string, got {action_ts_raw!r}"
             )
             if action_ts_raw > cancel_ts:
                 continue
             # Already handled by a previous cancel event
             if d.get("rolled_back") or d.get("cast_rolled_back"):
                 break
-            msg = d.get("message", "")
+            msg = d["message"]
             assert isinstance(msg, str), f"message must be a string, got {msg!r}"
             if msg.startswith(_CAST_PROMPT_PREFIXES):
                 d["cast_rolled_back"] = True

@@ -38,13 +38,15 @@ class ErrorEvent:
     game_id: str
 
 
-def _parse_result(result_str: str) -> JsonObject | None:
+def _parse_result(result_str: str | None) -> JsonObject | None:
     """Parse a tool result string into a dict, or None if not JSON."""
+    if result_str is None:
+        return None
     try:
         r = json.loads(result_str)
         if isinstance(r, dict):
             return r
-    except (json.JSONDecodeError, TypeError):
+    except json.JSONDecodeError:
         pass
     return None
 
@@ -77,10 +79,12 @@ def _infer_action_type(events: Sequence[LlmEvent], idx: int, player: str) -> str
         if ev["type"] == "tool_call" and ev["tool"] == "get_action_choices":
             r = _parse_result(ev["result"])
             if r:
-                action_type = r.get("action_type", "")
-                assert isinstance(action_type, str), (
+                action_type = r.get("action_type")
+                assert action_type is None or isinstance(action_type, str), (
                     f"get_action_choices action_type must be a string, got {action_type!r}"
                 )
+                if action_type is None:
+                    continue
                 return action_type
         # Stop if we hit another choose_action from this player
         if ev["type"] == "tool_call" and ev["tool"] == "choose_action":
@@ -146,10 +150,12 @@ def analyze_game(gz_path: str) -> list[ErrorEvent]:
         r = _parse_result(result_str)
 
         if r is not None and r.get("success") is False:
-            error_message = r.get("error", "")
-            assert isinstance(error_message, str), (
-                f"{game_id}: tool error message must be a string, got {error_message!r}"
+            error_message = r.get("error")
+            assert error_message is None or isinstance(error_message, str), (
+                f"{game_id}: tool error message must be a string when present, got {error_message!r}"
             )
+            if error_message is None:
+                error_message = ""
             error_code = r.get("error_code")
             assert error_code is None or isinstance(error_code, str), (
                 f"{game_id}: tool error code must be a string when present, got {error_code!r}"
