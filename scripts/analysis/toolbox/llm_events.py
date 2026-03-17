@@ -27,7 +27,7 @@ def main(gz_path: str) -> None:
 
     # By player
     print()
-    players = sorted(set(e.get("player", "?") for e in events))
+    players = sorted({e.get("player", "?") for e in events})
     for player in players:
         pe = [e for e in events if e.get("player") == player]
         pt = Counter(e.get("type", "?") for e in pe)
@@ -83,8 +83,7 @@ def main(gz_path: str) -> None:
         prompt_tokens = sum(e["usage"].get("promptTokens", 0) for e in pr)
         completion_tokens = sum(e["usage"].get("completionTokens", 0) for e in pr)
         print(
-            f"{player}: {len(pr)} responses, "
-            f"{prompt_tokens:,} prompt, {completion_tokens:,} completion tokens"
+            f"{player}: {len(pr)} responses, {prompt_tokens:,} prompt, {completion_tokens:,} completion tokens"
         )
 
     # Game-level errors from error logs
