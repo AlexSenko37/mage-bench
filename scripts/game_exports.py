@@ -4,6 +4,7 @@ These helpers intentionally avoid schema validation so migration and backfill
 scripts can operate on older export versions.
 """
 
+import dataclasses
 import gzip
 import json
 from collections.abc import Mapping
@@ -50,7 +51,29 @@ def write_raw_game_export(
     export_path = Path(path)
     _assert_game_export_path(export_path)
 
-    json_bytes = json.dumps(data, indent=2, ensure_ascii=False).encode()
+    def _default(obj: object) -> object:
+        if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+            source_keys: frozenset[str] | None = getattr(obj, "_source_keys", None)
+            if source_keys is not None:
+                result = {
+                    f.name: getattr(obj, f.name)
+                    for f in dataclasses.fields(obj)
+                    if f.name in source_keys
+                }
+                extra: dict[str, object] | None = getattr(obj, "_extra", None)
+                if extra:
+                    result.update(extra)
+                return result
+            return {
+                f.name: getattr(obj, f.name)
+                for f in dataclasses.fields(obj)
+                if getattr(obj, f.name) is not None
+            }
+        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+    json_bytes = json.dumps(
+        data, indent=2, ensure_ascii=False, default=_default
+    ).encode()
     if compress is None:
         compress = len(json_bytes) > GAME_EXPORT_GZ_THRESHOLD
 
