@@ -1534,11 +1534,23 @@ def _send_spectator_command(
 
 def _to_sorted_json(obj: object) -> str:
     """Deterministic JSON serialization with sorted keys."""
-    return json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False, default=json_default)
+    return json.dumps(_json_ready(obj), indent=2, sort_keys=True, ensure_ascii=False)
+
+
+def _json_ready(obj: object) -> object:
+    """Convert dataclass-backed export records into plain JSON-compatible values."""
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        return _json_ready(json_default(obj))
+    if isinstance(obj, dict):
+        return {key: _json_ready(value) for key, value in obj.items()}
+    if isinstance(obj, list):
+        return [_json_ready(value) for value in obj]
+    return obj
 
 
 def _brief(value: object, max_len: int = 80) -> str:
     """Short representation of a JSON value for diff output."""
+    value = _json_ready(value)
     if isinstance(value, str):
         r = repr(value)
         if len(r) > max_len:
@@ -1616,6 +1628,7 @@ def _normalize_prompt_for_golden(obj: object) -> object:
 
     - Parse embedded JSON strings and re-serialize with sorted keys.
     """
+    obj = _json_ready(obj)
     if isinstance(obj, dict):
         return {key: _normalize_prompt_for_golden(value) for key, value in obj.items()}
     if isinstance(obj, list):
@@ -1660,6 +1673,7 @@ def _normalize_embedded_json(obj: object) -> object:
     The key order in these strings can vary between runs (e.g. {"blocks":"p10","id":"p7"}
     vs {"id":"p7","blocks":"p10"}). Parse and re-serialize with sorted keys.
     """
+    obj = _json_ready(obj)
     if isinstance(obj, dict):
         return {k: _normalize_embedded_json(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -1811,7 +1825,9 @@ def extract_blunder_decisions(export_data: dict, game_dir: Path) -> list[dict]:
     """Extract decisions for golden blunder prompt comparisons."""
     # Keep the temp export on the validator's canonical game-export path.
     tmp_export = game_dir / "game_blunder_export.json"
-    tmp_export.write_text(json.dumps(export_data, default=json_default))
+    # Golden helpers now receive dataclass-backed exports from the typed loader,
+    # so normalize them back to plain JSON before handing off to file-based tools.
+    tmp_export.write_text(json.dumps(_json_ready(export_data)))
     try:
         return extract_decisions(str(tmp_export))
     finally:
