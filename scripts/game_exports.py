@@ -12,7 +12,6 @@ from typing import Any
 
 from schemas.game_export_types import json_default
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GAMES_DIR = REPO_ROOT / "website" / "public" / "games"
 GAME_EXPORT_GZ_THRESHOLD = 25 * 1024 * 1024
