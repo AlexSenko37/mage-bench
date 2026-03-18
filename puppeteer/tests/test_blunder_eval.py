@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import scripts.analysis.blunder_eval_common as blunder_eval_common
-from schemas.game_export_types import Annotation
+from schemas.game_export_types import Annotation, Snapshot
 from scripts.analysis.blunder_eval_common import (
     chosen_display,
     compute_aftermath_index,
@@ -175,35 +175,50 @@ class TestLoadGameValidation:
 # --- compute_aftermath_index ---
 
 
+def _snap(seq: int = 0, ts: str | None = None) -> Snapshot:
+    """Build a minimal Snapshot for aftermath index tests."""
+    return Snapshot(
+        seq=seq,
+        turn=1,
+        phase=None,
+        step=None,
+        active_player=None,
+        priority_player=None,
+        players=[],
+        stack=[],
+        ts=ts,
+    )
+
+
 class TestComputeAftermathIndex:
     def test_with_action_seq(self) -> None:
         snapshots = [
-            {"seq": 1},
-            {"seq": 5},
-            {"seq": 10},
+            _snap(seq=1),
+            _snap(seq=5),
+            _snap(seq=10),
         ]
         decision = {"snapshotIndex": 0, "actionSeq": 4}
         assert compute_aftermath_index(decision, snapshots) == 1
 
     def test_exact_seq_match(self) -> None:
         snapshots = [
-            {"seq": 1},
-            {"seq": 5},
+            _snap(seq=1),
+            _snap(seq=5),
         ]
         # actionSeq=5, we need strictly greater, so snapshot seq=5 is not > 5
         decision = {"snapshotIndex": 0, "actionSeq": 4}
         assert compute_aftermath_index(decision, snapshots) == 1
 
     def test_no_action_seq(self) -> None:
-        snapshots = [{"seq": 1}]
+        snapshots = [_snap(seq=1)]
         decision = {"snapshotIndex": 0}
-        # No actionSeq → falls back to snapshotIndex + 1
+        # No actionSeq -> falls back to snapshotIndex + 1
         assert compute_aftermath_index(decision, snapshots) == 0
 
     def test_action_seq_beyond_all_snapshots(self) -> None:
         snapshots = [
-            {"seq": 1},
-            {"seq": 2},
+            _snap(seq=1),
+            _snap(seq=2),
         ]
         decision = {"snapshotIndex": 0, "actionSeq": 99}
         # No snapshot > actionSeq, falls back to snapshotIndex + 1
@@ -212,10 +227,10 @@ class TestComputeAftermathIndex:
     def test_starts_from_snapshot_index(self) -> None:
         """Search starts from decision's snapshotIndex, not from 0."""
         snapshots = [
-            {"seq": 1},
-            {"seq": 3},
-            {"seq": 5},
-            {"seq": 7},
+            _snap(seq=1),
+            _snap(seq=3),
+            _snap(seq=5),
+            _snap(seq=7),
         ]
         decision = {"snapshotIndex": 2, "actionSeq": 6}
         # Should find snapshot 3 (seq=7 > 6), starting search from index 2

@@ -19,7 +19,7 @@ import os
 import re
 import sys
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from pathlib import Path
@@ -47,6 +47,7 @@ from schemas.game_export_types import (
     SnapshotPlayer,
     export_record_field,
     json_default,
+    snapshot_to_dict,
 )
 from scripts import scryfall
 from scripts.analysis.annotate_game import annotate_game
@@ -266,28 +267,23 @@ def _record_field(record: object, field: str) -> object | None:
     return export_record_field(record, field)
 
 
+_SNAPSHOT_ZONES = frozenset({"hand", "battlefield", "graveyard", "exile", "commanders"})
+
+
 def _snapshot_zone_cards(
     player: SnapshotPlayer, zone: str
 ) -> list[str | Permanent] | None:
     """Return a snapshot player's cards for a supported public/private zone."""
-    if zone == "hand":
-        return player["hand"]
-    if zone == "battlefield":
-        return player["battlefield"]
-    if zone == "graveyard":
-        return player["graveyard"]
-    if zone == "exile":
-        return player.get("exile")
-    if zone == "commanders":
-        return player.get("commanders")
-    raise AssertionError(f"unexpected zone {zone!r}")
+    assert zone in _SNAPSHOT_ZONES, f"unexpected zone {zone!r}"
+    cards: list[str | Permanent] | None = getattr(player, zone)
+    return cards
 
 
 def _collect_card_names(data: GameExport) -> set[str]:
     """Collect all unique card names from game snapshots and choices."""
     names: set[str] = set()
     for snap in data["snapshots"]:
-        for p in snap["players"]:
+        for p in snap.players:
             for zone in ("hand", "battlefield", "graveyard", "exile", "commanders"):
                 zone_cards = _snapshot_zone_cards(p, zone)
                 if zone_cards is not None:
@@ -298,25 +294,22 @@ def _collect_card_names(data: GameExport) -> set[str]:
                             name = _record_field(c, "name")
                             if isinstance(name, str) and name:
                                 names.add(name)
-        for item in snap["stack"]:
+        for item in snap.stack:
             if isinstance(item, str) and item:
                 names.add(item)
             else:
                 name = _record_field(item, "name")
                 if isinstance(name, str) and name:
                     names.add(name)
-        snap_combat = snap.get("combat")
-        if snap_combat is not None:
-            for group in snap_combat:
-                group_attackers = group.get("attackers")
-                if group_attackers is not None:
-                    for a in group_attackers:
+        if snap.combat is not None:
+            for group in snap.combat:
+                if group.attackers is not None:
+                    for a in group.attackers:
                         name = _record_field(a, "name")
                         if isinstance(name, str) and name:
                             names.add(name)
-                group_blockers = group.get("blockers")
-                if group_blockers is not None:
-                    for b in group_blockers:
+                if group.blockers is not None:
+                    for b in group.blockers:
                         name = _record_field(b, "name")
                         if isinstance(name, str) and name:
                             names.add(name)
@@ -567,7 +560,7 @@ def _actions_by_turn(actions: Sequence[Action]) -> dict[int, list[str]]:
 def _snapshot_for_turn(snapshots: Sequence[Snapshot], turn: int) -> Snapshot | None:
     """Find the first snapshot for a given turn number."""
     for snap in snapshots:
-        if snap["turn"] == turn:
+        if snap.turn == turn:
             return snap
     return None
 
@@ -598,12 +591,12 @@ def _format_prior_context(
 
     # Format the reference snapshot using shared renderer display functions
     players_parts: list[str] = []
-    for p in ref_snap["players"]:
-        bf = p["battlefield"]
-        s = f"{p['name']}: {p['life']}hp"
+    for p in ref_snap.players:
+        bf = p.battlefield
+        s = f"{p.name}: {p.life}hp"
         if bf:
             s += f" bf=[{', '.join(permanent_display(x) for x in bf)}]"
-        gy = p["graveyard"]
+        gy = p.graveyard
         if gy:
             s += f" gy=[{', '.join(card_display(x) for x in gy)}]"
         players_parts.append(s)
@@ -1084,7 +1077,7 @@ def build_decision_prompt(
 
     assert snap is not None, f"decision references missing snapshot index {snap_idx}"
     prior_ctx = _format_prior_context(decision, snapshots, actions_by_turn, num_players)
-    snap_ts = snap.get("ts")
+    snap_ts = snap.ts
     turn_ctx = _format_current_turn_actions(decision, all_actions, snap_ts)
     rendered_decision = decision if isinstance(decision, Decision) else dict(decision)
     deciding_player = (
@@ -1092,7 +1085,7 @@ def build_decision_prompt(
     )
     formatted = render_decision(
         rendered_decision,
-        dict(snap),
+        snapshot_to_dict(snap),
         oracle_texts=oracle_texts,
         deciding_player=deciding_player,
         include_card_reference=True,
@@ -1238,14 +1231,14 @@ def _eval_one_decision(
         # v2: find first snapshot strictly after action_seq
         aftermath_idx = min(s_idx + 1, len(snapshots) - 1)
         for i in range(s_idx, len(snapshots)):
-            if snapshots[i].get("seq", 0) > action_seq:
+            if snapshots[i].seq > action_seq:
                 aftermath_idx = i
                 break
     elif action_ts:
         # v1: find first snapshot strictly after action_ts
         aftermath_idx = min(s_idx + 1, len(snapshots) - 1)
         for i in range(s_idx, len(snapshots)):
-            snap_ts_val = snapshots[i].get("ts")
+            snap_ts_val = snapshots[i].ts
             if snap_ts_val and snap_ts_val > action_ts:
                 aftermath_idx = i
                 break
@@ -1364,7 +1357,7 @@ def _auto_ingest_ground_truth(
     game_id: str,
     annotations: Sequence[Annotation],
     decisions: Sequence[DecisionRecord],
-    snapshots: Sequence[Mapping[str, object]],
+    snapshots: Sequence[Snapshot],
 ) -> None:
     """Add annotated decisions to ground truth for future eval."""
     from scripts.analysis.blunder_eval_common import (
@@ -1558,7 +1551,7 @@ def main(gz_path: str) -> float:
     for ann in annotations:
         snap_idx = ann.snapshotIndex
         assert snap_idx is not None
-        turn = snapshots[snap_idx]["turn"] if snap_idx < len(snapshots) else "?"
+        turn = snapshots[snap_idx].turn if snap_idx < len(snapshots) else "?"
         sev = ann.severity.upper()
         print(f"  Turn {turn} ({ann.player}) - {sev}")
         print(f"    {ann.description}")
