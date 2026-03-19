@@ -2,38 +2,39 @@
   "actions": [
     {
       "message": "TestPlayer chooses that they take the first turn",
-      "seq": 2
+      "seq": 2,
     },
     {
       "seq": 3,
       "turn": 1,
-      "type": "turn_change"
+      "type": "turn_change",
     },
     {
       "seq": 4,
       "turn": 1,
-      "type": "phase_change"
+      "type": "phase_change",
     },
     {
       "message": "TestPlayer wants to concede",
-      "seq": 6
+      "seq": 6,
     }
   ],
   "cardData": {
     "Aether Vial": {
       "mana_cost": "{1}",
-      "oracle_text": "At the beginning of your upkeep, you may put a charge counter on this artifact.\n{T}: You may put a creature card with mana value equal to the number of charge counters on this artifact from your hand onto the battlefield.",
-      "type_line": "Artifact"
+      "oracle_text": "At the beginning of your upkeep, you may put a charge counter on this artifact.\n\
+{T}: You may put a creature card with mana value equal to the number of charge counters on this artifact from your hand onto the battlefield.",
+      "type_line": "Artifact",
     },
     "Ancient Tomb": {
       "mana_cost": "",
       "oracle_text": "{T}: Add {C}{C}. This land deals 2 damage to you.",
-      "type_line": "Land"
+      "type_line": "Land",
     },
     "Badlands": {
       "mana_cost": "",
       "oracle_text": "({T}: Add {B} or {R}.)",
-      "type_line": "Land — Swamp Mountain"
+      "type_line": "Land — Swamp Mountain",
     }
   },
   "cardImages": {},
@@ -50,7 +51,7 @@
       "isForced": false,
       "llmEventIndices": [
         2,
-        3
+        3,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -59,7 +60,7 @@
       "snapshotIndex": 0,
       "step": null,
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {
@@ -67,7 +68,7 @@
         "error_code": "missing_param",
         "game_seq": 5,
         "retryable": true,
-        "success": false
+        "success": false,
       },
       "actionSeq": 5,
       "actionType": "GAME_ASK",
@@ -75,7 +76,7 @@
       "choices": [],
       "chosen": false,
       "chosenArgs": {
-        "answer": false
+        "answer": false,
       },
       "index": 1,
       "isForced": false,
@@ -83,7 +84,7 @@
         4,
         5,
         6,
-        7
+        7,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -92,7 +93,7 @@
       "snapshotIndex": 0,
       "step": null,
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {},
@@ -106,7 +107,7 @@
       "isForced": false,
       "llmEventIndices": [
         8,
-        9
+        9,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -115,15 +116,15 @@
       "snapshotIndex": 0,
       "step": null,
       "subsequentActions": [
-        "TestPlayer wants to concede"
+        "TestPlayer wants to concede",
       ],
-      "turn": 1
+      "turn": 1,
     }
   ],
   "deckType": "Constructed - Legacy",
   "gameOver": {
     "message": "Opponent",
-    "seq": 7
+    "seq": 7,
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 55,
@@ -139,12 +140,12 @@
         "get_oracle_text",
         "get_action_choices",
         "choose_action",
-        "concede"
+        "concede",
       ],
       "model": "google/gemini-2.0-flash-001",
       "player": "TestPlayer",
       "seq": 1,
-      "type": "game_start"
+      "type": "game_start",
     },
     {
       "costUsd": 0.0,
@@ -154,16 +155,16 @@
       "toolCalls": [
         {
           "arguments": {
-            "index": 0
+            "index": 0,
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "index": 0
+        "index": 0,
       },
       "gameSeq": 5,
       "player": "TestPlayer",
@@ -179,7 +180,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -187,7 +188,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -195,7 +196,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -203,7 +204,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -211,7 +212,7 @@
                 "mana_cost": "{2}{R}",
                 "name": "Blood Moon",
                 "rules": [
-                  "Nonbasic lands are Mountains."
+                  "Nonbasic lands are Mountains.",
                 ]
               },
               {
@@ -219,7 +220,7 @@
                 "mana_cost": "{2}{R}",
                 "name": "Blood Moon",
                 "rules": [
-                  "Nonbasic lands are Mountains."
+                  "Nonbasic lands are Mountains.",
                 ]
               },
               {
@@ -227,16 +228,16 @@
                 "mana_cost": "{2}{R}",
                 "name": "Blood Moon",
                 "rules": [
-                  "Nonbasic lands are Mountains."
+                  "Nonbasic lands are Mountains.",
                 ]
-              }
+              },
             ],
             "hand_size": 7,
             "is_active": false,
             "is_you": true,
             "library_size": 43,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -244,7 +245,7 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "board_cursor": 2,
@@ -260,56 +261,56 @@
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
-          }
+          },
         ]
       },
       "seq": 3,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -320,14 +321,14 @@
       "toolCalls": [
         {
           "arguments": {},
-          "name": "pass_priority"
+          "name": "pass_priority",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "board_cursor": 2
+        "board_cursor": 2,
       },
       "gameSeq": 5,
       "player": "TestPlayer",
@@ -347,56 +348,56 @@
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
-          }
+          },
         ]
       },
       "seq": 5,
       "tool": "pass_priority",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -407,16 +408,16 @@
       "toolCalls": [
         {
           "arguments": {
-            "answer": false
+            "answer": false,
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "answer": false
+        "answer": false,
       },
       "gameSeq": 5,
       "player": "TestPlayer",
@@ -425,11 +426,11 @@
         "error_code": "missing_param",
         "game_seq": 5,
         "retryable": true,
-        "success": false
+        "success": false,
       },
       "seq": 7,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -440,14 +441,14 @@
       "toolCalls": [
         {
           "arguments": {},
-          "name": "pass_priority"
+          "name": "pass_priority",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "board_cursor": 2
+        "board_cursor": 2,
       },
       "gameSeq": 5,
       "player": "TestPlayer",
@@ -467,56 +468,56 @@
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "is_land": true,
             "name": "Ancient Tomb",
             "rules": [
-              "{T}: Add {C}{C}. {this} deals 2 damage to you."
+              "{T}: Add {C}{C}. {this} deals 2 damage to you.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
           },
           {
             "mana_cost": "{2}{R}",
             "name": "Blood Moon",
             "rules": [
-              "Nonbasic lands are Mountains."
+              "Nonbasic lands are Mountains.",
             ]
-          }
+          },
         ]
       },
       "seq": 9,
       "tool": "pass_priority",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -527,10 +528,10 @@
       "toolCalls": [
         {
           "arguments": {},
-          "name": "get_game_state"
+          "name": "get_game_state",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {},
@@ -549,7 +550,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -557,7 +558,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -565,7 +566,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -573,7 +574,7 @@
                 "is_land": true,
                 "name": "Ancient Tomb",
                 "rules": [
-                  "{T}: Add {C}{C}. {this} deals 2 damage to you."
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
                 ]
               },
               {
@@ -581,7 +582,7 @@
                 "mana_cost": "{2}{R}",
                 "name": "Blood Moon",
                 "rules": [
-                  "Nonbasic lands are Mountains."
+                  "Nonbasic lands are Mountains.",
                 ]
               },
               {
@@ -589,7 +590,7 @@
                 "mana_cost": "{2}{R}",
                 "name": "Blood Moon",
                 "rules": [
-                  "Nonbasic lands are Mountains."
+                  "Nonbasic lands are Mountains.",
                 ]
               },
               {
@@ -597,16 +598,16 @@
                 "mana_cost": "{2}{R}",
                 "name": "Blood Moon",
                 "rules": [
-                  "Nonbasic lands are Mountains."
+                  "Nonbasic lands are Mountains.",
                 ]
-              }
+              },
             ],
             "hand_size": 7,
             "is_active": false,
             "is_you": true,
             "library_size": 43,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -614,16 +615,16 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "priority_player": "",
         "stack": [],
-        "turn": 1
+        "turn": 1,
       },
       "seq": 11,
       "tool": "get_game_state",
-      "type": "tool_call"
+      "type": "tool_call",
     }
   ],
   "players": [
@@ -642,10 +643,10 @@
         "get_oracle_text",
         "get_action_choices",
         "choose_action",
-        "concede"
+        "concede",
       ],
       "totalCostUsd": 0.0,
-      "type": "pilot"
+      "type": "pilot",
     },
     {
       "deckName": "Goblins",
@@ -653,7 +654,7 @@
       "placement": 1,
       "toolCallsFailed": 0,
       "toolCallsOk": 0,
-      "type": "replay"
+      "type": "replay",
     }
   ],
   "season": 1,
@@ -669,7 +670,7 @@
           "hand": [],
           "library_size": 60,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -678,14 +679,14 @@
           "hand": [],
           "library_size": 50,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": null,
       "seq": 1,
       "stack": [],
       "step": null,
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": null,
@@ -700,55 +701,55 @@
               "id": "p3",
               "name": "Aether Vial",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Aether Vial",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Aether Vial",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Aether Vial",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Ancient Tomb",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Ancient Tomb",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Badlands",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -757,19 +758,19 @@
           "hand": [],
           "library_size": 0,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": null,
       "seq": 7,
       "stack": [],
       "step": null,
-      "turn": 1
+      "turn": 1,
     }
   ],
   "totalTurns": 1,
   "tournament": null,
   "version": 8,
   "winner": "Opponent",
-  "youtubeUrl": ""
+  "youtubeUrl": "",
 }

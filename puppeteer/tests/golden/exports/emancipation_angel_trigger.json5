@@ -2,21 +2,21 @@
   "actions": [
     {
       "message": "TestPlayer chooses that they take the first turn",
-      "seq": 2
+      "seq": 2,
     },
     {
       "seq": 3,
       "turn": 1,
-      "type": "turn_change"
+      "type": "turn_change",
     },
     {
       "seq": 4,
       "turn": 1,
-      "type": "phase_change"
+      "type": "phase_change",
     },
     {
       "message": "TestPlayer skips Draw step",
-      "seq": 7
+      "seq": 7,
     },
     {
       "active_player": "TestPlayer",
@@ -24,11 +24,11 @@
       "seq": 8,
       "step": "DRAW",
       "turn": 1,
-      "type": "phase_change"
+      "type": "phase_change",
     },
     {
       "message": "TestPlayer skip attack",
-      "seq": 11
+      "seq": 11,
     },
     {
       "active_player": "TestPlayer",
@@ -36,11 +36,11 @@
       "seq": 12,
       "step": "DECLARE_ATTACKERS",
       "turn": 1,
-      "type": "phase_change"
+      "type": "phase_change",
     },
     {
-      "message": "TestPlayer puts Forest from hand onto the Battlefield",
-      "seq": 16
+      "message": "TestPlayer puts Plains from hand onto the Battlefield",
+      "seq": 16,
     },
     {
       "active_player": "TestPlayer",
@@ -48,45 +48,60 @@
       "seq": 17,
       "step": "POSTCOMBAT_MAIN",
       "turn": 1,
-      "type": "phase_change"
+      "type": "phase_change",
     },
     {
-      "message": "TestPlayer casts Ancient Stirrings from hand",
-      "seq": 20
+      "message": "TestPlayer casts Black Lotus from hand",
+      "seq": 20,
     },
     {
-      "message": "TestPlayer reveals Ornithopter (source: Ancient Stirrings)",
-      "seq": 25
+      "message": "TestPlayer puts Black Lotus from stack onto the Battlefield",
+      "seq": 23,
     },
     {
-      "message": "TestPlayer puts a card from library into their hand",
-      "seq": 26
+      "message": "TestPlayer sacrificed Black Lotus (source: Black Lotus)",
+      "seq": 27,
+    },
+    {
+      "message": "TestPlayer casts Emancipation Angel from hand",
+      "seq": 28,
+    },
+    {
+      "message": "TestPlayer puts Emancipation Angel from stack onto the Battlefield",
+      "seq": 31,
+    },
+    {
+      "message": "TestPlayer - Ability triggers: Emancipation Angel - When Emancipation Angel enters, return a permanent you control to its owner's hand.",
+      "seq": 32,
     },
     {
       "message": "TestPlayer wants to concede",
-      "seq": 28
+      "seq": 36,
     }
   ],
   "cardData": {
-    "Ancient Stirrings": {
-      "mana_cost": "{G}",
-      "oracle_text": "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Then put the rest on the bottom of your library in any order.",
-      "type_line": "Sorcery"
+    "Black Lotus": {
+      "mana_cost": "{0}",
+      "oracle_text": "{T}, Sacrifice this artifact: Add three mana of any one color.",
+      "type_line": "Artifact",
     },
-    "Forest": {
-      "mana_cost": "",
-      "oracle_text": "({T}: Add {G}.)",
-      "type_line": "Basic Land — Forest"
+    "Emancipation Angel": {
+      "mana_cost": "{1}{W}{W}",
+      "oracle_text": "Flying\n\
+When this creature enters, return a permanent you control to its owner's hand.",
+      "power": "3",
+      "toughness": "3",
+      "type_line": "Creature — Angel",
     },
     "Mountain": {
       "mana_cost": "",
       "oracle_text": "({T}: Add {R}.)",
-      "type_line": "Basic Land — Mountain"
+      "type_line": "Basic Land — Mountain",
     },
     "Plains": {
       "mana_cost": "",
       "oracle_text": "({T}: Add {W}.)",
-      "type_line": "Basic Land — Plains"
+      "type_line": "Basic Land — Plains",
     }
   },
   "cardImages": {},
@@ -103,7 +118,7 @@
       "isForced": false,
       "llmEventIndices": [
         2,
-        3
+        3,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -112,7 +127,7 @@
       "snapshotIndex": 1,
       "step": null,
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {
@@ -124,20 +139,23 @@
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
+                "playable": true,
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
               {
                 "id": "p11",
-                "is_land": true,
-                "name": "Forest",
-                "playable": true,
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
                 "rules": [
-                  "{T}: Add {G}."
-                ]
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p12",
@@ -145,7 +163,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -154,7 +172,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -163,7 +181,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -172,7 +190,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -181,16 +199,16 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
             "hand_size": 7,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -198,46 +216,47 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "board_cursor": 3,
         "choices": [
           {
-            "action": "land",
-            "id": "p11",
+            "action": "cast",
+            "id": "p10",
             "index": 0,
-            "name": "Forest"
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
           },
           {
             "action": "land",
             "id": "p12",
             "index": 1,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p13",
             "index": 2,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p14",
             "index": 3,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p15",
             "index": 4,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p16",
             "index": 5,
-            "name": "Plains"
+            "name": "Plains",
           }
         ],
         "context": "T1 Precombat Main/Precombat Main (TestPlayer) YOUR_MAIN",
@@ -246,7 +265,7 @@
         "message": "Play spells and abilities",
         "respond_with": "choice=pN to play, or choice=no to pass",
         "response_type": "select",
-        "success": true
+        "success": true,
       },
       "actionSeq": 9,
       "actionType": "GAME_ASK",
@@ -254,14 +273,14 @@
       "choices": [],
       "chosen": false,
       "chosenArgs": {
-        "choice": "no"
+        "choice": "no",
       },
       "index": 1,
       "isForced": false,
       "llmEventIndices": [
         4,
         5,
-        6
+        6,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -270,7 +289,7 @@
       "snapshotIndex": 1,
       "step": null,
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {},
@@ -279,40 +298,41 @@
       "choiceCount": 6,
       "choices": [
         {
-          "action": "land",
-          "id": "p11",
+          "action": "cast",
+          "id": "p10",
           "index": 0,
-          "name": "Forest"
+          "mana_cost": "{0}",
+          "name": "Black Lotus",
         },
         {
           "action": "land",
           "id": "p12",
           "index": 1,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p13",
           "index": 2,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p14",
           "index": 3,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p15",
           "index": 4,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p16",
           "index": 5,
-          "name": "Plains"
+          "name": "Plains",
         }
       ],
       "chosen": null,
@@ -321,19 +341,19 @@
       "isForced": false,
       "llmEventIndices": [
         6,
-        7
+        7,
       ],
       "message": "Play spells and abilities",
       "phase": "PRECOMBAT_MAIN",
       "pilotContext": {
         "landDropsUsed": 0,
         "playableCards": [
-          "p11",
+          "p10",
           "p12",
           "p13",
           "p14",
           "p15",
-          "p16"
+          "p16",
         ]
       },
       "player": "TestPlayer",
@@ -341,51 +361,54 @@
       "snapshotIndex": 2,
       "step": "PRECOMBAT_MAIN",
       "subsequentActions": [
-        "TestPlayer skip attack"
+        "TestPlayer skip attack",
       ],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {
         "action_pending": true,
-        "action_taken": "selected_0",
+        "action_taken": "selected_1",
         "action_type": "GAME_SELECT",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
+                "id": "p12",
+                "name": "Plains",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{T}: Add {W}.",
                 ],
-                "tapped": false
+                "tapped": false,
               }
             ],
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
                 "playable": true,
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
               {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
                 "rules": [
-                  "{T}: Add {W}."
-                ]
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -393,7 +416,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -401,7 +424,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -409,16 +432,16 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
             "hand_size": 6,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -426,7 +449,7 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "board_cursor": 4,
@@ -435,8 +458,8 @@
             "action": "cast",
             "id": "p10",
             "index": 0,
-            "mana_cost": "{G}",
-            "name": "Ancient Stirrings"
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
           }
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
@@ -446,104 +469,117 @@
         "respond_with": "choice=pN to play, or choice=no to pass",
         "response_type": "select",
         "success": true,
-        "untapped_lands": 1
+        "untapped_lands": 1,
       },
       "actionSeq": 18,
       "actionType": "GAME_SELECT",
       "choiceCount": 6,
       "choices": [
         {
-          "action": "land",
-          "id": "p11",
+          "action": "cast",
+          "id": "p10",
           "index": 0,
-          "name": "Forest"
+          "mana_cost": "{0}",
+          "name": "Black Lotus",
         },
         {
           "action": "land",
           "id": "p12",
           "index": 1,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p13",
           "index": 2,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p14",
           "index": 3,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p15",
           "index": 4,
-          "name": "Plains"
+          "name": "Plains",
         },
         {
           "action": "land",
           "id": "p16",
           "index": 5,
-          "name": "Plains"
+          "name": "Plains",
         }
       ],
-      "chosen": 0,
+      "chosen": 1,
       "chosenArgs": {
-        "choice": "p11"
+        "choice": "p12",
       },
       "index": 3,
       "isForced": false,
       "llmEventIndices": [
         8,
         9,
-        10
+        10,
       ],
       "message": "Play spells and abilities",
       "phase": "POSTCOMBAT_MAIN",
       "pilotContext": {
-        "landDropsUsed": 0
+        "landDropsUsed": 0,
       },
       "player": "TestPlayer",
       "responseType": "select",
       "snapshotIndex": 6,
       "step": "POSTCOMBAT_MAIN",
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {
         "action_pending": true,
         "action_taken": "selected_0",
-        "action_type": "GAME_SELECT",
+        "action_type": "GAME_CHOOSE_ABILITY",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
+                "id": "p12",
+                "name": "Plains",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{T}: Add {W}.",
                 ],
-                "tapped": true
+                "tapped": false,
               }
             ],
             "hand": [
               {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
+                "id": "p10",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
+                "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
+              },
+              {
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
+                "rules": [
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -551,7 +587,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -559,7 +595,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -567,16 +603,16 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
-            "hand_size": 5,
+            "hand_size": 6,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -584,7 +620,140 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
+          }
+        ],
+        "board_cursor": 4,
+        "choices": [
+          {
+            "description": "Cast Black Lotus",
+            "index": 0,
+          }
+        ],
+        "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
+        "game_seq": 19,
+        "land_drops_used": 1,
+        "message": "Choose spell or ability to play: Black Lotus",
+        "respond_with": "choice=0, choice=1, etc. (not yes/no)",
+        "response_type": "index",
+        "success": true,
+        "untapped_lands": 1,
+      },
+      "actionSeq": 19,
+      "actionType": "GAME_SELECT",
+      "choiceCount": 1,
+      "choices": [
+        {
+          "action": "cast",
+          "id": "p10",
+          "index": 0,
+          "mana_cost": "{0}",
+          "name": "Black Lotus",
+        }
+      ],
+      "chosen": 0,
+      "chosenArgs": {
+        "choice": "p10",
+      },
+      "index": 4,
+      "isForced": false,
+      "llmEventIndices": [
+        10,
+        11,
+        12,
+      ],
+      "message": "Play spells and abilities",
+      "phase": "POSTCOMBAT_MAIN",
+      "pilotContext": {
+        "landDropsUsed": 1,
+        "playableCards": [
+          "p10",
+        ],
+        "untappedLands": 1,
+      },
+      "player": "TestPlayer",
+      "responseType": "select",
+      "snapshotIndex": 7,
+      "step": "POSTCOMBAT_MAIN",
+      "subsequentActions": [],
+      "turn": 1,
+    },
+    {
+      "actionResult": {
+        "action_pending": true,
+        "action_taken": "selected_ability_0",
+        "action_type": "GAME_SELECT",
+        "board": [
+          {
+            "battlefield": [
+              {
+                "id": "p12",
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ],
+                "tapped": false,
+              }
+            ],
+            "hand": [
+              {
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
+                "rules": [
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p14",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p15",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p16",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+            ],
+            "hand_size": 5,
+            "is_active": true,
+            "is_you": true,
+            "library_size": 53,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 53,
+            "life": 20,
+            "name": "Opponent",
           }
         ],
         "board_cursor": 5,
@@ -596,50 +765,48 @@
         "response_type": "boolean",
         "stack": [
           {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
+            "name": "Black Lotus",
+            "owner": "TestPlayer",
           }
         ],
-        "success": true
+        "success": true,
+        "untapped_lands": 1,
       },
       "actionSeq": 21,
-      "actionType": "GAME_SELECT",
+      "actionType": "GAME_CHOOSE_ABILITY",
       "choiceCount": 1,
       "choices": [
         {
-          "action": "cast",
-          "id": "p10",
+          "description": "Cast Black Lotus",
           "index": 0,
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
         }
       ],
       "chosen": 0,
       "chosenArgs": {
-        "choice": "p10"
+        "choice": "0",
       },
-      "index": 4,
+      "index": 5,
       "isForced": false,
       "llmEventIndices": [
-        10,
-        11,
-        12
+        12,
+        13,
+        14,
       ],
-      "message": "Play spells and abilities",
+      "message": "Choose spell or ability to play: Black Lotus",
       "phase": "POSTCOMBAT_MAIN",
       "pilotContext": {
         "landDropsUsed": 1,
         "playableCards": [
-          "p10"
+          "p10",
         ],
-        "untappedLands": 1
+        "untappedLands": 1,
       },
       "player": "TestPlayer",
-      "responseType": "select",
+      "responseType": "index",
       "snapshotIndex": 7,
       "step": "POSTCOMBAT_MAIN",
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {},
@@ -649,217 +816,60 @@
       "choices": [],
       "chosen": null,
       "chosenArgs": {},
-      "index": 5,
-      "isForced": false,
-      "llmEventIndices": [
-        12,
-        13
-      ],
-      "message": "Play instants and activated abilities",
-      "phase": "POSTCOMBAT_MAIN",
-      "pilotContext": {
-        "landDropsUsed": 1
-      },
-      "player": "TestPlayer",
-      "responseType": "boolean",
-      "snapshotIndex": 9,
-      "step": "POSTCOMBAT_MAIN",
-      "subsequentActions": [],
-      "turn": 1
-    },
-    {
-      "actionResult": {
-        "action_pending": true,
-        "action_taken": "yes",
-        "action_type": "GAME_TARGET",
-        "board": [
-          {
-            "battlefield": [
-              {
-                "id": "p11",
-                "name": "Forest",
-                "rules": [
-                  "{T}: Add {G}."
-                ],
-                "tapped": true
-              }
-            ],
-            "hand": [
-              {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p13",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p14",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p15",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              },
-              {
-                "id": "p16",
-                "is_land": true,
-                "name": "Plains",
-                "rules": [
-                  "{T}: Add {W}."
-                ]
-              }
-            ],
-            "hand_size": 5,
-            "is_active": true,
-            "is_you": true,
-            "library_size": 53,
-            "life": 20,
-            "name": "TestPlayer"
-          },
-          {
-            "hand_size": 7,
-            "is_active": false,
-            "is_you": false,
-            "library_size": 53,
-            "life": 20,
-            "name": "Opponent"
-          }
-        ],
-        "board_cursor": 5,
-        "can_cancel": false,
-        "choices": [
-          {
-            "id": "p24",
-            "index": 0,
-            "name": "Ornithopter",
-            "target_type": "card"
-          },
-          {
-            "id": "p25",
-            "index": 1,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p26",
-            "index": 2,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p27",
-            "index": 3,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p28",
-            "index": 4,
-            "name": "Plains",
-            "target_type": "card"
-          }
-        ],
-        "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
-        "game_seq": 24,
-        "land_drops_used": 1,
-        "message": "Select a colorless card (to put into your hand)",
-        "required": true,
-        "respond_with": "choice=pN — must pick a target",
-        "response_type": "index",
-        "stack": [
-          {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
-          }
-        ],
-        "success": true
-      },
-      "actionSeq": 24,
-      "actionType": "GAME_ASK",
-      "choiceCount": 0,
-      "choices": [],
-      "chosen": true,
-      "chosenArgs": {
-        "choice": "yes"
-      },
       "index": 6,
       "isForced": false,
       "llmEventIndices": [
         14,
         15,
-        16
       ],
-      "message": "Reveal a colorless card and put it into your hand?",
+      "message": "Play instants and activated abilities",
       "phase": "POSTCOMBAT_MAIN",
       "pilotContext": {
-        "landDropsUsed": 1
+        "landDropsUsed": 1,
+        "untappedLands": 1,
       },
       "player": "TestPlayer",
       "responseType": "boolean",
-      "snapshotIndex": 11,
+      "snapshotIndex": 8,
       "step": "POSTCOMBAT_MAIN",
-      "subsequentActions": [],
-      "turn": 1
+      "subsequentActions": [
+        "TestPlayer puts Black Lotus from stack onto the Battlefield",
+      ],
+      "turn": 1,
     },
     {
       "actionResult": {
         "action_pending": true,
-        "action_taken": "selected_target_0",
-        "action_type": "GAME_TARGET",
+        "action_taken": "selected_0",
+        "action_type": "GAME_SELECT",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
-                "rules": [
-                  "{T}: Add {G}."
-                ],
-                "tapped": true
-              }
-            ],
-            "hand": [
-              {
-                "id": "p24",
-                "mana_cost": "{0}",
-                "name": "Ornithopter",
-                "power": "0",
-                "rules": [
-                  "Flying"
-                ],
-                "toughness": "2"
-              },
-              {
                 "id": "p12",
-                "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
+                ],
+                "tapped": true,
+              }
+            ],
+            "graveyard": [
+              {
+                "id": "p10",
+                "name": "Black Lotus",
+                "rules": [
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
+            ],
+            "hand": [
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -867,7 +877,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -875,7 +885,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -883,16 +893,19 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
-            "hand_size": 6,
+            "hand_size": 4,
             "is_active": true,
             "is_you": true,
-            "library_size": 52,
+            "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "mana_pool": {
+              "W": 1,
+            },
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -900,172 +913,146 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
-        "board_cursor": 6,
-        "can_cancel": false,
-        "choices": [
-          {
-            "id": "p25",
-            "index": 0,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p26",
-            "index": 1,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p27",
-            "index": 2,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p28",
-            "index": 3,
-            "name": "Plains",
-            "target_type": "card"
-          }
-        ],
+        "board_cursor": 7,
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
-        "game_seq": 27,
+        "game_seq": 29,
         "land_drops_used": 1,
-        "message": "Select a card ORDER to put on the BOTTOM of your library (last one chosen will be bottommost)",
-        "required": true,
-        "respond_with": "choice=pN — must pick a target",
-        "response_type": "index",
+        "message": "Play instants and activated abilities",
+        "respond_with": "choice=yes (confirm) or choice=no (pass)",
+        "response_type": "boolean",
         "stack": [
           {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
+            "name": "Emancipation Angel",
+            "owner": "TestPlayer",
           }
         ],
-        "success": true
+        "success": true,
       },
-      "actionSeq": 27,
-      "actionType": "GAME_TARGET",
-      "choiceCount": 5,
+      "actionSeq": 29,
+      "actionType": "GAME_SELECT",
+      "choiceCount": 1,
       "choices": [
         {
-          "id": "p24",
+          "action": "cast",
+          "id": "p11",
           "index": 0,
-          "name": "Ornithopter",
-          "target_type": "card"
-        },
-        {
-          "id": "p25",
-          "index": 1,
-          "name": "Plains",
-          "target_type": "card"
-        },
-        {
-          "id": "p26",
-          "index": 2,
-          "name": "Plains",
-          "target_type": "card"
-        },
-        {
-          "id": "p27",
-          "index": 3,
-          "name": "Plains",
-          "target_type": "card"
-        },
-        {
-          "id": "p28",
-          "index": 4,
-          "name": "Plains",
-          "target_type": "card"
+          "mana_cost": "{1}{W}{W}",
+          "name": "Emancipation Angel",
+          "power": "3",
+          "toughness": "3",
         }
       ],
       "chosen": 0,
       "chosenArgs": {
-        "choice": "0"
+        "choice": "p11",
       },
       "index": 7,
       "isForced": false,
       "llmEventIndices": [
         16,
         17,
-        18
+        18,
       ],
-      "message": "Select a colorless card (to put into your hand)",
+      "message": "Play spells and abilities",
       "phase": "POSTCOMBAT_MAIN",
       "pilotContext": {
-        "landDropsUsed": 1
+        "landDropsUsed": 1,
+        "playableCards": [
+          "p11",
+        ],
+        "untappedLands": 1,
       },
       "player": "TestPlayer",
-      "responseType": "index",
-      "snapshotIndex": 11,
+      "responseType": "select",
+      "snapshotIndex": 10,
       "step": "POSTCOMBAT_MAIN",
       "subsequentActions": [],
-      "turn": 1
+      "turn": 1,
     },
     {
       "actionResult": {},
-      "actionSeq": 27,
-      "actionType": "GAME_TARGET",
-      "choiceCount": 4,
-      "choices": [
-        {
-          "id": "p25",
-          "index": 0,
-          "name": "Plains",
-          "target_type": "card"
-        },
-        {
-          "id": "p26",
-          "index": 1,
-          "name": "Plains",
-          "target_type": "card"
-        },
-        {
-          "id": "p27",
-          "index": 2,
-          "name": "Plains",
-          "target_type": "card"
-        },
-        {
-          "id": "p28",
-          "index": 3,
-          "name": "Plains",
-          "target_type": "card"
-        }
-      ],
+      "actionSeq": 29,
+      "actionType": "GAME_SELECT",
+      "choiceCount": 0,
+      "choices": [],
       "chosen": null,
       "chosenArgs": {},
       "index": 8,
       "isForced": false,
       "llmEventIndices": [
         18,
-        19
+        19,
       ],
-      "message": "Select a card ORDER to put on the BOTTOM of your library (last one chosen will be bottommost)",
+      "message": "Play instants and activated abilities",
       "phase": "POSTCOMBAT_MAIN",
       "pilotContext": {
-        "landDropsUsed": 1
+        "landDropsUsed": 1,
+      },
+      "player": "TestPlayer",
+      "responseType": "boolean",
+      "snapshotIndex": 13,
+      "step": "POSTCOMBAT_MAIN",
+      "subsequentActions": [
+        "TestPlayer puts Emancipation Angel from stack onto the Battlefield",
+        "TestPlayer - Ability triggers: Emancipation Angel - When Emancipation Angel enters, return a permanent you control to its owner's hand.",
+      ],
+      "turn": 1,
+    },
+    {
+      "actionResult": {},
+      "actionSeq": 35,
+      "actionType": "GAME_TARGET",
+      "choiceCount": 2,
+      "choices": [
+        {
+          "id": "p11",
+          "index": 0,
+          "name": "Emancipation Angel",
+          "power": "3",
+          "target_type": "permanent",
+          "toughness": "3",
+        },
+        {
+          "id": "p12",
+          "index": 1,
+          "name": "Plains",
+          "tapped": true,
+          "target_type": "permanent",
+        }
+      ],
+      "chosen": null,
+      "chosenArgs": {},
+      "index": 9,
+      "isForced": false,
+      "llmEventIndices": [
+        20,
+      ],
+      "message": "Select a permanent you control",
+      "phase": "POSTCOMBAT_MAIN",
+      "pilotContext": {
+        "landDropsUsed": 1,
       },
       "player": "TestPlayer",
       "responseType": "index",
-      "snapshotIndex": 11,
+      "snapshotIndex": 16,
       "step": "POSTCOMBAT_MAIN",
       "subsequentActions": [
-        "TestPlayer wants to concede"
+        "TestPlayer wants to concede",
       ],
-      "turn": 1
+      "turn": 1,
     }
   ],
   "deckType": "Constructed - Legacy",
   "gameOver": {
     "message": "Opponent",
-    "seq": 29
+    "seq": 37,
   },
   "gameType": "Two Player Duel",
   "harnessEpoch": 55,
-  "id": "ancient_stirrings",
+  "id": "emancipation_angel_trigger",
   "llmEvents": [
     {
       "availableTools": [
@@ -1077,12 +1064,12 @@
         "get_oracle_text",
         "get_action_choices",
         "choose_action",
-        "concede"
+        "concede",
       ],
       "model": "google/gemini-2.0-flash-001",
       "player": "TestPlayer",
       "seq": 1,
-      "type": "game_start"
+      "type": "game_start",
     },
     {
       "costUsd": 0.0,
@@ -1092,16 +1079,16 @@
       "toolCalls": [
         {
           "arguments": {
-            "choice": "0"
+            "choice": "0",
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "choice": "0"
+        "choice": "0",
       },
       "gameSeq": 5,
       "player": "TestPlayer",
@@ -1114,26 +1101,29 @@
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
               {
                 "id": "p11",
-                "is_land": true,
-                "name": "Forest",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
                 "rules": [
-                  "{T}: Add {G}."
-                ]
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p12",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1141,7 +1131,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1149,7 +1139,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1157,7 +1147,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1165,16 +1155,16 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
             "hand_size": 7,
             "is_active": false,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -1182,7 +1172,7 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "board_cursor": 2,
@@ -1194,59 +1184,62 @@
         "success": true,
         "your_hand": [
           {
-            "mana_cost": "{G}",
-            "name": "Ancient Stirrings",
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
             "rules": [
-              "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+              "{T}, Sacrifice {this}: Add three mana of any one color.",
             ]
           },
           {
-            "is_land": true,
-            "name": "Forest",
+            "mana_cost": "{1}{W}{W}",
+            "name": "Emancipation Angel",
+            "power": "3",
             "rules": [
-              "{T}: Add {G}."
+              "Flying",
+              "When {this} enters, return a permanent you control to its owner's hand.",
+            ],
+            "toughness": "3",
+          },
+          {
+            "is_land": true,
+            "name": "Plains",
+            "rules": [
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
-          {
-            "is_land": true,
-            "name": "Plains",
-            "rules": [
-              "{T}: Add {W}."
-            ]
-          }
         ]
       },
       "seq": 3,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -1257,14 +1250,14 @@
       "toolCalls": [
         {
           "arguments": {},
-          "name": "pass_priority"
+          "name": "pass_priority",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "board_cursor": 2
+        "board_cursor": 2,
       },
       "gameSeq": 5,
       "player": "TestPlayer",
@@ -1281,59 +1274,62 @@
         "stop_reason": "non_priority_action",
         "your_hand": [
           {
-            "mana_cost": "{G}",
-            "name": "Ancient Stirrings",
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
             "rules": [
-              "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+              "{T}, Sacrifice {this}: Add three mana of any one color.",
             ]
           },
           {
-            "is_land": true,
-            "name": "Forest",
+            "mana_cost": "{1}{W}{W}",
+            "name": "Emancipation Angel",
+            "power": "3",
             "rules": [
-              "{T}: Add {G}."
+              "Flying",
+              "When {this} enters, return a permanent you control to its owner's hand.",
+            ],
+            "toughness": "3",
+          },
+          {
+            "is_land": true,
+            "name": "Plains",
+            "rules": [
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
           {
             "is_land": true,
             "name": "Plains",
             "rules": [
-              "{T}: Add {W}."
+              "{T}: Add {W}.",
             ]
           },
-          {
-            "is_land": true,
-            "name": "Plains",
-            "rules": [
-              "{T}: Add {W}."
-            ]
-          }
         ]
       },
       "seq": 5,
       "tool": "pass_priority",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -1344,16 +1340,16 @@
       "toolCalls": [
         {
           "arguments": {
-            "choice": "no"
+            "choice": "no",
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "choice": "no"
+        "choice": "no",
       },
       "gameSeq": 9,
       "player": "TestPlayer",
@@ -1366,20 +1362,23 @@
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
+                "playable": true,
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
               {
                 "id": "p11",
-                "is_land": true,
-                "name": "Forest",
-                "playable": true,
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
                 "rules": [
-                  "{T}: Add {G}."
-                ]
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p12",
@@ -1387,7 +1386,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1396,7 +1395,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1405,7 +1404,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1414,7 +1413,7 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1423,16 +1422,16 @@
                 "name": "Plains",
                 "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
             "hand_size": 7,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -1440,46 +1439,47 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "board_cursor": 3,
         "choices": [
           {
-            "action": "land",
-            "id": "p11",
+            "action": "cast",
+            "id": "p10",
             "index": 0,
-            "name": "Forest"
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
           },
           {
             "action": "land",
             "id": "p12",
             "index": 1,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p13",
             "index": 2,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p14",
             "index": 3,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p15",
             "index": 4,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p16",
             "index": 5,
-            "name": "Plains"
+            "name": "Plains",
           }
         ],
         "context": "T1 Precombat Main/Precombat Main (TestPlayer) YOUR_MAIN",
@@ -1488,11 +1488,11 @@
         "message": "Play spells and abilities",
         "respond_with": "choice=pN to play, or choice=no to pass",
         "response_type": "select",
-        "success": true
+        "success": true,
       },
       "seq": 7,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -1503,14 +1503,14 @@
       "toolCalls": [
         {
           "arguments": {},
-          "name": "pass_priority"
+          "name": "pass_priority",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "board_cursor": 3
+        "board_cursor": 3,
       },
       "gameSeq": 15,
       "player": "TestPlayer",
@@ -1521,40 +1521,41 @@
         "board_unchanged": true,
         "choices": [
           {
-            "action": "land",
-            "id": "p11",
+            "action": "cast",
+            "id": "p10",
             "index": 0,
-            "name": "Forest"
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
           },
           {
             "action": "land",
             "id": "p12",
             "index": 1,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p13",
             "index": 2,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p14",
             "index": 3,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p15",
             "index": 4,
-            "name": "Plains"
+            "name": "Plains",
           },
           {
             "action": "land",
             "id": "p16",
             "index": 5,
-            "name": "Plains"
+            "name": "Plains",
           }
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
@@ -1564,11 +1565,11 @@
         "message": "Play spells and abilities",
         "respond_with": "choice=pN to play, or choice=no to pass",
         "response_type": "select",
-        "stop_reason": "playable_cards"
+        "stop_reason": "playable_cards",
       },
       "seq": 9,
       "tool": "pass_priority",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -1579,59 +1580,62 @@
       "toolCalls": [
         {
           "arguments": {
-            "choice": "p11"
+            "choice": "p12",
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "choice": "p11"
+        "choice": "p12",
       },
       "gameSeq": 18,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
-        "action_taken": "selected_0",
+        "action_taken": "selected_1",
         "action_type": "GAME_SELECT",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
+                "id": "p12",
+                "name": "Plains",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{T}: Add {W}.",
                 ],
-                "tapped": false
+                "tapped": false,
               }
             ],
             "hand": [
               {
                 "id": "p10",
-                "mana_cost": "{G}",
-                "name": "Ancient Stirrings",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
                 "playable": true,
                 "rules": [
-                  "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
               {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
                 "rules": [
-                  "{T}: Add {W}."
-                ]
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1639,7 +1643,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1647,7 +1651,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1655,16 +1659,16 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
             "hand_size": 6,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -1672,7 +1676,7 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
         "board_cursor": 4,
@@ -1681,8 +1685,8 @@
             "action": "cast",
             "id": "p10",
             "index": 0,
-            "mana_cost": "{G}",
-            "name": "Ancient Stirrings"
+            "mana_cost": "{0}",
+            "name": "Black Lotus",
           }
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
@@ -1692,11 +1696,11 @@
         "respond_with": "choice=pN to play, or choice=no to pass",
         "response_type": "select",
         "success": true,
-        "untapped_lands": 1
+        "untapped_lands": 1,
       },
       "seq": 11,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -1707,50 +1711,62 @@
       "toolCalls": [
         {
           "arguments": {
-            "choice": "p10"
+            "choice": "p10",
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "choice": "p10"
+        "choice": "p10",
       },
-      "gameSeq": 21,
+      "gameSeq": 19,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_taken": "selected_0",
-        "action_type": "GAME_SELECT",
+        "action_type": "GAME_CHOOSE_ABILITY",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
+                "id": "p12",
+                "name": "Plains",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{T}: Add {W}.",
                 ],
-                "tapped": true
+                "tapped": false,
               }
             ],
             "hand": [
               {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
+                "id": "p10",
+                "mana_cost": "{0}",
+                "name": "Black Lotus",
+                "playable": true,
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
+              },
+              {
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
+                "rules": [
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1758,7 +1774,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1766,7 +1782,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1774,16 +1790,16 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
-            "hand_size": 5,
+            "hand_size": 6,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -1791,7 +1807,126 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
+          }
+        ],
+        "board_cursor": 4,
+        "choices": [
+          {
+            "description": "Cast Black Lotus",
+            "index": 0,
+          }
+        ],
+        "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
+        "game_seq": 19,
+        "land_drops_used": 1,
+        "message": "Choose spell or ability to play: Black Lotus",
+        "respond_with": "choice=0, choice=1, etc. (not yes/no)",
+        "response_type": "index",
+        "success": true,
+        "untapped_lands": 1,
+      },
+      "seq": 13,
+      "tool": "choose_action",
+      "type": "tool_call",
+    },
+    {
+      "costUsd": 0.0,
+      "gameSeq": 19,
+      "player": "TestPlayer",
+      "reasoning": null,
+      "seq": 14,
+      "toolCalls": [
+        {
+          "arguments": {
+            "choice": "0",
+          },
+          "name": "choose_action",
+        }
+      ],
+      "type": "llm_response",
+    },
+    {
+      "args": {
+        "choice": "0",
+      },
+      "gameSeq": 21,
+      "player": "TestPlayer",
+      "result": {
+        "action_pending": true,
+        "action_taken": "selected_ability_0",
+        "action_type": "GAME_SELECT",
+        "board": [
+          {
+            "battlefield": [
+              {
+                "id": "p12",
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ],
+                "tapped": false,
+              }
+            ],
+            "hand": [
+              {
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "power": "3",
+                "rules": [
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p14",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p15",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p16",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+            ],
+            "hand_size": 5,
+            "is_active": true,
+            "is_you": true,
+            "library_size": 53,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 53,
+            "life": 20,
+            "name": "Opponent",
           }
         ],
         "board_cursor": 5,
@@ -1803,112 +1938,79 @@
         "response_type": "boolean",
         "stack": [
           {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
+            "name": "Black Lotus",
+            "owner": "TestPlayer",
           }
         ],
-        "success": true
+        "success": true,
+        "untapped_lands": 1,
       },
-      "seq": 13,
+      "seq": 15,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
       "gameSeq": 21,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 14,
-      "toolCalls": [
-        {
-          "arguments": {},
-          "name": "pass_priority"
-        }
-      ],
-      "type": "llm_response"
-    },
-    {
-      "args": {
-        "board_cursor": 5
-      },
-      "gameSeq": 23,
-      "player": "TestPlayer",
-      "result": {
-        "action_pending": true,
-        "action_type": "GAME_ASK",
-        "board_cursor": 5,
-        "board_unchanged": true,
-        "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
-        "game_seq": 23,
-        "land_drops_used": 1,
-        "message": "Reveal a colorless card and put it into your hand?",
-        "respond_with": "choice=yes or choice=no",
-        "response_type": "boolean",
-        "stack": [
-          {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
-          }
-        ],
-        "stop_reason": "non_priority_action"
-      },
-      "seq": 15,
-      "tool": "pass_priority",
-      "type": "tool_call"
-    },
-    {
-      "costUsd": 0.0,
-      "gameSeq": 23,
-      "player": "TestPlayer",
-      "reasoning": null,
       "seq": 16,
       "toolCalls": [
         {
-          "arguments": {
-            "choice": "yes"
-          },
-          "name": "choose_action"
+          "arguments": {},
+          "name": "pass_priority",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "choice": "yes"
+        "board_cursor": 5,
       },
       "gameSeq": 24,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
-        "action_taken": "yes",
-        "action_type": "GAME_TARGET",
+        "action_type": "GAME_SELECT",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
+                "id": "p10",
+                "name": "Black Lotus",
                 "rules": [
-                  "{T}: Add {G}."
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ],
-                "tapped": true
+                "tapped": false,
+              },
+              {
+                "id": "p12",
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ],
+                "tapped": false,
               }
             ],
             "hand": [
               {
-                "id": "p12",
-                "is_land": true,
-                "name": "Plains",
+                "id": "p11",
+                "mana_cost": "{1}{W}{W}",
+                "name": "Emancipation Angel",
+                "playable": true,
+                "power": "3",
                 "rules": [
-                  "{T}: Add {W}."
-                ]
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
+                ],
+                "toughness": "3",
               },
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1916,7 +2018,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1924,7 +2026,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -1932,16 +2034,16 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
             "hand_size": 5,
             "is_active": true,
             "is_you": true,
             "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -1949,61 +2051,34 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
-        "board_cursor": 5,
-        "can_cancel": false,
+        "board_cursor": 6,
         "choices": [
           {
-            "id": "p24",
+            "action": "cast",
+            "id": "p11",
             "index": 0,
-            "name": "Ornithopter",
-            "target_type": "card"
-          },
-          {
-            "id": "p25",
-            "index": 1,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p26",
-            "index": 2,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p27",
-            "index": 3,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p28",
-            "index": 4,
-            "name": "Plains",
-            "target_type": "card"
+            "mana_cost": "{1}{W}{W}",
+            "name": "Emancipation Angel",
+            "power": "3",
+            "toughness": "3",
           }
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
         "game_seq": 24,
+        "has_playable_cards": true,
         "land_drops_used": 1,
-        "message": "Select a colorless card (to put into your hand)",
-        "required": true,
-        "respond_with": "choice=pN — must pick a target",
-        "response_type": "index",
-        "stack": [
-          {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
-          }
-        ],
-        "success": true
+        "message": "Play spells and abilities",
+        "respond_with": "choice=pN to play, or choice=no to pass",
+        "response_type": "select",
+        "stop_reason": "playable_cards",
+        "untapped_lands": 1,
       },
       "seq": 17,
-      "tool": "choose_action",
-      "type": "tool_call"
+      "tool": "pass_priority",
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
@@ -2014,60 +2089,51 @@
       "toolCalls": [
         {
           "arguments": {
-            "choice": "0"
+            "choice": "p11",
           },
-          "name": "choose_action"
+          "name": "choose_action",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
       "args": {
-        "choice": "0"
+        "choice": "p11",
       },
-      "gameSeq": 27,
+      "gameSeq": 29,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
-        "action_taken": "selected_target_0",
-        "action_type": "GAME_TARGET",
+        "action_taken": "selected_0",
+        "action_type": "GAME_SELECT",
         "board": [
           {
             "battlefield": [
               {
-                "id": "p11",
-                "name": "Forest",
-                "rules": [
-                  "{T}: Add {G}."
-                ],
-                "tapped": true
-              }
-            ],
-            "hand": [
-              {
-                "id": "p24",
-                "mana_cost": "{0}",
-                "name": "Ornithopter",
-                "power": "0",
-                "rules": [
-                  "Flying"
-                ],
-                "toughness": "2"
-              },
-              {
                 "id": "p12",
-                "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
+                ],
+                "tapped": true,
+              }
+            ],
+            "graveyard": [
+              {
+                "id": "p10",
+                "name": "Black Lotus",
+                "rules": [
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
+            ],
+            "hand": [
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -2075,7 +2141,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -2083,7 +2149,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -2091,16 +2157,19 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
-            "hand_size": 6,
+            "hand_size": 4,
             "is_active": true,
             "is_you": true,
-            "library_size": 52,
+            "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "mana_pool": {
+              "W": 1,
+            },
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -2108,117 +2177,91 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
-        "board_cursor": 6,
-        "can_cancel": false,
-        "choices": [
-          {
-            "id": "p25",
-            "index": 0,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p26",
-            "index": 1,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p27",
-            "index": 2,
-            "name": "Plains",
-            "target_type": "card"
-          },
-          {
-            "id": "p28",
-            "index": 3,
-            "name": "Plains",
-            "target_type": "card"
-          }
-        ],
+        "board_cursor": 7,
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
-        "game_seq": 27,
+        "game_seq": 29,
         "land_drops_used": 1,
-        "message": "Select a card ORDER to put on the BOTTOM of your library (last one chosen will be bottommost)",
-        "required": true,
-        "respond_with": "choice=pN — must pick a target",
-        "response_type": "index",
+        "message": "Play instants and activated abilities",
+        "respond_with": "choice=yes (confirm) or choice=no (pass)",
+        "response_type": "boolean",
         "stack": [
           {
-            "name": "Ancient Stirrings",
-            "owner": "TestPlayer"
+            "name": "Emancipation Angel",
+            "owner": "TestPlayer",
           }
         ],
-        "success": true
+        "success": true,
       },
       "seq": 19,
       "tool": "choose_action",
-      "type": "tool_call"
+      "type": "tool_call",
     },
     {
       "costUsd": 0.0,
-      "gameSeq": 27,
+      "gameSeq": 29,
       "player": "TestPlayer",
       "reasoning": null,
       "seq": 20,
       "toolCalls": [
         {
           "arguments": {},
-          "name": "get_game_state"
+          "name": "pass_priority",
         }
       ],
-      "type": "llm_response"
+      "type": "llm_response",
     },
     {
-      "args": {},
-      "gameSeq": 27,
+      "args": {
+        "board_cursor": 7,
+      },
+      "gameSeq": 35,
       "player": "TestPlayer",
       "result": {
-        "active_player": "TestPlayer",
-        "available": true,
-        "cursor": 1,
-        "game_seq": 27,
-        "phase": "Postcombat Main",
-        "players": [
+        "action_pending": true,
+        "action_type": "GAME_TARGET",
+        "board": [
           {
             "battlefield": [
               {
                 "id": "p11",
-                "name": "Forest",
+                "name": "Emancipation Angel",
+                "power": "3",
                 "rules": [
-                  "{T}: Add {G}."
+                  "Flying",
+                  "When {this} enters, return a permanent you control to its owner's hand.",
                 ],
-                "tapped": true
-              }
-            ],
-            "hand": [
-              {
-                "id": "p24",
-                "mana_cost": "{0}",
-                "name": "Ornithopter",
-                "power": "0",
-                "rules": [
-                  "Flying"
-                ],
-                "toughness": "2"
+                "summoning_sick": true,
+                "tapped": false,
+                "toughness": "3",
               },
               {
                 "id": "p12",
-                "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
+                ],
+                "tapped": true,
+              }
+            ],
+            "graveyard": [
+              {
+                "id": "p10",
+                "name": "Black Lotus",
+                "rules": [
+                  "{T}, Sacrifice {this}: Add three mana of any one color.",
                 ]
               },
+            ],
+            "hand": [
               {
                 "id": "p13",
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -2226,7 +2269,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -2234,7 +2277,7 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
               },
               {
@@ -2242,16 +2285,19 @@
                 "is_land": true,
                 "name": "Plains",
                 "rules": [
-                  "{T}: Add {W}."
+                  "{T}: Add {W}.",
                 ]
-              }
+              },
             ],
-            "hand_size": 6,
+            "hand_size": 4,
             "is_active": true,
             "is_you": true,
-            "library_size": 52,
+            "library_size": 53,
             "life": 20,
-            "name": "TestPlayer"
+            "mana_pool": {
+              "W": 1,
+            },
+            "name": "TestPlayer",
           },
           {
             "hand_size": 7,
@@ -2259,31 +2305,59 @@
             "is_you": false,
             "library_size": 53,
             "life": 20,
-            "name": "Opponent"
+            "name": "Opponent",
           }
         ],
-        "priority_player": "TestPlayer",
+        "board_cursor": 8,
+        "can_cancel": false,
+        "choices": [
+          {
+            "id": "p11",
+            "index": 0,
+            "name": "Emancipation Angel",
+            "power": "3",
+            "target_type": "permanent",
+            "toughness": "3",
+          },
+          {
+            "id": "p12",
+            "index": 1,
+            "name": "Plains",
+            "tapped": true,
+            "target_type": "permanent",
+          }
+        ],
+        "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
+        "game_seq": 35,
+        "land_drops_used": 1,
+        "message": "Select a permanent you control",
+        "required": true,
+        "respond_with": "choice=pN — must pick a target",
+        "response_type": "index",
         "stack": [
           {
-            "id": "p23",
-            "name": "Ancient Stirrings",
+            "ability_text": "When Emancipation Angel enters, return a permanent you control to its owner's hand.",
+            "name": "Emancipation Angel",
             "owner": "TestPlayer",
-            "rules": [
-              "Look at the top five cards of your library. You may reveal a colorless card from among them and put it into your hand. Put the rest on the bottom of your library in any order."
-            ]
+            "source_card": "Emancipation Angel",
+            "targets": [
+              {
+                "id": "p2",
+                "name": "TestPlayer (you)",
+              }
+            ],
           }
         ],
-        "step": "Postcombat Main",
-        "turn": 1
+        "stop_reason": "non_priority_action",
       },
       "seq": 21,
-      "tool": "get_game_state",
-      "type": "tool_call"
+      "tool": "pass_priority",
+      "type": "tool_call",
     }
   ],
   "players": [
     {
-      "deckName": "ancient_stirrings",
+      "deckName": "emancipation_angel",
       "model": "test/golden",
       "name": "TestPlayer",
       "toolCallsFailed": 0,
@@ -2297,10 +2371,10 @@
         "get_oracle_text",
         "get_action_choices",
         "choose_action",
-        "concede"
+        "concede",
       ],
       "totalCostUsd": 0.0,
-      "type": "pilot"
+      "type": "pilot",
     },
     {
       "deckName": "filler_opponent",
@@ -2308,7 +2382,7 @@
       "placement": 1,
       "toolCallsFailed": 0,
       "toolCallsOk": 0,
-      "type": "replay"
+      "type": "replay",
     }
   ],
   "season": 1,
@@ -2324,7 +2398,7 @@
           "hand": [],
           "library_size": 60,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -2333,14 +2407,14 @@
           "hand": [],
           "library_size": 60,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": null,
       "seq": 1,
       "stack": [],
       "step": null,
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": null,
@@ -2355,55 +2429,55 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -2412,64 +2486,64 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p12",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": null,
       "seq": 5,
       "stack": [],
       "step": null,
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -2484,55 +2558,55 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -2541,64 +2615,64 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p12",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
       "seq": 9,
       "stack": [],
       "step": "PRECOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -2613,55 +2687,55 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -2670,64 +2744,64 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p12",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "Opponent",
       "seq": 10,
       "stack": [],
       "step": "PRECOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -2742,55 +2816,55 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -2799,64 +2873,64 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p12",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
       "seq": 13,
       "stack": [],
       "step": "DECLARE_ATTACKERS",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -2871,55 +2945,55 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -2928,64 +3002,64 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p12",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "Opponent",
       "seq": 14,
       "stack": [],
       "step": "DECLARE_ATTACKERS",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -3000,55 +3074,55 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [],
@@ -3057,64 +3131,64 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p11",
-              "name": "Forest",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p12",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
       "seq": 15,
       "stack": [],
       "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -3129,65 +3203,65 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p12",
+              "name": "Plains",
               "summoning_sick": true,
               "tapped": false,
-              "token": false
+              "token": false,
             }
           ],
           "exile": [],
@@ -3195,57 +3269,57 @@
           "hand": [
             {
               "id": "p10",
-              "name": "Ancient Stirrings",
+              "name": "Black Lotus",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
-              "id": "p12",
-              "name": "Plains",
+              "id": "p11",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
       "seq": 18,
       "stack": [],
       "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -3260,240 +3334,109 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p12",
+              "name": "Plains",
               "summoning_sick": true,
               "tapped": false,
-              "token": false
+              "token": false,
             }
           ],
           "exile": [],
           "graveyard": [],
           "hand": [
             {
-              "id": "p12",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p13",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p14",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p15",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            },
-            {
-              "id": "p16",
-              "name": "Plains",
-              "visible_to": [
-                "TestPlayer"
-              ]
-            }
-          ],
-          "library_size": 53,
-          "life": 20,
-          "name": "TestPlayer"
-        }
-      ],
-      "priority_player": "TestPlayer",
-      "seq": 19,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
-      "step": "POSTCOMBAT_MAIN",
-      "turn": 1
-    },
-    {
-      "active_player": "TestPlayer",
-      "phase": "POSTCOMBAT_MAIN",
-      "players": [
-        {
-          "battlefield": [],
-          "exile": [],
-          "graveyard": [],
-          "hand": [
-            {
-              "id": "p3",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p4",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p5",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p6",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p7",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p8",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            },
-            {
-              "id": "p9",
-              "name": "Mountain",
-              "visible_to": [
-                "Opponent"
-              ]
-            }
-          ],
-          "library_size": 53,
-          "life": 20,
-          "name": "Opponent"
-        },
-        {
-          "battlefield": [
-            {
-              "face_down": false,
               "id": "p11",
-              "name": "Forest",
-              "summoning_sick": true,
-              "tapped": true,
-              "token": false
-            }
-          ],
-          "exile": [],
-          "graveyard": [],
-          "hand": [
-            {
-              "id": "p12",
-              "name": "Plains",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
@@ -3502,12 +3445,12 @@
         {
           "controller": "TestPlayer",
           "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
+          "mana_cost": "{0}",
+          "name": "Black Lotus",
         }
       ],
       "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -3522,109 +3465,109 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p12",
+              "name": "Plains",
               "summoning_sick": true,
-              "tapped": true,
-              "token": false
+              "tapped": false,
+              "token": false,
             }
           ],
           "exile": [],
           "graveyard": [],
           "hand": [
             {
-              "id": "p12",
-              "name": "Plains",
+              "id": "p11",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "Opponent",
@@ -3633,12 +3576,12 @@
         {
           "controller": "TestPlayer",
           "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
+          "mana_cost": "{0}",
+          "name": "Black Lotus",
         }
       ],
       "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -3653,123 +3596,124 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p10",
+              "name": "Black Lotus",
               "summoning_sick": true,
-              "tapped": true,
-              "token": false
+              "tapped": false,
+              "token": false,
+            },
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false,
             }
           ],
           "exile": [],
           "graveyard": [],
           "hand": [
             {
-              "id": "p12",
-              "name": "Plains",
+              "id": "p11",
+              "name": "Emancipation Angel",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p13",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p14",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p15",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
             },
             {
               "id": "p16",
               "name": "Plains",
               "visible_to": [
-                "TestPlayer"
+                "TestPlayer",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
-      "seq": 23,
-      "stack": [
-        {
-          "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
-        }
-      ],
+      "seq": 24,
+      "stack": [],
       "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
     },
     {
       "active_player": "TestPlayer",
@@ -3784,73 +3728,374 @@
               "id": "p3",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p4",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p5",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p6",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p7",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p8",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
             },
             {
               "id": "p9",
               "name": "Mountain",
               "visible_to": [
-                "Opponent"
+                "Opponent",
               ]
-            }
+            },
           ],
           "library_size": 53,
           "life": 20,
-          "name": "Opponent"
+          "name": "Opponent",
         },
         {
           "battlefield": [
             {
               "face_down": false,
-              "id": "p11",
-              "name": "Forest",
+              "id": "p10",
+              "name": "Black Lotus",
               "summoning_sick": true,
-              "tapped": true,
-              "token": false
+              "tapped": false,
+              "token": false,
+            },
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false,
             }
           ],
           "exile": [],
           "graveyard": [],
-          "hand": [],
-          "library_size": 0,
+          "hand": [
+            {
+              "id": "p13",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p14",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+          ],
+          "library_size": 53,
           "life": 20,
-          "name": "TestPlayer"
+          "name": "TestPlayer",
+        }
+      ],
+      "priority_player": "TestPlayer",
+      "seq": 25,
+      "stack": [
+        {
+          "controller": "TestPlayer",
+          "id": "p24",
+          "mana_cost": "{1}{W}{W}",
+          "name": "Emancipation Angel",
+        }
+      ],
+      "step": "POSTCOMBAT_MAIN",
+      "turn": 1,
+    },
+    {
+      "active_player": "TestPlayer",
+      "phase": "POSTCOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "Opponent",
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p10",
+              "name": "Black Lotus",
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false,
+            },
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": true,
+              "token": false,
+            }
+          ],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p13",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p14",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "TestPlayer",
+        }
+      ],
+      "priority_player": "TestPlayer",
+      "seq": 26,
+      "stack": [
+        {
+          "controller": "TestPlayer",
+          "id": "p24",
+          "mana_cost": "{1}{W}{W}",
+          "name": "Emancipation Angel",
+        }
+      ],
+      "step": "POSTCOMBAT_MAIN",
+      "turn": 1,
+    },
+    {
+      "active_player": "TestPlayer",
+      "phase": "POSTCOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "Opponent",
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": true,
+              "token": false,
+            }
+          ],
+          "exile": [],
+          "graveyard": [
+            {
+              "id": "p10",
+              "name": "Black Lotus",
+            }
+          ],
+          "hand": [
+            {
+              "id": "p13",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p14",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "mana_pool": {
+            "W": 1,
+          },
+          "name": "TestPlayer",
         }
       ],
       "priority_player": "TestPlayer",
@@ -3858,18 +4103,545 @@
       "stack": [
         {
           "controller": "TestPlayer",
-          "id": "p23",
-          "mana_cost": "{G}",
-          "name": "Ancient Stirrings"
+          "id": "p24",
+          "mana_cost": "{1}{W}{W}",
+          "name": "Emancipation Angel",
         }
       ],
       "step": "POSTCOMBAT_MAIN",
-      "turn": 1
+      "turn": 1,
+    },
+    {
+      "active_player": "TestPlayer",
+      "phase": "POSTCOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "Opponent",
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": true,
+              "token": false,
+            }
+          ],
+          "exile": [],
+          "graveyard": [
+            {
+              "id": "p10",
+              "name": "Black Lotus",
+            }
+          ],
+          "hand": [
+            {
+              "id": "p13",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p14",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "mana_pool": {
+            "W": 1,
+          },
+          "name": "TestPlayer",
+        }
+      ],
+      "priority_player": "Opponent",
+      "seq": 30,
+      "stack": [
+        {
+          "controller": "TestPlayer",
+          "id": "p24",
+          "mana_cost": "{1}{W}{W}",
+          "name": "Emancipation Angel",
+        }
+      ],
+      "step": "POSTCOMBAT_MAIN",
+      "turn": 1,
+    },
+    {
+      "active_player": "TestPlayer",
+      "phase": "POSTCOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "Opponent",
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p11",
+              "name": "Emancipation Angel",
+              "power": 3,
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false,
+              "toughness": 3,
+            },
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": true,
+              "token": false,
+            }
+          ],
+          "exile": [],
+          "graveyard": [
+            {
+              "id": "p10",
+              "name": "Black Lotus",
+            }
+          ],
+          "hand": [
+            {
+              "id": "p13",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p14",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "mana_pool": {
+            "W": 1,
+          },
+          "name": "TestPlayer",
+        }
+      ],
+      "priority_player": "TestPlayer",
+      "seq": 33,
+      "stack": [
+        {
+          "controller": "TestPlayer",
+          "id": "p25",
+          "mana_cost": "",
+          "name": "stack ability (When {this} enters, return a permanent you control to its owner's hand.)",
+          "source_card": "Emancipation Angel",
+        }
+      ],
+      "step": "POSTCOMBAT_MAIN",
+      "turn": 1,
+    },
+    {
+      "active_player": "TestPlayer",
+      "phase": "POSTCOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "Opponent",
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p11",
+              "name": "Emancipation Angel",
+              "power": 3,
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false,
+              "toughness": 3,
+            },
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": true,
+              "token": false,
+            }
+          ],
+          "exile": [],
+          "graveyard": [
+            {
+              "id": "p10",
+              "name": "Black Lotus",
+            }
+          ],
+          "hand": [
+            {
+              "id": "p13",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p14",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p15",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+            {
+              "id": "p16",
+              "name": "Plains",
+              "visible_to": [
+                "TestPlayer",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "mana_pool": {
+            "W": 1,
+          },
+          "name": "TestPlayer",
+        }
+      ],
+      "priority_player": "Opponent",
+      "seq": 34,
+      "stack": [
+        {
+          "controller": "TestPlayer",
+          "id": "p25",
+          "mana_cost": "",
+          "name": "stack ability (When {this} enters, return a permanent you control to its owner's hand.)",
+          "source_card": "Emancipation Angel",
+        }
+      ],
+      "step": "POSTCOMBAT_MAIN",
+      "turn": 1,
+    },
+    {
+      "active_player": "TestPlayer",
+      "phase": "POSTCOMBAT_MAIN",
+      "players": [
+        {
+          "battlefield": [],
+          "exile": [],
+          "graveyard": [],
+          "hand": [
+            {
+              "id": "p3",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p4",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p5",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p6",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p7",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p8",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+            {
+              "id": "p9",
+              "name": "Mountain",
+              "visible_to": [
+                "Opponent",
+              ]
+            },
+          ],
+          "library_size": 53,
+          "life": 20,
+          "name": "Opponent",
+        },
+        {
+          "battlefield": [
+            {
+              "face_down": false,
+              "id": "p11",
+              "name": "Emancipation Angel",
+              "power": 3,
+              "summoning_sick": true,
+              "tapped": false,
+              "token": false,
+              "toughness": 3,
+            },
+            {
+              "face_down": false,
+              "id": "p12",
+              "name": "Plains",
+              "summoning_sick": true,
+              "tapped": true,
+              "token": false,
+            }
+          ],
+          "exile": [],
+          "graveyard": [],
+          "hand": [],
+          "library_size": 0,
+          "life": 20,
+          "mana_pool": {
+            "W": 1,
+          },
+          "name": "TestPlayer",
+        }
+      ],
+      "priority_player": "TestPlayer",
+      "seq": 37,
+      "stack": [
+        {
+          "controller": "TestPlayer",
+          "id": "p25",
+          "mana_cost": "",
+          "name": "stack ability (When {this} enters, return a permanent you control to its owner's hand.)",
+          "source_card": "Emancipation Angel",
+        }
+      ],
+      "step": "POSTCOMBAT_MAIN",
+      "turn": 1,
     }
   ],
   "totalTurns": 1,
   "tournament": null,
   "version": 8,
   "winner": "Opponent",
-  "youtubeUrl": ""
+  "youtubeUrl": "",
 }
