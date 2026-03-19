@@ -6,22 +6,20 @@ evaluation matches golden reference files, catching regressions in prompt
 assembly (format, context, card references).
 
 To update golden files after intentional changes:
-    make regen-blunder-golden
+    make regen-golden
 """
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
-from schemas.game_export_types import load_game_export
 from scripts.analysis.blunder_analysis import (
-    _actions_by_turn,
-    _game_overview,
     build_decision_prompt,
+    load_game_context,
 )
 from scripts.analysis.blunder_eval_common import decision_index as get_decision_index
-from scripts.analysis.extract_decisions import extract_decisions
 from scripts.json5_utils import dumps_json5, loads_json5
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "blunder_prompts" / "game_20260216_074122_g2"
@@ -34,8 +32,8 @@ ORACLE_CACHE = GOLDEN_DIR / "oracle_cache.json5"
 UPDATE_MODE = bool(os.environ.get("UPDATE_BLUNDER_GOLDEN"))
 
 # Decision indices covering different game phases and context levels:
-#   0   - Starting player selection (minimal prompt, no board/prior context)
-#   11  - Turn 1 postcombat main (early game, card ref, no prior context)
+#   0   - Starting player selection (minimal prompt, no preceding action)
+#   11  - Turn 1 postcombat main (early game, card ref, has preceding action)
 #   64  - Turn 6 precombat main (mid-game, has prior context)
 #   113 - Turn 8 end step (discard decision, 7 choices)
 #   232 - Turn 18 precombat main (late game, max prior context)
@@ -44,29 +42,13 @@ GOLDEN_DECISION_INDICES = [0, 11, 64, 113, 232]
 
 @pytest.fixture(scope="module")
 def game_context():
-    """Load game data and build context (once per module, no network calls)."""
-    data = load_game_export(GAME_PATH)
-
+    """Load game context via the production code path, with cached oracle texts."""
     oracle_texts = loads_json5(ORACLE_CACHE.read_text())
-    decisions = extract_decisions(str(GAME_PATH))
-    snapshots = data.snapshots
-    overview = _game_overview(data)
-    game_actions = data.actions
-    abt = _actions_by_turn(game_actions)
-    num_players = len(data.players)
-
-    # Build index for quick lookup by decision_index
-    by_index = {get_decision_index(d): d for d in decisions}
-
-    return {
-        "decisions_by_index": by_index,
-        "snapshots": snapshots,
-        "overview": overview,
-        "oracle_texts": oracle_texts,
-        "actions_by_turn": abt,
-        "num_players": num_players,
-        "all_actions": game_actions,
-    }
+    with patch(
+        "scripts.analysis.blunder_analysis._get_oracle_texts",
+        return_value=oracle_texts,
+    ):
+        return load_game_context(str(GAME_PATH))
 
 
 @pytest.mark.parametrize("decision_index", GOLDEN_DECISION_INDICES)
@@ -74,8 +56,9 @@ def test_blunder_prompt_golden(game_context, decision_index):
     """Verify blunder annotator prompt matches golden reference."""
     golden_path = GOLDEN_DIR / f"decision_{decision_index}.json5"
 
-    decision = game_context["decisions_by_index"][decision_index]
-    assert get_decision_index(decision) == decision_index
+    decisions_by_index = {get_decision_index(d): d for d in game_context["decisions"]}
+    decision = decisions_by_index[decision_index]
+    preceding = game_context["preceding_by_index"].get(decision_index)
 
     system, user = build_decision_prompt(
         overview=game_context["overview"],
@@ -85,6 +68,7 @@ def test_blunder_prompt_golden(game_context, decision_index):
         actions_by_turn=game_context["actions_by_turn"],
         num_players=game_context["num_players"],
         all_actions=game_context["all_actions"],
+        preceding_decision=preceding,
     )
 
     actual = {

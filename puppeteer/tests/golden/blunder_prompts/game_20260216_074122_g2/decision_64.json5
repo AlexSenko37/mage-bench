@@ -106,6 +106,10 @@ Gem3F Valley - Ability triggers: Undercity Sewers - When Undercity Sewers enters
 Gem3F Valley surveils 1 (source: Undercity Sewers)\n\
 Gem3F Valley puts Undercity Sewers from library into their graveyard (source: Undercity Sewers)\n\
 \n\
+## Preceding Action\n\
+\n\
+[Decision 63] Choose spell or ability to playRestless Anchorage → Chose: 3. {1}{W}{U}: Until end of turn, Restless Anchorage becomes a 2/3 white and blue Bird creature with flying. It's still a land.\n\
+\n\
 ## Decision\n\
 \n\
 [Decision 64, snapshot=60] Turn 8 PRECOMBAT_MAIN - Gem25P Drama\n\
