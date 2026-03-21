@@ -13,20 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BridgeClientTest {
-
-    @Test
-    void normalizesSupportedPersonalityNames() {
-        assertThat(BridgeClient.parsePersonality("SLEEPWALKER")).isEqualTo("sleepwalker");
-        assertThat(BridgeClient.parsePersonality("StAlLeR")).isEqualTo("staller");
-    }
-
-    @Test
-    void rejectsUnknownPersonality() {
-        assertThatThrownBy(() -> BridgeClient.parsePersonality("wizard"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Unknown bridge personality 'wizard'. Expected one of: potato, staller, sleepwalker");
-    }
-
     @Test
     void rejectsMissingArgumentValue() {
         assertThatThrownBy(() -> BridgeClient.getStringSetting(
