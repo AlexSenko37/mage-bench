@@ -5,6 +5,7 @@ import mage.client.bridge.processor.BridgeChooseActionFlowContext;
 import mage.client.bridge.processor.BridgeChooseActionFlowManager;
 import mage.client.bridge.processor.BridgeChooseActionInput;
 import mage.client.bridge.processor.BridgeChooseActionStartResult;
+import mage.client.bridge.processor.BridgeCallbackEvent;
 import mage.client.bridge.processor.BridgeCommand;
 import mage.client.bridge.processor.BridgeConcedeFlow;
 import mage.client.bridge.processor.BridgeConcedeFlowManager;
@@ -18,6 +19,7 @@ import mage.cards.repository.CardInfo;
 import mage.choices.ChoiceImpl;
 import mage.client.bridge.tools.ActionResult;
 import mage.client.bridge.tools.ChooseActionTool;
+import mage.client.bridge.tools.GetGameStateTool;
 import mage.client.bridge.tools.GetOracleTextTool;
 import mage.constants.CardType;
 import mage.game.BridgeLogEntry;
@@ -511,6 +513,77 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
+    void passPriorityUsesLatestPassiveGameUpdateWhenNextSelectLacksGameView() throws Exception {
+        CountDownLatch autoPassSent = new CountDownLatch(1);
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        client.setSession(sessionProxy(autoPassSent, sendPlayerBooleanCalls));
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID landId = UUID.randomUUID();
+        CardView land = cardView(landId, "p11", "Plains");
+        setField(land, "cardTypes", List.of(CardType.LAND));
+        setField(land, "rules", List.of("{T}: Add {W}."));
+        setField(land, "manaCostLeftStr", List.of());
+        setField(land, "manaCostRightStr", List.of());
+
+        PlayerView player = playerView(playerId, "TestPlayer", "p2");
+        GameView initialView = gameView(21, List.of(player), new CardsView());
+        setField(initialView, "myPlayerId", playerId);
+
+        CardsView updatedHand = new CardsView();
+        updatedHand.put(landId, land);
+        GameView updatedView = gameView(44, List.of(player), new CardsView());
+        setField(updatedView, "myPlayerId", playerId);
+        setField(updatedView, "myHand", updatedHand);
+        setField(updatedView, "step", PhaseStep.PRECOMBAT_MAIN);
+        setField(updatedView, "canPlayObjects", playableObjects(Map.of(landId, playStats("Play land"))));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", initialView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            new GameClientMessage(initialView, Collections.<String, Serializable>emptyMap(), "Play instants and activated abilities"),
+            "Play instants and activated abilities",
+            21
+        ));
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<ActionResult> future = executor.submit(() -> handler.passPriority(null, null));
+
+            assertThat(autoPassSent.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            enqueueCallback(handler, ClientCallbackMethod.GAME_UPDATE, gameId, updatedView);
+            enqueueCallback(
+                handler,
+                ClientCallbackMethod.GAME_SELECT,
+                gameId,
+                new GameClientMessage((GameView) null, Collections.<String, Serializable>emptyMap(), "Play spells and abilities")
+            );
+
+            ActionResult result = future.get(1, TimeUnit.SECONDS);
+            assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
+            assertThat(result.stop_reason).isEqualTo("playable_cards");
+            assertThat(result.action_pending).isTrue();
+            assertThat(result.action_type).isEqualTo("GAME_SELECT");
+            assertThat(result.board).isNotNull();
+            assertThat(result.choices).singleElement().satisfies(choice ->
+                assertThat(choice).containsEntry("name", "Plains")
+            );
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void gameOverKeepsPostgameHistoryAvailableWithoutBlockingCallbackThread() throws Exception {
         UUID gameId = UUID.randomUUID();
         UUID playerId = UUID.randomUUID();
@@ -632,6 +705,74 @@ class BridgeCallbackHandlerTest {
         List<BridgeLogEntry> cachedEvents = (List<BridgeLogEntry>) getField(handler, "cachedBridgeEvents");
         assertThat(cachedEvents).extracting(BridgeLogEntry::index).containsExactly(50, 51, 70, 71);
         assertThat((int) getField(handler, "bridgeEventCursor")).isEqualTo(52);
+    }
+
+    @Test
+    void getGameHistoryDoesNotRewindCursorWhenNoEventsAreReturned() throws Exception {
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("getBridgeEvents".equals(method.getName())) {
+                    return List.of();
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        addActiveGame(handler, gameId, playerId);
+
+        var history = handler.getGameHistory(null, 17);
+        assertThat(history.cursor).isEqualTo(17);
+        assertThat(history.event_count).isZero();
+        assertThat(history.history).isEqualTo("No game events recorded yet.");
+    }
+
+    @Test
+    void getGameHistoryFetchDoesNotBlockProcessorThread() throws Exception {
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        CountDownLatch fetchStarted = new CountDownLatch(1);
+        CountDownLatch releaseFetch = new CountDownLatch(1);
+
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("getBridgeEvents".equals(method.getName())) {
+                    fetchStarted.countDown();
+                    assertThat(releaseFetch.await(1, TimeUnit.SECONDS)).isTrue();
+                    return List.of();
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+
+        addActiveGame(handler, gameId, playerId);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> historyFuture = executor.submit(() -> handler.getGameHistory(null, null));
+            assertThat(fetchStarted.await(1, TimeUnit.SECONDS)).isTrue();
+
+            Future<Void> processorFuture = executor.submit(() -> processor.submit(BridgeCommand.of(() -> null)));
+            processorFuture.get(1, TimeUnit.SECONDS);
+
+            releaseFetch.countDown();
+            historyFuture.get(1, TimeUnit.SECONDS);
+        } finally {
+            releaseFetch.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -1988,6 +2129,204 @@ class BridgeCallbackHandlerTest {
         assertThat(((GameClientMessage) pendingAction.data()).getGameView()).isSameAs(targetView);
         assertThat(getField(handler, "lastGameView")).isSameAs(targetView);
         assertThat(getField(handler, "playerDead")).isEqualTo(false);
+        assertThat(handler.isActionPending()).isTrue();
+    }
+
+    @Test
+    void getGameStateReadsPublishedProcessorSnapshot() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID tableId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        GameView gameView = gameView(12, List.of(playerView(playerId, "TestPlayer", "p2")), new CardsView());
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                return switch (method.getName()) {
+                    case "joinGame" -> true;
+                    case "getGameChatId" -> Optional.empty();
+                    default -> defaultReturnValue(method.getReturnType());
+                };
+            }
+        ));
+
+        handler.handleCallback(new ClientCallback(
+            ClientCallbackMethod.START_GAME,
+            gameId,
+            new TableClientMessage().withTable(tableId, null).withPlayer(playerId),
+            false
+        ));
+        handler.handleCallback(new ClientCallback(
+            ClientCallbackMethod.GAME_INIT,
+            gameId,
+            gameView,
+            false
+        ));
+        handler.awaitProcessorIdle();
+
+        var result = handler.getGameState(null);
+
+        assertThat(result.available).isTrue();
+        assertThat(result.game_seq).isEqualTo(12);
+        assertThat(result.turn).isEqualTo(1);
+        assertThat(result.active_player).isEqualTo("TestPlayer");
+        assertThat(result.priority_player).isEqualTo("TestPlayer");
+    }
+
+    @Test
+    void getGameStateWithCursorWaitsForQueuedCallbacksBeforeReportingUnchanged() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID tableId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        GameView initialView = gameView(12, List.of(playerView(playerId, "TestPlayer", "p2")), new CardsView());
+        GameView queuedView = gameView(13, List.of(playerView(playerId, "TestPlayer", "p2")), new CardsView());
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                return switch (method.getName()) {
+                    case "joinGame" -> true;
+                    case "getGameChatId" -> Optional.empty();
+                    default -> defaultReturnValue(method.getReturnType());
+                };
+            }
+        ));
+
+        handler.handleCallback(new ClientCallback(
+            ClientCallbackMethod.START_GAME,
+            gameId,
+            new TableClientMessage().withTable(tableId, null).withPlayer(playerId),
+            false
+        ));
+        handler.handleCallback(new ClientCallback(
+            ClientCallbackMethod.GAME_INIT,
+            gameId,
+            initialView,
+            false
+        ));
+        handler.awaitProcessorIdle();
+
+        long initialCursor = handler.getGameState(null).cursor;
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+
+        CountDownLatch blockerEntered = new CountDownLatch(1);
+        CountDownLatch releaseBlocker = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> blockerFuture = executor.submit(() -> processor.submit(new BridgeCommand<Void>() {
+                @Override
+                public Void execute() {
+                    blockerEntered.countDown();
+                    try {
+                        assertThat(releaseBlocker.await(1, TimeUnit.SECONDS)).isTrue();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Interrupted while blocking processor", e);
+                    }
+                    return null;
+                }
+            }));
+
+            assertThat(blockerEntered.await(1, TimeUnit.SECONDS)).isTrue();
+
+            enqueueCallback(
+                handler,
+                ClientCallbackMethod.GAME_SELECT,
+                gameId,
+                new GameClientMessage(queuedView, Collections.<String, Serializable>emptyMap(), "Pass")
+            );
+
+            Future<GetGameStateTool.Result> future = executor.submit(() -> handler.getGameState(initialCursor));
+
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            releaseBlocker.countDown();
+
+            GetGameStateTool.Result result = future.get(1, TimeUnit.SECONDS);
+            blockerFuture.get(1, TimeUnit.SECONDS);
+
+            assertThat(result.available).isTrue();
+            assertThat(result.unchanged).isNull();
+            assertThat(result.game_seq).isEqualTo(13);
+            assertThat(result.cursor).isNotEqualTo(initialCursor);
+        } finally {
+            releaseBlocker.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void failedProcessorCommandStillPublishesUpdatedActionPendingSnapshot() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+        BridgeDecisionState decisionState = (BridgeDecisionState) getDirectField(handler, "decisionState");
+        UUID gameId = UUID.randomUUID();
+        PendingAction pendingAction = new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            new GameClientMessage((GameView) null, Collections.<String, Serializable>emptyMap(), "Pass"),
+            "Pass",
+            7
+        );
+
+        processor.submit(BridgeCommand.of(() -> {
+            decisionState.replacePendingAction(pendingAction);
+            return null;
+        }));
+        assertThat(handler.isActionPending()).isTrue();
+
+        assertThatThrownBy(() -> processor.submit(new BridgeCommand<Void>() {
+            @Override
+            public Void execute() {
+                decisionState.clearPendingActionIfCurrent(pendingAction);
+                throw new IllegalStateException("boom");
+            }
+        })).isInstanceOf(IllegalStateException.class)
+            .hasMessage("boom");
+
+        assertThat(handler.isActionPending()).isFalse();
+    }
+
+    @Test
+    void callbackHookFailureDoesNotKillProcessorThread() throws Exception {
+        AtomicInteger hookCalls = new AtomicInteger();
+        CountDownLatch callbackHandled = new CountDownLatch(1);
+        BridgeProcessor processor = new BridgeProcessor(
+            "TestPlayer",
+            Logger.getLogger(BridgeCallbackHandlerTest.class),
+            event -> callbackHandled.countDown()
+        );
+        processor.setAfterMessageHook(() -> {
+            if (hookCalls.getAndIncrement() == 0) {
+                throw new IllegalStateException("hook failed");
+            }
+        });
+        processor.start();
+
+        try {
+            processor.enqueueCallback(new BridgeCallbackEvent(
+                UUID.randomUUID(),
+                ClientCallbackMethod.GAME_SELECT,
+                null
+            ));
+
+            assertThat(callbackHandled.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(processor.submit(BridgeCommand.of(() -> "ok"))).isEqualTo("ok");
+            assertThat(hookCalls.get()).isGreaterThanOrEqualTo(2);
+        } finally {
+            processor.shutdown("test");
+        }
     }
 
     @Test
@@ -3170,6 +3509,16 @@ class BridgeCallbackHandlerTest {
         }
         setField(stats, "allManaAbilities", records);
         setField(stats, "basicManaAbilities", records);
+        return stats;
+    }
+
+    private static PlayableObjectStats playStats(String... playAbilities) throws Exception {
+        PlayableObjectStats stats = new PlayableObjectStats();
+        List<Object> records = new java.util.ArrayList<>();
+        for (int i = 0; i < playAbilities.length; i++) {
+            records.add(playableObjectRecord(UUID.randomUUID(), playAbilities[i]));
+        }
+        setField(stats, "basicPlayAbilities", records);
         return stats;
     }
 

@@ -2,6 +2,7 @@ package mage.client.bridge.processor;
 
 import org.apache.log4j.Logger;
 
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
@@ -12,6 +13,7 @@ public final class BridgeProcessor {
     private final Logger logger;
     private final String username;
     private final Consumer<BridgeCallbackEvent> callbackHandler;
+    private Runnable afterMessageHook = () -> {};
     private volatile boolean closed = false;
 
     public BridgeProcessor(String username, Logger logger, Consumer<BridgeCallbackEvent> callbackHandler) {
@@ -24,6 +26,10 @@ public final class BridgeProcessor {
 
     public void start() {
         thread.start();
+    }
+
+    public void setAfterMessageHook(Runnable afterMessageHook) {
+        this.afterMessageHook = Objects.requireNonNull(afterMessageHook);
     }
 
     public void enqueueCallback(BridgeCallbackEvent event) {
@@ -85,6 +91,7 @@ public final class BridgeProcessor {
             }
             if (message instanceof BridgeCallbackEvent event) {
                 callbackHandler.accept(event);
+                runAfterMessageHookOnCallback();
                 continue;
             }
             if (message instanceof BridgeCommand<?> command) {
@@ -93,12 +100,37 @@ public final class BridgeProcessor {
         }
     }
 
-    private <T> void executeCommand(BridgeCommand<T> command) {
+    private void runAfterMessageHookOnCallback() {
         try {
-            T value = command.execute();
-            command.complete(value);
+            afterMessageHook.run();
+        } catch (Throwable hookFailure) {
+            logger.error("[" + username + "] Bridge processor after-message hook failed on callback", hookFailure);
+        }
+    }
+
+    private <T> void executeCommand(BridgeCommand<T> command) {
+        T value = null;
+        Throwable failure = null;
+        try {
+            value = command.execute();
         } catch (Throwable t) {
-            command.completeExceptionally(t);
+            failure = t;
+        }
+
+        try {
+            afterMessageHook.run();
+        } catch (Throwable hookFailure) {
+            if (failure == null) {
+                failure = hookFailure;
+            } else {
+                failure.addSuppressed(hookFailure);
+            }
+        }
+
+        if (failure == null) {
+            command.complete(value);
+        } else {
+            command.completeExceptionally(failure);
         }
     }
 }
