@@ -63,7 +63,7 @@ class TestChangedGameFilenames:
         monkeypatch.setattr(
             repo_convention_helpers,
             "changed_files_since_master",
-            lambda: {"src/magebench/game/game-export-v8.schema.json"},
+            lambda: {"src/magebench/game/game-export-v9.schema.json"},
         )
 
         assert repo_convention_helpers.changed_game_filenames() is None
