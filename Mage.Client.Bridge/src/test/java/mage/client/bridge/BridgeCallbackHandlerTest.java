@@ -1,5 +1,16 @@
 package mage.client.bridge;
 
+import mage.client.bridge.processor.BridgeChooseActionFlow;
+import mage.client.bridge.processor.BridgeChooseActionFlowContext;
+import mage.client.bridge.processor.BridgeChooseActionFlowManager;
+import mage.client.bridge.processor.BridgeChooseActionInput;
+import mage.client.bridge.processor.BridgeChooseActionStartResult;
+import mage.client.bridge.processor.BridgeCommand;
+import mage.client.bridge.processor.BridgeDecisionState;
+import mage.client.bridge.processor.BridgePassPriorityFlow;
+import mage.client.bridge.processor.BridgePassPriorityFlowContext;
+import mage.client.bridge.processor.BridgePassPriorityFlowManager;
+import mage.client.bridge.processor.BridgeProcessor;
 import mage.cards.repository.CardInfo;
 import mage.choices.ChoiceImpl;
 import mage.client.bridge.tools.ActionResult;
@@ -29,6 +40,7 @@ import mage.view.PlayerView;
 import mage.view.StackAbilityView;
 import mage.view.TableClientMessage;
 import org.junit.jupiter.api.Test;
+import org.apache.log4j.Logger;
 import sun.misc.Unsafe;
 
 import java.io.Serializable;
@@ -47,6 +59,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -1252,7 +1265,168 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
-    void chooseActionReturnsInterruptedResultWhenCallerThreadIsInterrupted() throws Exception {
+    void chooseActionReturnsAfterClientDisconnectWithoutFollowupCallback() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        CountDownLatch sendPlayerBooleanCalled = new CountDownLatch(1);
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        GameView initialView = gameView(55);
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("sendPlayerBoolean".equals(method.getName())) {
+                    sendPlayerBooleanCalls.incrementAndGet();
+                    sendPlayerBooleanCalled.countDown();
+                    return true;
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", initialView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_ASK,
+            new GameClientMessage(initialView, Collections.<String, Serializable>emptyMap(), "Use effect of Clone?"),
+            "Use effect of Clone?",
+            55
+        ));
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<ChooseActionTool.Result> future = executor.submit(() -> handler.chooseAction(
+                null, null, true, null, null, null, null, null, null, null, null
+            ));
+
+            assertThat(sendPlayerBooleanCalled.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            client.disconnected(false, false);
+
+            ChooseActionTool.Result result = future.get(1, TimeUnit.SECONDS);
+            assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
+            assertThat(result.success).isTrue();
+            assertThat(result.action_taken).isEqualTo("yes");
+            assertThat(result.action_pending).isNull();
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void chooseActionReturnsAfterClientStopWithBatchTargetCallbackPending() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID blockerUuid = UUID.randomUUID();
+        UUID attackerUuid = UUID.randomUUID();
+        CountDownLatch targetCallbackQueued = new CountDownLatch(1);
+        AtomicInteger sendPlayerUuidCalls = new AtomicInteger();
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        GameView combatView = gameView(56);
+        GameView targetView = gameView(57);
+
+        registerShortId(handler, blockerUuid, "p5");
+        registerShortId(handler, attackerUuid, "p1");
+
+        var combatOptions = new LinkedHashMap<String, Serializable>();
+        combatOptions.put("possibleBlockers", new ArrayList<>(List.of(blockerUuid)));
+        GameClientMessage combatMessage = new GameClientMessage(combatView, combatOptions, "Declare blockers");
+        GameClientMessage targetMessage = new GameClientMessage(
+            targetView,
+            Collections.<String, Serializable>emptyMap(),
+            "Choose attacker to block",
+            new CardsView(),
+            Set.of(attackerUuid),
+            true
+        );
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "sendPlayerUUID" -> {
+                        sendPlayerUuidCalls.incrementAndGet();
+                        assertThat(args[0]).isEqualTo(gameId);
+                        if (sendPlayerUuidCalls.get() == 1) {
+                            assertThat(args[1]).isEqualTo(blockerUuid);
+                            enqueueCallback(handler, ClientCallbackMethod.GAME_TARGET, gameId, targetMessage);
+                            targetCallbackQueued.countDown();
+                        } else {
+                            assertThat(sendPlayerUuidCalls.get()).isEqualTo(2);
+                            assertThat(args[1]).isEqualTo(attackerUuid);
+                        }
+                        return true;
+                    }
+                    case "sendPlayerBoolean" -> {
+                        sendPlayerBooleanCalls.incrementAndGet();
+                        return true;
+                    }
+                    default -> {
+                        return defaultReturnValue(method.getReturnType());
+                    }
+                }
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", combatView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            combatMessage,
+            "Declare blockers",
+            56
+        ));
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<ChooseActionTool.Result> future = executor.submit(() -> handler.chooseAction(
+                null, null, null, null, null, null, null, null, null, null, new String[]{"p5:p1"}
+            ));
+
+            assertThat(targetCallbackQueued.await(1, TimeUnit.SECONDS)).isTrue();
+            BridgeDecisionState decisionState = (BridgeDecisionState) getField(handler, "decisionState");
+            long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
+            while (System.nanoTime() < deadlineNanos) {
+                PendingAction pendingAction = decisionState.pendingAction();
+                if (pendingAction != null && pendingAction.method() == ClientCallbackMethod.GAME_TARGET) {
+                    break;
+                }
+                Thread.sleep(10);
+            }
+
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            client.stop();
+
+            ChooseActionTool.Result result = future.get(1, TimeUnit.SECONDS);
+            assertThat(sendPlayerUuidCalls.get()).isEqualTo(2);
+            assertThat(sendPlayerBooleanCalls.get()).isZero();
+            assertThat(result.success).isFalse();
+            assertThat(result.interrupted).isTrue();
+            assertThat(result.action_taken).isEqualTo("batch_block");
+            assertThat(result.declared).containsExactly(Map.of("id", "p5", "blocks", "p1"));
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void chooseActionReturnsCancelledResultWhenCallerThreadIsInterrupted() throws Exception {
         BridgeMageClient client = new BridgeMageClient("TestPlayer");
         BridgeCallbackHandler handler = client.getCallbackHandler();
 
@@ -1314,10 +1488,171 @@ class BridgeCallbackHandlerTest {
             assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
             assertThat(resultRef.get()).isNotNull();
             assertThat(resultRef.get().success).isFalse();
-            assertThat(resultRef.get().error_code).isEqualTo("interrupted");
+            assertThat(resultRef.get().error_code).isEqualTo("cancelled");
             assertThat(interruptFlagAfterReturn.get()).isTrue();
         } finally {
             worker.join(1000);
+        }
+    }
+
+    @Test
+    void chooseActionTickerFailsFlowWhenTickCommandThrowsIllegalStateException() throws Exception {
+        AtomicBoolean failOnDecisionRead = new AtomicBoolean(false);
+        BridgeProcessor processor = new BridgeProcessor(
+            "TestPlayer",
+            Logger.getLogger(BridgeChooseActionFlowManager.class),
+            event -> { }
+        );
+        BridgeDecisionState decisionState = new BridgeDecisionState();
+        BridgeChooseActionFlowContext context = new BridgeChooseActionFlowContext() {
+            @Override
+            public PendingAction currentPendingAction() {
+                return null;
+            }
+
+            @Override
+            public PendingAction currentDecisionAction() {
+                if (failOnDecisionRead.get()) {
+                    throw new IllegalStateException("choose_action tick failed");
+                }
+                return null;
+            }
+
+            @Override
+            public boolean requestCannotContinue() {
+                return false;
+            }
+
+            @Override
+            public ChooseActionTool.Result noPendingActionResult() {
+                return new ChooseActionTool.Result();
+            }
+
+            @Override
+            public BridgeChooseActionStartResult applyChooseAction(BridgeChooseActionInput input, PendingAction action) {
+                throw new AssertionError("applyChooseAction should not run");
+            }
+
+            @Override
+            public String detectCombatSelect(PendingAction action) {
+                throw new AssertionError("detectCombatSelect should not run");
+            }
+
+            @Override
+            public UUID resolveShortId(String shortId) {
+                throw new AssertionError("resolveShortId should not run");
+            }
+
+            @Override
+            public Set<UUID> validTargets(PendingAction action) {
+                throw new AssertionError("validTargets should not run");
+            }
+
+            @Override
+            public boolean clearPendingActionIfCurrent(PendingAction action) {
+                throw new AssertionError("clearPendingActionIfCurrent should not run");
+            }
+
+            @Override
+            public void sendBooleanOrDie(UUID gameId, boolean data, String sendContext) {
+                throw new AssertionError("sendBooleanOrDie should not run");
+            }
+
+            @Override
+            public void sendUuidOrDie(UUID gameId, UUID data, String sendContext) {
+                throw new AssertionError("sendUuidOrDie should not run");
+            }
+
+            @Override
+            public void sendStringOrDie(UUID gameId, String data, String sendContext) {
+                throw new AssertionError("sendStringOrDie should not run");
+            }
+
+            @Override
+            public void clearLastChoices() {
+            }
+
+            @Override
+            public ChooseActionTool.Result buildChooseActionError(
+                    ChooseActionTool.Result result,
+                    String errorCode,
+                    String message,
+                    boolean retryable,
+                    PendingAction action) {
+                throw new AssertionError("buildChooseActionError should not run");
+            }
+
+            @Override
+            public void finishChooseActionWithNextDecision(
+                    ChooseActionTool.Result result,
+                    PendingAction previousAction,
+                    PendingAction nextAction) {
+                throw new AssertionError("finishChooseActionWithNextDecision should not run");
+            }
+
+            @Override
+            public void finishChooseActionWithoutNextDecision(
+                    ChooseActionTool.Result result,
+                    PendingAction previousAction) {
+                throw new AssertionError("finishChooseActionWithoutNextDecision should not run");
+            }
+
+            @Override
+            public void finishBatchChooseActionWithNextDecision(
+                    ChooseActionTool.Result result,
+                    PendingAction nextAction) {
+                throw new AssertionError("finishBatchChooseActionWithNextDecision should not run");
+            }
+
+            @Override
+            public void finishBatchChooseActionWithoutNextDecision(ChooseActionTool.Result result) {
+                throw new AssertionError("finishBatchChooseActionWithoutNextDecision should not run");
+            }
+
+            @Override
+            public ChooseActionTool.Result cancelledChooseActionResult(
+                    PendingAction previousAction,
+                    ChooseActionTool.Result partialResult) {
+                throw new AssertionError("cancelledChooseActionResult should not run");
+            }
+        };
+        BridgeChooseActionFlowManager manager = new BridgeChooseActionFlowManager(
+            processor,
+            "TestPlayer",
+            decisionState,
+            context,
+            message -> {
+                var result = new ChooseActionTool.Result();
+                result.error = message;
+                return result;
+            }
+        );
+        processor.start();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            BridgeChooseActionFlow flow = processor.submit(BridgeCommand.of(() -> manager.startPendingFlow(
+                new BridgeChooseActionInput(null, null, null, null, null, null, null, null, null, null, null)
+            )));
+
+            Future<ChooseActionTool.Result> future = executor.submit(flow::awaitResult);
+            failOnDecisionRead.set(true);
+
+            assertThatThrownBy(() -> future.get(1, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .satisfies(error -> {
+                    Throwable outerCause = ((ExecutionException) error).getCause();
+                    assertThat(outerCause).isInstanceOf(ExecutionException.class);
+                    assertThat(outerCause.getCause())
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("choose_action tick failed");
+                });
+            assertThat(decisionState.pendingChooseActionFlow()).isNull();
+        } finally {
+            manager.shutdown();
+            processor.shutdown("test done");
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
         }
     }
 
@@ -1650,6 +1985,336 @@ class BridgeCallbackHandlerTest {
             assertThat(result.action_type).isEqualTo("GAME_ASK");
             assertThat(result.game_seq).isEqualTo(91);
         } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void passPriorityReturnsAfterClientStopWithoutFollowupCallback() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        CountDownLatch autoPassSent = new CountDownLatch(1);
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        GameView initialView = gameView(92);
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("sendPlayerBoolean".equals(method.getName())) {
+                    sendPlayerBooleanCalls.incrementAndGet();
+                    autoPassSent.countDown();
+                    return true;
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", initialView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            new GameClientMessage(initialView, Collections.<String, Serializable>emptyMap(), "Pass"),
+            "Pass",
+            92
+        ));
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<ActionResult> future = executor.submit(() -> handler.passPriority(null, null));
+
+            assertThat(autoPassSent.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            client.stop();
+
+            ActionResult result = future.get(1, TimeUnit.SECONDS);
+            assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
+            assertThat(result.stop_reason).isEqualTo("game_over");
+            assertThat(result.action_pending).isFalse();
+            assertThat(result.game_seq).isEqualTo(92);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void passPriorityReturnsCancelledResultWhenCallerThreadIsInterrupted() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        CountDownLatch autoPassSent = new CountDownLatch(1);
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        GameView initialView = gameView(93);
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("sendPlayerBoolean".equals(method.getName())) {
+                    sendPlayerBooleanCalls.incrementAndGet();
+                    autoPassSent.countDown();
+                    return true;
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", initialView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            new GameClientMessage(initialView, Collections.<String, Serializable>emptyMap(), "Pass"),
+            "Pass",
+            93
+        ));
+
+        AtomicReference<ActionResult> resultRef = new AtomicReference<>();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        AtomicBoolean interruptFlagAfterReturn = new AtomicBoolean(false);
+        CountDownLatch done = new CountDownLatch(1);
+
+        Thread worker = new Thread(() -> {
+            try {
+                resultRef.set(handler.passPriority(null, null));
+                interruptFlagAfterReturn.set(Thread.currentThread().isInterrupted());
+            } catch (Throwable t) {
+                errorRef.set(t);
+            } finally {
+                done.countDown();
+            }
+        }, "pass-priority-interrupt-test");
+
+        worker.start();
+        try {
+            assertThat(autoPassSent.await(1, TimeUnit.SECONDS)).isTrue();
+
+            worker.interrupt();
+
+            assertThat(done.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(errorRef.get()).isNull();
+            assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
+            assertThat(resultRef.get()).isNotNull();
+            assertThat(resultRef.get().stop_reason).isEqualTo("cancelled");
+            assertThat(resultRef.get().action_pending).isFalse();
+            assertThat(interruptFlagAfterReturn.get()).isTrue();
+        } finally {
+            worker.join(1000);
+        }
+    }
+
+    @Test
+    void passPriorityTickerFailsFlowWhenTickCommandThrowsIllegalStateException() throws Exception {
+        AtomicBoolean failOnPendingRead = new AtomicBoolean(false);
+        BridgeProcessor processor = new BridgeProcessor(
+            "TestPlayer",
+            Logger.getLogger(BridgePassPriorityFlowManager.class),
+            event -> { }
+        );
+        BridgeDecisionState decisionState = new BridgeDecisionState();
+        BridgePassPriorityFlowContext context = new BridgePassPriorityFlowContext() {
+            @Override
+            public String username() {
+                return "TestPlayer";
+            }
+
+            @Override
+            public PendingAction currentPendingAction() {
+                if (failOnPendingRead.get()) {
+                    throw new IllegalStateException("pass_priority tick failed");
+                }
+                return null;
+            }
+
+            @Override
+            public PendingAction currentDecisionAction() {
+                return null;
+            }
+
+            @Override
+            public PendingAction resolvePassPriorityAction(PendingAction action) {
+                return action;
+            }
+
+            @Override
+            public GameView preparePassPriorityActionView(PendingAction action) {
+                return null;
+            }
+
+            @Override
+            public int interactionsThisTurn() {
+                return 0;
+            }
+
+            @Override
+            public int maxInteractionsPerTurn() {
+                return 10;
+            }
+
+            @Override
+            public void executeDefaultAction() {
+                throw new AssertionError("executeDefaultAction should not run");
+            }
+
+            @Override
+            public String detectCombatSelect(PendingAction action) {
+                throw new AssertionError("detectCombatSelect should not run");
+            }
+
+            @Override
+            public ActionResult pendingActionResult(PendingAction action, String stopReason, Long boardCursorParam) {
+                throw new AssertionError("pendingActionResult should not run");
+            }
+
+            @Override
+            public ActionResult pendingActionResult(
+                    PendingAction action,
+                    String stopReason,
+                    Long boardCursorParam,
+                    java.util.function.Consumer<ActionResult> customizer) {
+                throw new AssertionError("pendingActionResult should not run");
+            }
+
+            @Override
+            public ActionResult stepYieldResult(PendingAction action, GameView gameView, String stopReason, Long boardCursorParam) {
+                throw new AssertionError("stepYieldResult should not run");
+            }
+
+            @Override
+            public ActionResult stackResolvedResult(PendingAction action, Long boardCursorParam) {
+                throw new AssertionError("stackResolvedResult should not run");
+            }
+
+            @Override
+            public UUID lowestStackObjectId(GameView gameView) {
+                return null;
+            }
+
+            @Override
+            public boolean stackContains(GameView gameView, UUID stackObjectId) {
+                return false;
+            }
+
+            @Override
+            public boolean clearPendingActionIfCurrent(PendingAction action) {
+                throw new AssertionError("clearPendingActionIfCurrent should not run");
+            }
+
+            @Override
+            public void sendBooleanOrDie(UUID gameId, boolean data, String sendContext) {
+                throw new AssertionError("sendBooleanOrDie should not run");
+            }
+
+            @Override
+            public UUID currentGameId() {
+                return UUID.randomUUID();
+            }
+
+            @Override
+            public GameView lastGameView() {
+                return null;
+            }
+
+            @Override
+            public int lastTurnNumber() {
+                return 0;
+            }
+
+            @Override
+            public int activeGamesSize() {
+                return 1;
+            }
+
+            @Override
+            public boolean superseded() {
+                return false;
+            }
+
+            @Override
+            public boolean playerDead() {
+                return false;
+            }
+
+            @Override
+            public boolean gameEverStarted() {
+                return false;
+            }
+
+            @Override
+            public boolean clientRunning() {
+                return true;
+            }
+
+            @Override
+            public long lastActionableCallbackAt() {
+                return 0;
+            }
+
+            @Override
+            public long lastCallbackReceivedAt() {
+                return 0;
+            }
+
+            @Override
+            public void declareZombieGame(long absoluteIdleMs) {
+                throw new AssertionError("declareZombieGame should not run");
+            }
+
+            @Override
+            public boolean failedManaCast(UUID objectId) {
+                return false;
+            }
+
+            @Override
+            public void finalizePassPriorityResult(
+                    BridgePassPriorityFlow flow,
+                    String until,
+                    int actionsPassed,
+                    PendingAction action,
+                    GameView view,
+                    ActionResult result,
+                    boolean actionPending) {
+                decisionState.clearPendingPassPriorityFlowIfCurrent(flow);
+            }
+        };
+        BridgePassPriorityFlowManager manager = new BridgePassPriorityFlowManager(
+            processor,
+            "TestPlayer",
+            decisionState,
+            context
+        );
+        processor.start();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            BridgePassPriorityFlow flow = processor.submit(BridgeCommand.of(() -> manager.startPendingFlow(null, null)));
+
+            Future<ActionResult> future = executor.submit(flow::awaitResult);
+            failOnPendingRead.set(true);
+
+            assertThatThrownBy(() -> future.get(1, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .satisfies(error -> {
+                    Throwable outerCause = ((ExecutionException) error).getCause();
+                    assertThat(outerCause).isInstanceOf(ExecutionException.class);
+                    assertThat(outerCause.getCause())
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("pass_priority tick failed");
+                });
+            assertThat(decisionState.pendingPassPriorityFlow()).isNull();
+        } finally {
+            manager.shutdown();
+            processor.shutdown("test done");
             executor.shutdownNow();
             executor.awaitTermination(1, TimeUnit.SECONDS);
         }
