@@ -11,6 +11,7 @@ import mage.client.bridge.processor.BridgeCommand;
 import mage.client.bridge.processor.BridgeConcedeFlow;
 import mage.client.bridge.processor.BridgeConcedeFlowManager;
 import mage.client.bridge.processor.BridgeDecisionState;
+import mage.client.bridge.processor.BridgeGameLogRefresher;
 import mage.client.bridge.processor.BridgeGameLogState;
 import mage.client.bridge.processor.BridgeGameState;
 import mage.client.bridge.processor.BridgePassPriorityFlow;
@@ -21,6 +22,7 @@ import mage.cards.repository.CardInfo;
 import mage.choices.ChoiceImpl;
 import mage.client.bridge.tools.ActionResult;
 import mage.client.bridge.tools.ChooseActionTool;
+import mage.client.bridge.tools.GetGameHistoryTool;
 import mage.client.bridge.tools.GetGameStateTool;
 import mage.client.bridge.tools.GetOracleTextTool;
 import mage.constants.CardType;
@@ -283,6 +285,7 @@ class BridgeCallbackHandlerTest {
             "",
             7
         ));
+        publishProcessorState(handler);
 
         ActionResult result = handler.getActionChoices(null);
 
@@ -702,6 +705,19 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
+    void getGameHistoryKeepsFutureCursorAtPublishedNextCursor() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        setCachedBridgeEvents(handler, sampleBridgeLogEvents());
+
+        var result = handler.getGameHistory(null, 999);
+
+        assertThat(result.cursor).isEqualTo(6);
+        assertThat(result.event_count).isZero();
+        assertThat(result.history).isEqualTo("No game events recorded yet.");
+    }
+
+    @Test
     void getGameHistoryReadsPublishedSnapshotWithoutFetchingServerBridgeEvents() throws Exception {
         BridgeMageClient client = new BridgeMageClient("TestPlayer");
         AtomicInteger getBridgeEventsCalls = new AtomicInteger();
@@ -729,6 +745,82 @@ class BridgeCallbackHandlerTest {
             historyFuture.get(1, TimeUnit.SECONDS);
             assertThat(getBridgeEventsCalls.get()).isZero();
         } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void getGameHistoryWaitsForPublishedLogAfterRefreshSyncBarrier() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        AtomicInteger getBridgeEventsCalls = new AtomicInteger();
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("getBridgeEvents".equals(method.getName())) {
+                    int cursor = (Integer) args[2];
+                    getBridgeEventsCalls.incrementAndGet();
+                    if (cursor == 0) {
+                        return List.of(bridgeLogEntry(9, "LAND_PLAYED", 4, "Alice", "Alice", "Shock", "Bob"));
+                    }
+                    return List.of();
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+        BridgeGameState gameState = (BridgeGameState) getDirectField(handler, "gameState");
+        BridgeGameLogState gameLogState = (BridgeGameLogState) getDirectField(handler, "gameLogState");
+        BridgeGameLogRefresher gameLogRefresher = (BridgeGameLogRefresher) getDirectField(handler, "gameLogRefresher");
+        BridgeMcpQueryApi mcpQueryApi = (BridgeMcpQueryApi) getDirectField(handler, "mcpQueryApi");
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        addActiveGame(handler, gameId, playerId);
+
+        CountDownLatch afterHookBlocked = new CountDownLatch(1);
+        CountDownLatch releaseAfterHook = new CountDownLatch(1);
+        AtomicBoolean delayedPublish = new AtomicBoolean(false);
+        processor.setAfterMessageHook(message -> {
+            if (message instanceof BridgeCallbackEvent event
+                    && gameState.currentGameId() != null
+                    && gameState.currentGameId().equals(event.objectId())) {
+                gameLogRefresher.afterCallbackProcessed();
+            }
+            if (message instanceof BridgeCommand<?>
+                    && gameLogState.publishedGameLog().nextCursor() > 0
+                    && delayedPublish.compareAndSet(false, true)) {
+                afterHookBlocked.countDown();
+                try {
+                    assertThat(releaseAfterHook.await(1, TimeUnit.SECONDS)).isTrue();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while blocking afterMessageHook", e);
+                }
+            }
+            mcpQueryApi.publishProcessorState();
+        });
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            enqueueCallback(handler, ClientCallbackMethod.GAME_UPDATE, gameId, null);
+
+            Future<GetGameHistoryTool.Result> future = executor.submit(() -> handler.getGameHistory(null, null));
+
+            assertThat(afterHookBlocked.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            releaseAfterHook.countDown();
+
+            GetGameHistoryTool.Result result = future.get(1, TimeUnit.SECONDS);
+            assertThat(getBridgeEventsCalls.get()).isGreaterThanOrEqualTo(1);
+            assertThat(result.event_count).isEqualTo(1);
+            assertThat(result.history).contains("Alice played Shock");
+        } finally {
+            releaseAfterHook.countDown();
             executor.shutdownNow();
             executor.awaitTermination(1, TimeUnit.SECONDS);
         }
@@ -2130,6 +2222,7 @@ class BridgeCallbackHandlerTest {
         var result = handler.getGameState(null);
 
         assertThat(result.available).isTrue();
+        assertThat(result.cursor).isEqualTo(1);
         assertThat(result.game_seq).isEqualTo(12);
         assertThat(result.turn).isEqualTo(1);
         assertThat(result.active_player).isEqualTo("TestPlayer");
@@ -2217,6 +2310,64 @@ class BridgeCallbackHandlerTest {
             assertThat(result.unchanged).isNull();
             assertThat(result.game_seq).isEqualTo(13);
             assertThat(result.cursor).isNotEqualTo(initialCursor);
+        } finally {
+            releaseBlocker.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void getActionChoicesWaitsForQueuedCallbacksBeforeReturningPublishedChoices() throws Exception {
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+
+        UUID gameId = UUID.randomUUID();
+        GameView queuedView = gameView(13, 3, PhaseStep.PRECOMBAT_MAIN);
+        addActiveGame(handler, gameId);
+
+        CountDownLatch blockerEntered = new CountDownLatch(1);
+        CountDownLatch releaseBlocker = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> blockerFuture = executor.submit(() -> processor.submit(new BridgeCommand<Void>() {
+                @Override
+                public Void execute() {
+                    blockerEntered.countDown();
+                    try {
+                        assertThat(releaseBlocker.await(1, TimeUnit.SECONDS)).isTrue();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Interrupted while blocking processor", e);
+                    }
+                    return null;
+                }
+            }));
+
+            assertThat(blockerEntered.await(1, TimeUnit.SECONDS)).isTrue();
+
+            enqueueCallback(
+                handler,
+                ClientCallbackMethod.GAME_SELECT,
+                gameId,
+                new GameClientMessage(queuedView, Collections.<String, Serializable>emptyMap(), "Pass")
+            );
+
+            Future<ActionResult> future = executor.submit(() -> handler.getActionChoices(null));
+
+            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
+                .isInstanceOf(TimeoutException.class);
+
+            releaseBlocker.countDown();
+
+            ActionResult result = future.get(1, TimeUnit.SECONDS);
+            blockerFuture.get(1, TimeUnit.SECONDS);
+
+            assertThat(result.action_pending).isTrue();
+            assertThat(result.action_type).isEqualTo("GAME_SELECT");
+            assertThat(result.response_type).isEqualTo("boolean");
+            assertThat(result.game_seq).isEqualTo(13);
         } finally {
             releaseBlocker.countDown();
             executor.shutdownNow();
@@ -3588,6 +3739,15 @@ class BridgeCallbackHandlerTest {
         BridgeMcpQueryApi mcpQueryApi = (BridgeMcpQueryApi) getDirectField(handler, "mcpQueryApi");
         processor.submit(BridgeCommand.of(() -> {
             gameLogState.recordFetchedBridgeEvents(events);
+            mcpQueryApi.publishProcessorState();
+            return null;
+        }));
+    }
+
+    private static void publishProcessorState(BridgeCallbackHandler handler) throws Exception {
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+        BridgeMcpQueryApi mcpQueryApi = (BridgeMcpQueryApi) getDirectField(handler, "mcpQueryApi");
+        processor.submit(BridgeCommand.of(() -> {
             mcpQueryApi.publishProcessorState();
             return null;
         }));
