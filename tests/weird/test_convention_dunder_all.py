@@ -7,12 +7,7 @@ from pathlib import Path
 
 from tests.weird.repo_convention_helpers import REPO_ROOT
 
-_SEARCH_ROOTS = (
-    REPO_ROOT / "puppeteer" / "src",
-    REPO_ROOT / "scripts",
-    REPO_ROOT / "schemas",
-    REPO_ROOT / "src",
-)
+_SEARCH_ROOTS = (REPO_ROOT / "src",)
 
 _ALLOWED_DUNDER_ALL_FILES = frozenset()
 
