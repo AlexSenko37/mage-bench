@@ -112,13 +112,22 @@ The action/game-state slice is also closer to the intended model now:
   snapshots after each processed message
 - MCP reads sync to that published snapshot instead of rebuilding live state on
   the MCP thread
+- `get_game_state` snapshot identity now happens at publish time on the
+  processor, not lazily on the MCP read path
 - `get_action_choices` is now a real read surface rather than a hidden
   auto-resolve path
+
+That API should keep its semantics explicit:
+
+- `get_game_state.snapshot_id` is a snapshot identity / unchanged token
+- `get_game_log.cursor` and `get_game_history.cursor` are real stream cursors
 
 But the bridge is still transitional overall:
 
 - the published MCP snapshot is still rebuilt from mutable `Bridge*State`
   holders
+- MCP reads still need a processor sync barrier before reading the published
+  snapshot
 - the processor still needs an async `Session.getBridgeEvents(...)` shim to
   append structured bridge events into the local published log
 - other MCP reads still depend on shared mutable runtime state holders rather
@@ -180,6 +189,8 @@ The remaining read-side cleanup should focus on:
 
 - making the rest of MCP reads consume processor-published immutable state
   instead of reading mutable `Bridge*State` holders
+- shrinking `BridgeMcpQueryApi` toward a pure "sync barrier + published read"
+  shell, with publication/build logic owned elsewhere
 - shrinking or deleting read helpers that only exist to rebuild published
   snapshots from those mutable state holders
 - eventually deleting the remaining async `Session.getBridgeEvents(...)` sync
@@ -207,6 +218,8 @@ This refactor is done only when all of the following are true:
 - no non-processor thread reads live mutable runtime state directly
 - `BridgeCallbackHandler` is no longer the place where cross-thread ownership
   is hidden behind helper methods
+- MCP naming reflects the actual model: snapshot ids for snapshot reads, cursors
+  for append-only log/history reads
 - recurring golden flakes caused by shared-memory races are gone, or any
   remaining flakes reduce to deterministic processor-logic bugs
 
