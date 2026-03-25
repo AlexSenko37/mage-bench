@@ -201,6 +201,9 @@ public class BridgeCallbackHandler {
             publishedQueryBuilder
         );
         publishedQueryStateRef.set(this.publishedQueryState);
+        processorState.decisionState().setPendingActionChangedListener(
+            () -> publishedQueryState.projectActionChoices("pending_action_changed")
+        );
         this.queryCommandService = new BridgeQueryCommandService(
             () -> deckList,
             processorServices::getOracleText
@@ -219,6 +222,7 @@ public class BridgeCallbackHandler {
             client.getUsername(),
             logger,
             processorState,
+            publishedQueryState,
             publishedQueryBuilder,
             processorServices,
             () -> session,
@@ -457,6 +461,7 @@ public class BridgeCallbackHandler {
     private void resetProcessorState() {
         processorState.reset();
         publishedQueryState.clearProjectedGameState("No game state available yet", "resetProcessorState");
+        publishedQueryState.clearProjectedActionChoices("resetProcessorState");
     }
 
     private void applyPersistentProcessorConfig() {

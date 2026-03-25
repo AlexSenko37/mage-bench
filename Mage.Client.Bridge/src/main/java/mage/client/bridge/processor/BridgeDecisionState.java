@@ -3,6 +3,7 @@ package mage.client.bridge.processor;
 import mage.client.bridge.PendingAction;
 
 import java.util.List;
+import java.util.Objects;
 
 public final class BridgeDecisionState {
     private volatile PendingAction pendingAction = null;
@@ -13,6 +14,7 @@ public final class BridgeDecisionState {
     private long lastChoicesGeneratedAtMs = 0;
     private BridgeChooseActionFlow pendingChooseActionFlow = null;
     private BridgePassPriorityFlow pendingPassPriorityFlow = null;
+    private Runnable pendingActionChangedListener = () -> {};
 
     public PendingAction pendingAction() {
         return pendingAction;
@@ -21,16 +23,25 @@ public final class BridgeDecisionState {
     public PendingAction replacePendingAction(PendingAction nextAction) {
         PendingAction previousAction = pendingAction;
         pendingAction = nextAction;
+        pendingActionChangedListener.run();
+        return previousAction;
+    }
+
+    public PendingAction replacePendingActionWithoutNotify(PendingAction nextAction) {
+        PendingAction previousAction = pendingAction;
+        pendingAction = nextAction;
         return previousAction;
     }
 
     public void restorePendingAction(PendingAction action) {
         pendingAction = action;
+        pendingActionChangedListener.run();
     }
 
     public boolean clearPendingActionIfCurrent(PendingAction action) {
         if (pendingAction == action) {
             pendingAction = null;
+            pendingActionChangedListener.run();
             return true;
         }
         return false;
@@ -39,6 +50,7 @@ public final class BridgeDecisionState {
     public void restorePendingActionIfEmpty(PendingAction action) {
         if (pendingAction == null) {
             pendingAction = action;
+            pendingActionChangedListener.run();
         }
     }
 
@@ -116,8 +128,17 @@ public final class BridgeDecisionState {
         }
     }
 
+    public void setPendingActionChangedListener(Runnable listener) {
+        pendingActionChangedListener = Objects.requireNonNull(listener);
+    }
+
+    public void notifyPendingActionChanged() {
+        pendingActionChangedListener.run();
+    }
+
     public void reset() {
         pendingAction = null;
+        pendingActionChangedListener.run();
         lastChoices = null;
         clearChoiceSnapshot();
         pendingChooseActionFlow = null;

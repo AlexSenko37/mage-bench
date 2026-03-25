@@ -1,7 +1,6 @@
 package mage.client.bridge.processor;
 
 import java.nio.charset.StandardCharsets;
-
 public final class BridgeCursorState {
     private long boardCursor = 0;
     private String lastBoardSignature = null;

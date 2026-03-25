@@ -1,6 +1,8 @@
 package mage.client.bridge.processor;
 
-import mage.client.bridge.tools.GetGameStateTool;
+import mage.client.bridge.BridgeGameStateBuilder;
+import mage.client.bridge.tools.ActionResult;
+import mage.client.bridge.tools.McpToolRegistry;
 import mage.view.GameView;
 import org.apache.log4j.Logger;
 
@@ -14,8 +16,11 @@ public final class BridgePublishedQueryState {
     private final BridgeGameLogRefresher gameLogRefresher;
     private final BridgePublishedQueryBuilder queryBuilder;
     private final boolean tracePublishedState = Boolean.getBoolean("xmage.bridge.tracePublishedState");
+    private final boolean tracePublishedActionChoices = Boolean.getBoolean("xmage.bridge.tracePublishedActionChoices");
     private final AtomicReference<BridgePublishedQuerySnapshot> publishedSnapshot =
         new AtomicReference<>(BridgePublishedQuerySnapshot.empty());
+    private final AtomicReference<BridgePublishedActionChoices> projectedActionChoices =
+        new AtomicReference<>(BridgePublishedActionChoices.empty());
     private final AtomicReference<BridgePublishedGameState> projectedGameState =
         new AtomicReference<>(BridgePublishedGameState.unavailable("No game state available yet"));
     private volatile GameView projectedGameView = null;
@@ -52,6 +57,10 @@ public final class BridgePublishedQueryState {
         return publishedSnapshot.get();
     }
 
+    public ActionResult currentActionChoicesForRead(Long boardCursorParam) {
+        return projectedActionChoices.get().copyForRead(boardCursorParam);
+    }
+
     public void projectGameState(GameView gameView, int round, String cause) {
         if (!processor.isProcessorThread()) {
             throw new IllegalStateException("projectGameState must run on the bridge processor thread");
@@ -61,6 +70,7 @@ public final class BridgePublishedQueryState {
         BridgePublishedGameState previous = projectedGameState.getAndSet(built.state());
         projectedGameView = gameView;
         projectedRound = round;
+        projectActionChoices(cause);
         traceProjectedGameStateChange(cause, previous, built.state(), built.payload());
     }
 
@@ -80,15 +90,34 @@ public final class BridgePublishedQueryState {
         );
     }
 
+    public void projectActionChoices(String cause) {
+        if (!processor.isProcessorThread()) {
+            throw new IllegalStateException("projectActionChoices must run on the bridge processor thread");
+        }
+        ActionResult result = queryBuilder.buildPublishedActionChoices(
+            processorState.decisionState().pendingAction(),
+            projectedGameView,
+            projectedRound
+        );
+        if (Boolean.TRUE.equals(result.action_pending)) {
+            result.board_cursor = processorState.cursorState().updateBoardCursor(
+                BridgeGameStateBuilder.buildStateSignature(McpToolRegistry.resultToMap(result))
+            );
+        }
+        BridgePublishedActionChoices previous = projectedActionChoices.getAndSet(BridgePublishedActionChoices.from(result));
+        traceProjectedActionChoicesChange(cause, previous, result);
+    }
+
+    public void clearProjectedActionChoices(String cause) {
+        if (!processor.isProcessorThread()) {
+            throw new IllegalStateException("clearProjectedActionChoices must run on the bridge processor thread");
+        }
+        projectedActionChoices.set(BridgePublishedActionChoices.empty());
+    }
+
     private BridgePublishedQuerySnapshot buildPublishedSnapshot() {
-        // TODO(shim): expires=2026-06-30 Stop rebuilding published action choices from mutable
-        // runtime state after the full native query projection lands.
         return new BridgePublishedQuerySnapshot(
-            queryBuilder.buildPublishedActionChoices(
-                processorState.decisionState().pendingAction(),
-                projectedGameView,
-                projectedRound
-            ),
+            projectedActionChoices.get(),
             projectedGameState.get(),
             processorState.gameLogState().publishedGameLog(gameLogRefresher.completedSyncEpoch())
         );
@@ -116,6 +145,27 @@ public final class BridgePublishedQueryState {
             + " payload_prev=" + previousPayload
             + " payload_next=" + currentPayload);
         lastPublishedGameStatePayload = currentPayload;
+    }
+
+    private void traceProjectedActionChoicesChange(
+            String cause,
+            BridgePublishedActionChoices previous,
+            ActionResult current) {
+        if (!tracePublishedActionChoices) {
+            return;
+        }
+        ActionResult previousResult = previous != null ? previous.copyForRead(null) : null;
+        String previousPayload = previousResult != null ? McpToolRegistry.resultToMap(previousResult).toString() : null;
+        String currentPayload = McpToolRegistry.resultToMap(current).toString();
+        Long previousCursor = previousResult != null ? previousResult.board_cursor : null;
+        Long currentCursor = current.board_cursor;
+        if (previousPayload != null && previousPayload.equals(currentPayload)) {
+            return;
+        }
+        logger.info("[" + username + "] published-action-choices cause=" + cause
+            + " board_cursor=" + previousCursor + "->" + currentCursor
+            + " payload_prev=" + previousPayload
+            + " payload_next=" + currentPayload);
     }
 
 }
