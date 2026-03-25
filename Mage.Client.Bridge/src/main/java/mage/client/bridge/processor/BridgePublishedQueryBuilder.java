@@ -5,6 +5,7 @@ import mage.cards.decks.DeckCardLists;
 import mage.cards.repository.CardInfo;
 import mage.cards.repository.CardRepository;
 import mage.choices.Choice;
+import mage.client.bridge.BridgeOracleTextService;
 import mage.client.bridge.BridgePromptFormatting;
 import mage.client.bridge.PendingAction;
 import mage.client.bridge.tools.ActionResult;
@@ -20,6 +21,7 @@ import mage.util.MultiAmountMessage;
 import mage.view.AbilityPickerView;
 import mage.view.CardView;
 import mage.view.CardsView;
+import mage.view.CommandObjectView;
 import mage.view.CombatGroupView;
 import mage.view.GameClientMessage;
 import mage.view.GameView;
@@ -181,6 +183,59 @@ public final class BridgePublishedQueryBuilder {
         );
     }
 
+    public BridgePublishedOracleIndex buildPublishedOracleIndex(GameView gameView) {
+        if (gameView == null) {
+            return BridgePublishedOracleIndex.empty();
+        }
+
+        var cardsByObjectId = new LinkedHashMap<String, Map<String, Object>>();
+        var cardsByUuid = new LinkedHashMap<UUID, Map<String, Object>>();
+
+        for (CardView card : gameView.getMyHand().values()) {
+            addOracleCard(cardsByObjectId, cardsByUuid, card, gameView);
+        }
+        for (CardView card : gameView.getStack().values()) {
+            addOracleCard(cardsByObjectId, cardsByUuid, card, gameView);
+        }
+        for (PlayerView player : gameView.getPlayers()) {
+            for (PermanentView permanent : player.getBattlefield().values()) {
+                addOracleCard(cardsByObjectId, cardsByUuid, permanent, gameView);
+            }
+            for (CardView card : player.getGraveyard().values()) {
+                addOracleCard(cardsByObjectId, cardsByUuid, card, gameView);
+            }
+            for (CardView card : player.getExile().values()) {
+                addOracleCard(cardsByObjectId, cardsByUuid, card, gameView);
+            }
+            for (CommandObjectView commandObject : player.getCommandObjectList()) {
+                if (commandObject instanceof CardView card) {
+                    addOracleCard(cardsByObjectId, cardsByUuid, card, gameView);
+                }
+            }
+        }
+        for (var exileZone : gameView.getExile()) {
+            for (CardView card : exileZone.values()) {
+                addOracleCard(cardsByObjectId, cardsByUuid, card, gameView);
+            }
+        }
+
+        for (String shortId : processorServices.shortIds().snapshotShortIds()) {
+            UUID objectId = processorServices.shortIds().tryResolve(shortId);
+            if (objectId == null) {
+                continue;
+            }
+            Map<String, Object> fields = cardsByUuid.get(objectId);
+            if (fields != null) {
+                cardsByObjectId.putIfAbsent(shortId, fields);
+            }
+        }
+
+        return new BridgePublishedOracleIndex(
+            cardsByObjectId,
+            processorServices.shortIds().snapshotShortIds()
+        );
+    }
+
     BridgePublishedGameStateBuild buildPublishedGameState(
             GameView gameView,
             int currentRound,
@@ -232,6 +287,31 @@ public final class BridgePublishedQueryBuilder {
             BridgePublishedGameState state,
             String payload
     ) {
+    }
+
+    private void addOracleCard(
+            Map<String, Map<String, Object>> cardsByObjectId,
+            Map<UUID, Map<String, Object>> cardsByUuid,
+            CardView card,
+            GameView gameView) {
+        if (card == null || card.getId() == null) {
+            return;
+        }
+        Map<String, Object> fields = BridgeOracleTextService.buildCardFieldsMap(card);
+        cardsByUuid.putIfAbsent(card.getId(), fields);
+        cardsByObjectId.putIfAbsent(
+            processorServices.viewLocator().getStableShortId(card.getId(), card, gameView),
+            fields
+        );
+        CardView secondFace = card.getSecondCardFace();
+        if (secondFace != null && secondFace.getId() != null) {
+            Map<String, Object> secondFaceFields = BridgeOracleTextService.buildCardFieldsMap(secondFace);
+            cardsByUuid.putIfAbsent(secondFace.getId(), secondFaceFields);
+            cardsByObjectId.putIfAbsent(
+                processorServices.viewLocator().getStableShortId(secondFace.getId(), secondFace, gameView),
+                secondFaceFields
+            );
+        }
     }
 
     private List<Object> buildAskChoices(ActionResult result, PendingAction action, GameView gameView) {
