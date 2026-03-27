@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-27T05:20:09.876926+00:00",
+  "generatedAt": "2026-03-27T15:23:54.192505+00:00",
   "games": [
     {
       "id": "game_20260210_074307",
@@ -19318,6 +19318,98 @@
           "otherErrors": 0,
           "contextResets": 0,
           "latencyP50": 1.4
+        }
+      ]
+    },
+    {
+      "id": "game_20260327_070751_g1",
+      "ts": "2026-03-27T07:07:51",
+      "epoch": 60,
+      "format": "jumpstart",
+      "players": [
+        {
+          "key": "openai/gpt-5.3-codex::medium",
+          "modelName": "GPT-5.3 Codex (medium)",
+          "won": true,
+          "timedOut": false,
+          "costUsd": 1.7666,
+          "promptTokens": 730048,
+          "completionTokens": 34931,
+          "cachedTokens": 185984,
+          "reasoningTokens": 30624,
+          "toolCallsOk": 88,
+          "toolCallsFailed": 0,
+          "thinkingTimeSecs": 869.0,
+          "responses": 88,
+          "timeouts": 0,
+          "otherErrors": 0,
+          "contextResets": 0,
+          "latencyP50": 3.5
+        },
+        {
+          "key": "qwen/qwen3-max-thinking::low",
+          "modelName": "Qwen3 Max Thinking (low)",
+          "won": false,
+          "timedOut": false,
+          "costUsd": 0.5719,
+          "promptTokens": 709669,
+          "completionTokens": 4718,
+          "cachedTokens": 0,
+          "reasoningTokens": 2585,
+          "toolCallsOk": 80,
+          "toolCallsFailed": 1,
+          "thinkingTimeSecs": 385.4,
+          "responses": 81,
+          "timeouts": 0,
+          "otherErrors": 0,
+          "contextResets": 0,
+          "latencyP50": 3.2
+        }
+      ]
+    },
+    {
+      "id": "game_20260327_070751_g2",
+      "ts": "2026-03-27T07:07:51",
+      "epoch": 60,
+      "format": "jumpstart",
+      "players": [
+        {
+          "key": "x-ai/grok-4-fast::medium",
+          "modelName": "Grok 4 Fast (medium)",
+          "won": false,
+          "timedOut": false,
+          "costUsd": 0.3024,
+          "promptTokens": 1244929,
+          "completionTokens": 106908,
+          "cachedTokens": 477117,
+          "reasoningTokens": 102147,
+          "toolCallsOk": 168,
+          "toolCallsFailed": 1,
+          "thinkingTimeSecs": 1526.5,
+          "responses": 149,
+          "timeouts": 3,
+          "otherErrors": 0,
+          "contextResets": 0,
+          "latencyP50": 5.7
+        },
+        {
+          "key": "deepseek/deepseek-v3.2",
+          "modelName": "DeepSeek V3.2",
+          "won": true,
+          "timedOut": false,
+          "costUsd": 0.5524,
+          "promptTokens": 2097050,
+          "completionTokens": 18814,
+          "cachedTokens": 128192,
+          "reasoningTokens": 0,
+          "toolCallsOk": 167,
+          "toolCallsFailed": 2,
+          "thinkingTimeSecs": 2216.6,
+          "responses": 169,
+          "timeouts": 0,
+          "otherErrors": 0,
+          "contextResets": 0,
+          "latencyP50": 5.5
         }
       ]
     }
