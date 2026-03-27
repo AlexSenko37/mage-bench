@@ -1,6 +1,7 @@
 """Recovery and error-handling helpers for the pilot loop."""
 
 import asyncio
+import json
 from logging import Logger
 from typing import Protocol
 
@@ -63,6 +64,21 @@ def _handle_truncated_response(
     return True
 
 
+def _parse_game_ended_reason(result_text: str) -> str | None:
+    """Return 'game_over' or 'player_dead' if the tool result indicates the game ended."""
+    try:
+        data = json.loads(result_text)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    if data.get("game_over") or data.get("stop_reason") == "game_over":
+        return "game_over"
+    if data.get("player_dead"):
+        return "player_dead"
+    return None
+
+
 async def _recover_from_stall(
     session: ClientSession,
     state: PilotLoopState,
@@ -70,8 +86,11 @@ async def _recover_from_stall(
     turn_tools_called: set[str],
     *,
     logger: Logger,
-) -> None:
-    """Auto-pass once, then reset conversation after a stalled turn sequence."""
+) -> bool:
+    """Auto-pass once, then reset conversation after a stalled turn sequence.
+
+    Returns True if the game ended during recovery (game_over or player_dead).
+    """
     last_tools = sorted(turn_tools_called)
     logger.warning(
         "[pilot] Stalled: %d turns without progress, last tools: %s, auto-passing until next event",
@@ -92,18 +111,27 @@ async def _recover_from_stall(
         )
     except ToolExecutionError:
         pass
+    game_ended = False
     try:
-        await execute_tool(session, "pass_priority", {})
+        result_text = await execute_tool(session, "pass_priority", {})
         logger.info("[pilot] Auto-passed stalled action")
+        reason = _parse_game_ended_reason(result_text)
+        if reason:
+            logger.info("[pilot] %s detected during stall recovery", reason)
+            if game_log:
+                game_log.emit("auto_pilot_mode", reason=reason)
+            game_ended = True
     except ToolExecutionError as exc:
         logger.warning("[pilot] Auto-pass failed: %s", exc)
 
     state.turns_without_progress = 0
-    reset_context(
-        state,
-        "A new turn has started. Call pass_priority to continue.",
-        reset_board_context=False,
-    )
+    if not game_ended:
+        reset_context(
+            state,
+            "A new turn has started. Call pass_priority to continue.",
+            reset_board_context=False,
+        )
+    return game_ended
 
 
 async def _handle_timeout(
@@ -114,8 +142,11 @@ async def _handle_timeout(
     logger: Logger,
     llm_request_timeout_secs: int,
     max_consecutive_timeouts: int,
-) -> None:
-    """Keep the game moving across request timeouts and reset repeated failures."""
+) -> bool:
+    """Keep the game moving across request timeouts and reset repeated failures.
+
+    Returns True if the game ended during recovery (game_over or player_dead).
+    """
     state.consecutive_timeouts += 1
     logger.warning(
         "[pilot] LLM request timed out after %ss [%d]",
@@ -129,12 +160,18 @@ async def _handle_timeout(
             error_message=f"Timed out after {llm_request_timeout_secs}s [{state.consecutive_timeouts}]",
         )
     try:
-        await execute_tool(session, "pass_priority", {})
+        result_text = await execute_tool(session, "pass_priority", {})
+        reason = _parse_game_ended_reason(result_text)
+        if reason:
+            logger.info("[pilot] %s detected during timeout recovery", reason)
+            if game_log:
+                game_log.emit("auto_pilot_mode", reason=reason)
+            return True
     except ToolExecutionError:
         await asyncio.sleep(5)
 
     if state.consecutive_timeouts < max_consecutive_timeouts:
-        return
+        return False
 
     logger.warning("[pilot] Repeated LLM timeouts, resetting conversation context")
     if game_log:
@@ -145,6 +182,7 @@ async def _handle_timeout(
         reset_board_context=True,
     )
     state.consecutive_timeouts = 0
+    return False
 
 
 def _classify_permanent_llm_failure(error_str: str) -> str | None:
