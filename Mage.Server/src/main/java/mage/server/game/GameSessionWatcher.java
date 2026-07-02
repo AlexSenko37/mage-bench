@@ -30,17 +30,31 @@ public class GameSessionWatcher {
 
     protected static final Logger logger = Logger.getLogger(GameSessionWatcher.class);
 
+    /**
+     * A pristine game copy published by GameController, plus the game seq captured at
+     * publish time. The seq must be stored separately because game copies share the live
+     * game's seq counter — reading it from the copy later would return a seq newer than
+     * the copied state. The copy must never be one a view was rendered from: GameView
+     * construction mutates its source (e.g. StackAbility.newId).
+     */
+    public record GameSnapshot(Game game, int gameSeq) {
+
+        public static GameSnapshot of(Game quiescentGame) {
+            return new GameSnapshot(quiescentGame, quiescentGame.getGameSeq());
+        }
+    }
+
     private final UserManager userManager;
     protected final UUID userId;
     protected final Game game;
-    // Last game copy published by a game-thread view build (owned by GameController,
-    // shared by all sessions of the game). Never null: seeded before the game starts.
-    private final AtomicReference<Game> lastStableGame;
+    // Last snapshot published by GameController (shared by all sessions of the game,
+    // read-only here). Never null: seeded before the game starts.
+    private final AtomicReference<GameSnapshot> lastStableGame;
     protected boolean killed = false;
     protected final boolean isPlayer;
     private int bridgeEventCursor = 0;
 
-    public GameSessionWatcher(UserManager userManager, UUID userId, Game game, AtomicReference<Game> lastStableGame, boolean isPlayer) {
+    public GameSessionWatcher(UserManager userManager, UUID userId, Game game, AtomicReference<GameSnapshot> lastStableGame, boolean isPlayer) {
         this.userManager = userManager;
         this.userId = userId;
         this.game = game;
@@ -180,18 +194,19 @@ public class GameSessionWatcher {
      * Copying the live game is only safe on the game thread: an RPC thread copying a game
      * the game thread is concurrently mutating can throw ConcurrentModificationException or
      * produce a corrupt view (issue watcher-getgameview-off-thread-copy). Off the game
-     * thread, copy the last stable snapshot published by a game-thread build instead.
+     * thread, copy the last stable snapshot published by GameController instead.
      * Snapshots are quiescent once published — nothing mutates them after the reference is
-     * set, so copying one off-thread is safe.
+     * set, so copying one off-thread is safe. Sessions never publish: the copies here are
+     * view-rendering sources, which GameView construction mutates.
      */
     protected GameView buildGameView(Function<Game, GameView> viewBuilder) {
-        boolean onGameThread = ThreadUtils.isRunGameThread();
-        Game sourceGame = onGameThread ? game.copy() : lastStableGame.get().copy();
-        GameView gameView = viewBuilder.apply(sourceGame);
-        if (onGameThread) {
-            // publish only after the view is built, so the snapshot is never mutated again
-            lastStableGame.set(sourceGame);
+        if (ThreadUtils.isRunGameThread()) {
+            return viewBuilder.apply(game.copy());
         }
+        GameSnapshot snapshot = lastStableGame.get();
+        GameView gameView = viewBuilder.apply(snapshot.game().copy());
+        // restamp the seq captured at publish time so seq and board state stay coherent
+        gameView.setGameSeq(snapshot.gameSeq());
         return gameView;
     }
 
