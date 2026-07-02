@@ -56,6 +56,11 @@ typecheck:
 test:
 	uv run pytest tests/ -n auto --dist=load
 
+.PHONY: test-java
+test-java:
+	mvn -q -pl Mage.Server -am -DskipTests install
+	mvn -q test -pl Mage.Server
+
 .PHONY: test-js
 test-js: $(WEBSITE_NPM_STAMP)
 	cd website && npx vitest run
