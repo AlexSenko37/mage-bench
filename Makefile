@@ -211,12 +211,13 @@ verify-decks:
 # Usage: make test-java [PL=Mage.Client.Observer] [TEST=SomeTestClass]
 # The install pass builds the modules' dependency chains from the reactor so
 # tests never compile against stale org.mage jars from the local repository.
+# TEST-filtered runs disable the build cache so a partial test run is never
+# cached (and later replayed) as the module's full test result.
 TEST_JAVA_MODULES := Mage.Server,Mage.Client.Observer
 .PHONY: test-java
 test-java:
 	mvn -q -pl $(or $(PL),$(TEST_JAVA_MODULES)) -am -DskipTests install
-	mvn test -pl $(or $(PL),$(TEST_JAVA_MODULES)) $(if $(TEST),-Dtest="$(TEST)",)
-
+	mvn test -pl $(or $(PL),$(TEST_JAVA_MODULES)) $(if $(TEST),-Dtest="$(TEST)" -Dmaven.build.cache.enabled=false,)
 # Analyze a game for blunders using Opus 4.6 via OpenRouter
 # Usage: make blunders GAME=game_20260214_185313_g1
 #        make blunders GAME=website/public/games/game_20260214_185313_g1.json.gz
