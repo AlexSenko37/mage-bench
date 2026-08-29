@@ -95,6 +95,9 @@ interface MergedLlmEvent {
   error_message?: string;
   reason?: string;
   message?: string;
+  summary?: string | null;
+  turn?: number;
+  action_taken?: string | null;
 }
 
 function mergeLlmEvents(events: LlmEvent[]): MergedLlmEvent[] {
@@ -153,6 +156,9 @@ function mergeLlmEvents(events: LlmEvent[]): MergedLlmEvent[] {
         error_message: e.error_message,
         reason: e.reason,
         message: (e as unknown as Record<string, unknown>).message as string | undefined,
+        summary: e.summary,
+        turn: e.turn,
+        action_taken: e.action_taken,
       });
       i++;
     }
@@ -295,6 +301,21 @@ function renderLlmEventHtml(
       return '<div class="llm-event llm-compact">' + innerHtml + '</div>';
     }
     return null;
+  }
+
+  if (type === 'action_summary') {
+    let html = '<span class="summary-badge">📝 action summary</span>';
+    html += playerSpan(event.player, playerColorMap);
+    if (event.turn != null) {
+      html += ' <span class="summary-turn">turn ' + escapeHtml(String(event.turn)) + '</span>';
+    }
+    html = '<div>' + html + '</div>';
+    html += '<div class="llm-reasoning llm-action-summary-text">' + escapeHtml(event.summary || '') + '</div>';
+    if (event.action_taken) {
+      html += '<div class="llm-action-summary-taken">Action: ' + escapeHtml(event.action_taken) + '</div>';
+    }
+    const cls = 'llm-event llm-thought llm-action-summary ' + playerColorClass(event.player, playerColorMap);
+    return '<div class="' + cls + '">' + html + '</div>';
   }
 
   if (type === 'context_trim') return null;

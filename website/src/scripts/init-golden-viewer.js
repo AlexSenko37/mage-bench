@@ -289,6 +289,33 @@ export function initGoldenViewerPage(options) {
       return null;
     }
 
+    if (type === "action_summary") {
+      var summaryDiv = document.createElement("div");
+      summaryDiv.className = "llm-event llm-thought llm-action-summary " + playerColorClass(event.player);
+
+      var summaryHeaderHtml = '<span class="summary-badge">📝 action summary</span>' + playerSpan(event.player);
+      if (event.turn != null) {
+        summaryHeaderHtml += ' <span class="summary-turn">turn ' + escapeHtml(String(event.turn)) + "</span>";
+      }
+      var summaryHeaderEl = document.createElement("div");
+      summaryHeaderEl.innerHTML = summaryHeaderHtml;
+      summaryDiv.appendChild(summaryHeaderEl);
+
+      var summaryTextEl = document.createElement("div");
+      summaryTextEl.className = "llm-reasoning llm-action-summary-text";
+      summaryTextEl.textContent = event.summary || "";
+      summaryDiv.appendChild(summaryTextEl);
+
+      if (event.action_taken) {
+        var actionTakenEl = document.createElement("div");
+        actionTakenEl.className = "llm-action-summary-taken";
+        actionTakenEl.textContent = "Action: " + event.action_taken;
+        summaryDiv.appendChild(actionTakenEl);
+      }
+
+      return summaryDiv;
+    }
+
     if (type === "context_trim") {
       return null;
     }

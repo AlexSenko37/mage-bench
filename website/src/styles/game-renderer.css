@@ -983,6 +983,44 @@
   line-height: 1.45;
 }
 
+.llm-action-summary {
+  border-left-color: #eab308;
+  background: rgba(234, 179, 8, 0.08);
+}
+
+.llm-action-summary-text {
+  color: #fde68a;
+}
+
+.llm-action-summary-taken {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #a3a3a3;
+  font-style: italic;
+}
+
+.summary-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  margin-right: 0.3rem;
+  vertical-align: baseline;
+  font-style: normal;
+  line-height: 1.4;
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde68a;
+}
+
+.summary-turn {
+  font-size: 0.75rem;
+  color: #a3a3a3;
+  margin-left: 0.4rem;
+}
+
 .llm-thinking-block {
   margin: 6px 0;
   font-size: 0.75rem;

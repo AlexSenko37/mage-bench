@@ -85,12 +85,15 @@ export interface MergedLlmEvent {
   cost_usd?: number;
   toolResults?: LlmEvent[];
   // Metadata fields preserved from non-merged events (system_message,
-  // context_reset, llm_error, stall, auto_pilot_mode, etc.)
+  // context_reset, llm_error, stall, auto_pilot_mode, action_summary, etc.)
   turns_without_progress?: number;
   error_type?: string;
   error_message?: string;
   reason?: string;
   message?: string;
+  summary?: string | null;
+  turn?: number;
+  action_taken?: string | null;
   [k: string]: unknown;
 }
 

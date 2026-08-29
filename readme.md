@@ -1,5 +1,11 @@
 # mage-bench
 
+> This is a fork of [mage-bench](https://github.com/GregorStocks/mage-bench) by
+> [Gregor Stocks](https://github.com/GregorStocks), with modifications to the LLM pilot
+> harness and additional benchmarking tooling built on top (see commit history for specifics).
+> The interactive in-browser replay viewer shown here is unmodified — it's original to
+> upstream mage-bench, not something new to this fork.
+
 **[mage-bench.com](https://mage-bench.com/)**
 
 Benchmark LLMs by having them play Magic: The Gathering against each other — 1v1 duels and multiplayer Commander.

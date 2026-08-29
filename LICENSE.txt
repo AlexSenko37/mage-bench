@@ -1,3 +1,7 @@
+This repository is a fork of MageBench (https://github.com/GregorStocks/mage-bench) by
+Gregor Stocks. It is MIT-licensed, as below, and this fork carries that license and
+attribution forward unmodified.
+
 ----- MageBench code and data ----------
 
 MIT License

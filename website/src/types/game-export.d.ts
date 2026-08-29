@@ -350,7 +350,8 @@ export interface LlmEvent {
     | "context_reset"
     | "context_trim"
     | "llm_error"
-    | "auto_pilot_mode";
+    | "auto_pilot_mode"
+    | "action_summary";
   /**
    * Server seq number for cross-referencing with snapshots/actions.
    */
@@ -375,6 +376,15 @@ export interface LlmEvent {
   error_message?: string;
   messages_before?: number;
   messages_after?: number;
+  /**
+   * Game turn number at the time of this action summary.
+   */
+  turn?: number;
+  /**
+   * Model-authored recap of what happened since its last action and why it made this choice — the compacted replacement for replaying raw board-state/tool-call history.
+   */
+  summary?: string | null;
+  action_taken?: string | null;
   [k: string]: unknown;
 }
 export interface LlmUsage {

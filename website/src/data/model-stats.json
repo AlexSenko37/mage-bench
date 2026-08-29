@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-27T15:22:37.548567+00:00",
+  "generatedAt": "2026-08-29T17:02:15.332474+00:00",
   "models": {
     "anthropic/claude-haiku-4.5::low": {
       "modelId": "anthropic/claude-haiku-4.5",
@@ -1122,6 +1122,35 @@
           "latencyP50": 2.7,
           "latencyP95": 27.4,
           "latencySamples": 340
+        }
+      }
+    },
+    "deepseek/deepseek-v4-pro-0813::low": {
+      "modelId": "deepseek/deepseek-v4-pro-0813",
+      "modelName": "DeepSeek V4 Pro (low)",
+      "provider": "DeepSeek",
+      "reasoningEffort": "low",
+      "epochs": {
+        "60": {
+          "gamesPlayed": 2,
+          "wins": 1,
+          "timerTimeoutLosses": 0,
+          "totalCostUsd": 0.3797,
+          "totalToolCallsOk": 128,
+          "totalToolCallsFailed": 7,
+          "totalThinkingTimeSecs": 2098.5,
+          "totalPromptTokens": 496702,
+          "totalCompletionTokens": 66205,
+          "totalCachedTokens": 369152,
+          "totalReasoningTokens": 57463,
+          "successfulResponses": 128,
+          "errors": {
+            "timeout": 5
+          },
+          "contextResets": 0,
+          "latencyP50": 0.1,
+          "latencyP95": 29.6,
+          "latencySamples": 324
         }
       }
     },
