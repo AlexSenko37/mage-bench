@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-27T15:23:54.192505+00:00",
+  "generatedAt": "2026-08-29T17:03:04.958503+00:00",
   "games": [
     {
       "id": "game_20260210_074307",
@@ -19410,6 +19410,52 @@
           "otherErrors": 0,
           "contextResets": 0,
           "latencyP50": 5.5
+        }
+      ]
+    },
+    {
+      "id": "game_20260827_084208",
+      "ts": "2026-08-27T08:42:08",
+      "epoch": 60,
+      "format": "constructed---freeform",
+      "players": [
+        {
+          "key": "deepseek/deepseek-v4-pro-0813::low",
+          "modelName": "DeepSeek V4 Pro (low)",
+          "won": false,
+          "timedOut": false,
+          "costUsd": 0.1696,
+          "promptTokens": 199667,
+          "completionTokens": 30359,
+          "cachedTokens": 144384,
+          "reasoningTokens": 26824,
+          "toolCallsOk": 52,
+          "toolCallsFailed": 4,
+          "thinkingTimeSecs": 1253.0,
+          "responses": 53,
+          "timeouts": 5,
+          "otherErrors": 0,
+          "contextResets": 0,
+          "latencyP50": 1.7
+        },
+        {
+          "key": "deepseek/deepseek-v4-pro-0813::low",
+          "modelName": "DeepSeek V4 Pro (low)",
+          "won": true,
+          "timedOut": false,
+          "costUsd": 0.2101,
+          "promptTokens": 297035,
+          "completionTokens": 35846,
+          "cachedTokens": 224768,
+          "reasoningTokens": 30639,
+          "toolCallsOk": 76,
+          "toolCallsFailed": 3,
+          "thinkingTimeSecs": 845.5,
+          "responses": 75,
+          "timeouts": 0,
+          "otherErrors": 0,
+          "contextResets": 0,
+          "latencyP50": 0.1
         }
       ]
     }

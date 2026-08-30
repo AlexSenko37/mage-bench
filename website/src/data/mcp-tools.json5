@@ -1247,6 +1247,10 @@
     "inputSchema": {
       "type": "object",
       "properties": {
+        "summary": {
+          "type": "string",
+          "description": "Brief recap of what happened since your last action (opponent's plays, attacks, triggers) and why you're making this choice now. Required for every real decision; this becomes your only memory of prior turns.",
+        },
         "choice": {
           "type": "string",
           "description": "ID (\"p3\"), index (\"0\"), or yes/no. yes=mulligan/confirm, no=keep/pass.",
@@ -1287,6 +1291,9 @@
           "description": "Batch block: comma-separated \"blocker:attacker\" pairs (e.g. \"p5:p1,p6:p2\"). Auto-confirms.",
         }
       },
+      "required": [
+        "summary",
+      ],
       "additionalProperties": false,
     },
     "outputSchema": {

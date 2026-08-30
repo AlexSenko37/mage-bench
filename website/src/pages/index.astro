@@ -11,7 +11,7 @@ function assert(condition: unknown, message: string): asserts condition {
   }
 }
 
-type FormatKey = 'standard' | 'modern' | 'legacy' | 'commander' | 'jumpstart';
+type FormatKey = 'standard' | 'modern' | 'legacy' | 'commander' | 'jumpstart' | 'freeform';
 
 interface RecentGamePlayer {
   name: string;
@@ -42,6 +42,7 @@ const DECK_TYPE_FORMATS: Record<string, FormatKey> = {
   'Variant Magic - Freeform Commander': 'commander',
   'Variant Magic - Commander': 'commander',
   Limited: 'jumpstart',
+  'Constructed - Freeform': 'freeform',
 };
 
 const FORMAT_DISPLAY: Record<FormatKey, string> = {
@@ -50,6 +51,7 @@ const FORMAT_DISPLAY: Record<FormatKey, string> = {
   legacy: 'Legacy',
   commander: 'Commander (Exhibition)',
   jumpstart: 'Jumpstart',
+  freeform: 'Freeform',
 };
 
 function formatKeyForDeckType(deckType: string): FormatKey {

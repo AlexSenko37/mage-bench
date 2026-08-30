@@ -37,12 +37,12 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy website/dist/ --project-name=mage-bench --branch=${{ github.head_ref || github.ref_name }}
+          command: pages deploy website/dist/ --project-name=llm-mage-bench --branch=${{ github.head_ref || github.ref_name }}
 
       - name: Print deployment URL
         run: |
           echo "Deployed to ${{ steps.deploy.outputs.deployment-url }}"
-          echo "Branch URL: https://${{ github.head_ref || github.ref_name }}.mage-bench.pages.dev"
+          echo "Branch URL: https://${{ github.head_ref || github.ref_name }}.llm-mage-bench.pages.dev"
 
       - name: Add preview link to commit status
         env:
@@ -51,6 +51,6 @@ jobs:
           gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
             --method POST \
             -f state=success \
-            -f target_url="https://${{ github.head_ref || github.ref_name }}.mage-bench.pages.dev" \
+            -f target_url="https://${{ github.head_ref || github.ref_name }}.llm-mage-bench.pages.dev" \
             -f description="Deployed to Cloudflare Pages" \
             -f context="Preview"
