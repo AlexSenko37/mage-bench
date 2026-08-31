@@ -13,14 +13,14 @@ LLM_REQUIRED_FIELDS = {"severity", "description", "action_taken", "better_line"}
 
 
 def compute_cost(
-    prices: dict[str, tuple[float, float]],
+    prices: dict[str, tuple[float, float, float]],
     model: str,
     prompt_tokens: int,
     completion_tokens: int,
 ) -> float:
     price = get_model_price(model, prices)
     assert price is not None, f"No pricing found for model {model}"
-    input_price, output_price = price
+    input_price, output_price, _cache_read_price = price
     return (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000
 
 

@@ -113,7 +113,7 @@ leaderboard:
 # Build the website (Astro static site).
 # Only rebuilds when dist/ is missing; delete dist/ to force a rebuild.
 .PHONY: build-website
-build-website: leaderboard $(WEBSITE_NPM_STAMP)
+build-website: $(WEBSITE_NPM_STAMP)
 	@if [ ! -d website/dist ]; then echo "Building website..."; cd website && npx astro build; fi
 
 # Run a game. CONFIG selects a config from configs/ (or a path to a custom file).

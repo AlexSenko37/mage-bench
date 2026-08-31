@@ -18,6 +18,7 @@ from magebench.pilot.pilot import (
     MAX_TOKENS,
     PermanentLLMError,
     _prefetch_first_action,
+    _process_tool_calls,
     main,
     run_pilot_loop,
 )
@@ -29,6 +30,7 @@ from magebench.pilot.pilot_bridge import (
 )
 from magebench.pilot.pilot_game_state import extract_oracle_texts_from_board
 from magebench.pilot.pilot_rendering import _fetch_state_summary, render_for_pilot
+from magebench.pilot.pilot_state import PilotLoopState
 from magebench.pilot.tool_error import ToolExecutionError
 
 
@@ -226,6 +228,7 @@ async def test_game_over_from_pass_priority_triggers_auto_pass():
     response = MagicMock()
     response.choices = [choice]
     response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    response.usage.prompt_tokens_details = None
 
     client = MagicMock()
     client.chat.completions.create = AsyncMock(return_value=response)
@@ -273,6 +276,7 @@ async def test_game_over_from_get_action_choices_triggers_auto_pass():
     response = MagicMock()
     response.choices = [choice]
     response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    response.usage.prompt_tokens_details = None
 
     client = MagicMock()
     client.chat.completions.create = AsyncMock(return_value=response)
@@ -323,6 +327,7 @@ async def test_game_over_from_choose_action_triggers_auto_pass():
     response = MagicMock()
     response.choices = [choice]
     response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    response.usage.prompt_tokens_details = None
 
     client = MagicMock()
     client.chat.completions.create = AsyncMock(return_value=response)
@@ -343,6 +348,158 @@ async def test_game_over_from_choose_action_triggers_auto_pass():
             username="test-player",
         )
         mock_auto_pass.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("_no_prefetch")
+async def test_cost_applies_cache_read_discount_to_cached_tokens(tmp_path):
+    """Cost tracking should bill cached prompt tokens at the discounted cache-read rate,
+    not the full input rate — otherwise reported costs badly overstate the real bill."""
+    session = _make_session()
+    result_json = (
+        '{"success": false, "error": "No pending action after 10s wait",'
+        ' "error_code": "no_pending_action", "game_over": true}'
+    )
+    session.call_tool = AsyncMock(return_value=CallToolResult(content=[TextContent(type="text", text=result_json)]))
+
+    tool_call = MagicMock()
+    tool_call.id = "call_1"
+    tool_call.function.name = "choose_action"
+    tool_call.function.arguments = json.dumps({"choice": "no", "summary": "Nothing to do."})
+
+    choice = MagicMock()
+    choice.finish_reason = "tool_calls"
+    choice.message.tool_calls = [tool_call]
+    choice.message.content = None
+
+    response = MagicMock()
+    response.choices = [choice]
+    response.usage = MagicMock(prompt_tokens=1000, completion_tokens=100)
+    response.usage.prompt_tokens_details = MagicMock(cached_tokens=800)
+    response.usage.completion_tokens_details = None
+
+    client = MagicMock()
+    client.chat.completions.create = AsyncMock(return_value=response)
+
+    # input=$2/M, output=$10/M, cache_read=$0.10/M — a steep discount, like a real provider.
+    prices = {"test-model": (2.0, 10.0, 0.10)}
+
+    with patch("magebench.pilot.pilot.auto_pass_loop", new_callable=AsyncMock):
+        await run_pilot_loop(
+            session=session,
+            client=client,
+            model="test-model",
+            system_prompt="You are a test.",
+            tools=[{"type": "function", "function": {"name": "choose_action", "parameters": {}}}],
+            prices=prices,
+            username="test-player",
+            game_dir=tmp_path,
+        )
+
+    cost_data = json.loads((tmp_path / "test-player_cost.json").read_text())
+    # uncached=200 tok @ $2/M + cached=800 tok @ $0.10/M + output=100 tok @ $10/M
+    expected = (200 * 2.0 + 800 * 0.10) / 1_000_000 + (100 * 10.0) / 1_000_000
+    assert cost_data["cost_usd"] == pytest.approx(expected)
+    # Sanity: the naive no-discount cost would have been notably higher.
+    naive = (1000 * 2.0) / 1_000_000 + (100 * 10.0) / 1_000_000
+    assert cost_data["cost_usd"] < naive
+
+
+@pytest.mark.asyncio
+async def test_choose_action_captures_summary_and_compacts_history():
+    """A successful choose_action with a summary argument should be captured into
+    turn_summaries, emitted as an action_summary game-log event, and trigger history
+    compaction so future LLM calls don't replay the raw transcript."""
+    session = _make_session()
+    result_json = '{"success": true, "action_taken": "played_forest", "game_seq": 7}'
+    session.call_tool = AsyncMock(return_value=CallToolResult(content=[TextContent(type="text", text=result_json)]))
+
+    tool_call = MagicMock()
+    tool_call.id = "call_1"
+    tool_call.function.name = "choose_action"
+    tool_call.function.arguments = json.dumps(
+        {"choice": "p1", "summary": "Opponent attacked with a Bear; I played a Forest and passed."}
+    )
+
+    choice = MagicMock()
+    choice.message.tool_calls = [tool_call]
+    choice.message.content = None
+
+    state = PilotLoopState(history=[{"role": "user", "content": "earlier context"}])
+    state.current_game_turn = 3
+    game_log = MagicMock()
+
+    finished, tools_called = await _process_tool_calls(session, choice, state, "test-player", None, game_log)
+
+    assert finished is False
+    assert tools_called == {"choose_action"}
+    assert state.turn_summaries == ["[Turn 3] Opponent attacked with a Bear; I played a Forest and passed."]
+    # History should be compacted to a single fresh message, not the raw transcript.
+    assert len(state.history) == 1
+    assert "Opponent attacked with a Bear" in state.history[0]["content"]
+    # A real action always forces a full board resend on the next fetch.
+    assert state.board_tracker.cursor is None
+
+    summary_calls = [call for call in game_log.emit.call_args_list if call.args and call.args[0] == "action_summary"]
+    assert len(summary_calls) == 1
+    assert summary_calls[0].kwargs["summary"] == "Opponent attacked with a Bear; I played a Forest and passed."
+    assert summary_calls[0].kwargs["action_taken"] == "played_forest"
+    assert summary_calls[0].kwargs["turn"] == 3
+
+
+@pytest.mark.asyncio
+async def test_choose_action_without_summary_falls_back_to_message_content():
+    """A model that omits the summary tool argument should still get a usable summary,
+    falling back to any free-text content in the same response rather than losing the
+    compaction/memory mechanism entirely."""
+    session = _make_session()
+    result_json = '{"success": true, "action_taken": "passed"}'
+    session.call_tool = AsyncMock(return_value=CallToolResult(content=[TextContent(type="text", text=result_json)]))
+
+    tool_call = MagicMock()
+    tool_call.id = "call_1"
+    tool_call.function.name = "choose_action"
+    tool_call.function.arguments = json.dumps({"choice": "no"})
+
+    choice = MagicMock()
+    choice.message.tool_calls = [tool_call]
+    choice.message.content = "I have nothing better to do this turn."
+
+    state = PilotLoopState(history=[])
+    game_log = MagicMock()
+
+    await _process_tool_calls(session, choice, state, "test-player", None, game_log)
+
+    assert state.turn_summaries == ["[Turn 0] I have nothing better to do this turn."]
+
+
+@pytest.mark.asyncio
+async def test_pass_priority_does_not_capture_summary():
+    """Passive pass_priority calls (no real action) must not require or capture a summary,
+    and must not trigger a history compaction."""
+    session = _make_session()
+    result_json = '{"action_pending": false, "context": "T2 upkeep"}'
+    session.call_tool = AsyncMock(return_value=CallToolResult(content=[TextContent(type="text", text=result_json)]))
+
+    tool_call = MagicMock()
+    tool_call.id = "call_1"
+    tool_call.function.name = "pass_priority"
+    tool_call.function.arguments = "{}"
+
+    choice = MagicMock()
+    choice.message.tool_calls = [tool_call]
+    choice.message.content = None
+
+    state = PilotLoopState(history=[{"role": "user", "content": "earlier context"}])
+    game_log = MagicMock()
+
+    await _process_tool_calls(session, choice, state, "test-player", None, game_log)
+
+    assert state.turn_summaries == []
+    summary_calls = [call for call in game_log.emit.call_args_list if call.args and call.args[0] == "action_summary"]
+    assert summary_calls == []
+    # History should have grown normally (assistant msg + tool result), not been reset.
+    assert len(state.history) == 3
 
 
 # --- mcp_tools_to_openai tests ---

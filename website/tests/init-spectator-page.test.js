@@ -13,14 +13,14 @@ describe("initSpectatorPage", () => {
   });
 
   it("dispatches to the configured mode initializer", async () => {
-    document.body.innerHTML = '<div id="visualizer" data-spectator-mode="golden"></div>';
+    document.body.innerHTML = '<div id="visualizer" data-spectator-mode="replay"></div>';
     const root = document.getElementById("visualizer");
     const initializer = vi.fn();
 
     await initSpectatorPage({
       root,
       importers: {
-        golden: async () => initializer,
+        replay: async () => initializer,
       },
     });
 

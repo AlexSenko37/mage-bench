@@ -1,0 +1,102 @@
+---
+import type { WinRateSummary } from '../utils/win-rates';
+
+interface Props {
+  summary: WinRateSummary;
+}
+
+const { summary } = Astro.props;
+const hasSelfPlay = summary.rows.some((r) => r.selfPlaySeats > 0);
+---
+
+{summary.rows.length === 0 ? (
+  <p class="no-games">No completed games yet.</p>
+) : (
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th class="num">Games</th>
+          <th class="num">W&ndash;L</th>
+          <th class="num">Win Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {summary.rows.map((row) => (
+          <tr>
+            <td class="model-name">
+              {row.displayName}
+              {row.efforts.length > 0 && <span class="model-effort"> ({row.efforts.join(', ')})</span>}
+            </td>
+            <td class="num">{row.seats}</td>
+            <td class="num">{row.wins}&ndash;{row.losses}</td>
+            <td class="num">{(row.winRate * 100).toFixed(0)}%</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
+{hasSelfPlay && (
+  <p class="self-play-note">
+    Some games were self-play (the same model on both sides) &mdash; each side is counted
+    separately, so a model's own games contribute both a win and a loss.
+  </p>
+)}
+
+<style>
+  .no-games {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    min-width: 420px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--border-default);
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .model-name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .model-effort {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .self-play-note {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+</style>

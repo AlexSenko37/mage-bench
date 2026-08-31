@@ -28,6 +28,35 @@
         "get_oracle_text",
         "get_action_choices",
         "choose_action",
+      ],
+      "decklist": [
+        "NAME:Generated-Deck-09-08-2026-07-33-27-531",
+        "1 [TLA:115] Pirate Peddlers",
+        "1 [TLA:106] June, Bounty Hunter",
+        "1 [TLA:372] Boiling Rock Rioter",
+        "1 [TLA:105] Joo Dee, One of Many",
+        "1 [TLA:91] Cat-Gator",
+        "1 [TLA:110] Merchant of Many Hats",
+        "1 [TLA:109] Mai, Scornful Striker",
+        "1 [TLA:374] Mai, Scornful Striker",
+        "1 [TLA:90] Canyon Crawler",
+        "2 [TLA:116] Raven Eagle",
+        "1 [TLA:87] Boiling Rock Rioter",
+        "1 [TLA:107] Koh, the Face Stealer",
+        "1 [TLA:99] Fire Nation Engineer",
+        "1 [TLA:95] Deadly Precision",
+        "1 [TLA:340] Obsessive Pursuit",
+        "1 [TLA:112] Obsessive Pursuit",
+        "2 [TLA:356] The Rise of Sozin",
+        "1 [TLA:113] Ozai's Cruelty",
+        "1 [TLA:118] Ruinous Waterbending",
+        "1 [TLA:120] Swampsnare Trap",
+        "1 [TLA:339] Foggy Swamp Visions",
+        "7 [TLA:289] Swamp",
+        "8 [TLA:294] Swamp",
+        "2 [TLA:284] Swamp",
+        "LAYOUT MAIN:(1,1)(NONE,false,50)|([TLA:115],[TLA:106],[TLA:372],[TLA:105],[TLA:91],[TLA:110],[TLA:109],[TLA:374],[TLA:90],[TLA:116],[TLA:116],[TLA:87],[TLA:107],[TLA:99],[TLA:95],[TLA:340],[TLA:112],[TLA:356],[TLA:356],[TLA:113],[TLA:118],[TLA:120],[TLA:339],[TLA:289],[TLA:289],[TLA:289],[TLA:289],[TLA:289],[TLA:289],[TLA:289],[TLA:294],[TLA:294],[TLA:294],[TLA:294],[TLA:294],[TLA:294],[TLA:294],[TLA:294],[TLA:284],[TLA:284])",
+        "LAYOUT SIDEBOARD:(0,0)(NONE,false,50)|",
       ]
     },
     {
@@ -49,6 +78,34 @@
         "get_oracle_text",
         "get_action_choices",
         "choose_action",
+      ],
+      "decklist": [
+        "NAME:Generated-Deck-09-08-2026-07-27-33-244",
+        "2 [TLA:155] Tiger-Dillo",
+        "1 [TLA:160] Wartime Protestors",
+        "1 [TLA:148] Mongoose Lizard",
+        "1 [TLA:161] Yuyan Archers",
+        "1 [TLA:127] Combustion Man",
+        "2 [TLA:124] Boar-q-pine",
+        "1 [TLA:156] Treetop Freedom Fighters",
+        "1 [TLA:150] Ran and Shaw",
+        "1 [TLA:342] Firebending Student",
+        "1 [TLA:152] Rough Rhino Cavalry",
+        "1 [TLA:162] Zhao, the Moon Slayer",
+        "1 [TLA:163] Zuko, Exiled Prince",
+        "1 [TLA:158] Ty Lee, Artful Acrobat",
+        "1 [TLA:142] Jeong Jeong, the Deserter",
+        "1 [TLA:130] Cunning Maneuver",
+        "1 [TLA:125] Bumi Bash",
+        "1 [TLA:151] Redirect Lightning",
+        "2 [TLA:145] The Legend of Roku",
+        "1 [TLA:297] Fated Firepower",
+        "1 [TLA:309] Sozin's Comet",
+        "7 [TLA:285] Mountain",
+        "7 [TLA:295] Mountain",
+        "3 [TLA:290] Mountain",
+        "LAYOUT MAIN:(1,1)(NONE,false,50)|([TLA:155],[TLA:155],[TLA:160],[TLA:148],[TLA:161],[TLA:127],[TLA:124],[TLA:124],[TLA:156],[TLA:150],[TLA:342],[TLA:152],[TLA:162],[TLA:163],[TLA:158],[TLA:142],[TLA:130],[TLA:125],[TLA:151],[TLA:145],[TLA:145],[TLA:297],[TLA:309],[TLA:285],[TLA:285],[TLA:285],[TLA:285],[TLA:285],[TLA:285],[TLA:285],[TLA:295],[TLA:295],[TLA:295],[TLA:295],[TLA:295],[TLA:295],[TLA:295],[TLA:290],[TLA:290],[TLA:290])",
+        "LAYOUT SIDEBOARD:(0,0)(NONE,false,50)|",
       ]
     },
   ],
@@ -50037,12 +50094,46 @@ Whenever this creature attacks, you may cast an Ally spell from among cards you 
       "power": "3",
       "toughness": "3",
     },
+    "Combustion Man": {
+      "mana_cost": "{3}{R}{R}",
+      "type_line": "Legendary Creature — Human Assassin",
+      "oracle_text": "Whenever Combustion Man attacks, destroy target permanent unless its controller has Combustion Man deal damage to them equal to his power.",
+      "power": "4",
+      "toughness": "6",
+    },
+    "Cunning Maneuver": {
+      "mana_cost": "{1}{R}",
+      "type_line": "Instant",
+      "oracle_text": "Target creature gets +3/+1 until end of turn.\n\
+Create a Clue token. (It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+    },
     "Fated Firepower": {
       "mana_cost": "{X}{R}{R}{R}",
       "type_line": "Enchantment",
       "oracle_text": "Flash\n\
 This enchantment enters with X fire counters on it.\n\
 If a source you control would deal damage to an opponent or a permanent an opponent controls, it deals that much damage plus an amount of damage equal to the number of fire counters on this enchantment instead.",
+    },
+    "Fire Nation Engineer": {
+      "mana_cost": "{2}{B}",
+      "type_line": "Creature — Human Artificer",
+      "oracle_text": "Raid — At the beginning of your end step, if you attacked this turn, put a +1/+1 counter on another target creature or Vehicle you control.",
+      "power": "2",
+      "toughness": "3",
+    },
+    "Firebending Student": {
+      "mana_cost": "{1}{R}",
+      "type_line": "Creature — Human Monk",
+      "oracle_text": "Prowess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)\n\
+Firebending X, where X is this creature's power. (Whenever this creature attacks, add X {R}. This mana lasts until end of combat.)",
+      "power": "1",
+      "toughness": "2",
+    },
+    "Foggy Swamp Visions": {
+      "mana_cost": "{1}{B}{B}",
+      "type_line": "Sorcery",
+      "oracle_text": "As an additional cost to cast this spell, waterbend {X}. (While paying a waterbend cost, you can tap your artifacts and creatures to help. Each one pays for {1}.)\n\
+Exile X target creature cards from graveyards. For each creature card exiled this way, create a token that's a copy of it. At the beginning of your next end step, sacrifice those tokens.",
     },
     "Joo Dee, One of Many": {
       "mana_cost": "{1}{B}",
@@ -50051,15 +50142,54 @@ If a source you control would deal damage to an opponent or a permanent an oppon
       "power": "2",
       "toughness": "2",
     },
+    "June, Bounty Hunter": {
+      "mana_cost": "{1}{B}",
+      "type_line": "Legendary Creature — Human Mercenary",
+      "oracle_text": "June can't be blocked as long as you've drawn two or more cards this turn.\n\
+{1}, Sacrifice another creature: Create a Clue token. Activate only during your turn. (It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")",
+      "power": "2",
+      "toughness": "2",
+    },
+    "Mai, Scornful Striker": {
+      "mana_cost": "{1}{B}",
+      "type_line": "Legendary Creature — Human Noble Ally",
+      "oracle_text": "First strike\n\
+Whenever a player casts a noncreature spell, they lose 2 life.",
+      "power": "2",
+      "toughness": "2",
+    },
+    "Mongoose Lizard": {
+      "mana_cost": "{4}{R}{R}",
+      "type_line": "Creature — Mongoose Lizard",
+      "oracle_text": "Menace (This creature can't be blocked except by two or more creatures.)\n\
+When this creature enters, it deals 1 damage to any target.\n\
+Mountaincycling {2} ({2}, Discard this card: Search your library for a Mountain card, reveal it, put it into your hand, then shuffle.)",
+      "power": "5",
+      "toughness": "6",
+    },
     "Mountain": {
       "mana_cost": "",
       "type_line": "Basic Land — Mountain",
       "oracle_text": "({T}: Add {R}.)",
     },
+    "Obsessive Pursuit": {
+      "mana_cost": "{1}{B}",
+      "type_line": "Enchantment",
+      "oracle_text": "When this enchantment enters and at the beginning of your upkeep, you lose 1 life and create a Clue token. (It's an artifact with \"{2}, Sacrifice this token: Draw a card.\")\n\
+Whenever you attack, put X +1/+1 counters on target attacking creature, where X is the number of permanents you've sacrificed this turn. If X is three or more, that creature gains lifelink until end of turn.",
+    },
     "Ozai's Cruelty": {
       "mana_cost": "{2}{B}",
       "type_line": "Sorcery — Lesson",
       "oracle_text": "Ozai's Cruelty deals 2 damage to target player. That player discards two cards.",
+    },
+    "Pirate Peddlers": {
+      "mana_cost": "{2}{B}",
+      "type_line": "Creature — Human Pirate",
+      "oracle_text": "Deathtouch\n\
+Whenever you sacrifice another permanent, put a +1/+1 counter on this creature.",
+      "power": "2",
+      "toughness": "2",
     },
     "Ran and Shaw": {
       "mana_cost": "{3}{R}{R}",
@@ -50114,12 +50244,23 @@ Enchanted creature gets -5/-3.",
     "The Legend of Roku // Avatar Roku": {
       "type_line": "Enchantment — Saga // Legendary Creature — Avatar",
     },
+    "The Rise of Sozin // Fire Lord Sozin": {
+      "type_line": "Enchantment — Saga // Legendary Creature — Human Noble",
+    },
     "Tiger-Dillo": {
       "mana_cost": "{1}{R}",
       "type_line": "Creature — Cat Armadillo",
       "oracle_text": "This creature can't attack or block unless you control another creature with power 4 or greater.",
       "power": "4",
       "toughness": "3",
+    },
+    "Treetop Freedom Fighters": {
+      "mana_cost": "{2}{R}",
+      "type_line": "Creature — Human Rebel Ally",
+      "oracle_text": "Haste\n\
+When this creature enters, create a 1/1 white Ally creature token.",
+      "power": "2",
+      "toughness": "1",
     },
     "Wartime Protestors": {
       "mana_cost": "{3}{R}",
@@ -50128,6 +50269,107 @@ Enchanted creature gets -5/-3.",
 Whenever another Ally you control enters, put a +1/+1 counter on that creature and it gains haste until end of turn.",
       "power": "4",
       "toughness": "4",
+    },
+    "Zhao, the Moon Slayer": {
+      "mana_cost": "{1}{R}",
+      "type_line": "Legendary Creature — Human Soldier",
+      "oracle_text": "Menace\n\
+Nonbasic lands enter tapped.\n\
+{7}: Put a conqueror counter on Zhao.\n\
+As long as Zhao has a conqueror counter on him, nonbasic lands are Mountains. (They lose all other land types and abilities and have \"{T}: Add {R}.\")",
+      "power": "2",
+      "toughness": "2",
+    },
+    "Bumi Bash": {
+      "mana_cost": "{3}{R}",
+      "type_line": "Sorcery",
+      "oracle_text": "Choose one —\n\
+• Bumi Bash deals damage equal to the number of lands you control to target creature.\n\
+• Destroy target land creature or nonbasic land.",
+    },
+    "Canyon Crawler": {
+      "mana_cost": "{4}{B}{B}",
+      "type_line": "Creature — Spider Beast",
+      "oracle_text": "Deathtouch\n\
+When this creature enters, create a Food token. (It's an artifact with \"{2}, {T}, Sacrifice this token: You gain 3 life.\")\n\
+Swampcycling {2} ({2}, Discard this card: Search your library for a Swamp card, reveal it, put it into your hand, then shuffle.)",
+      "power": "6",
+      "toughness": "6",
+    },
+    "Cat-Gator": {
+      "mana_cost": "{6}{B}",
+      "type_line": "Creature — Fish Crocodile",
+      "oracle_text": "Lifelink\n\
+When this creature enters, it deals damage equal to the number of Swamps you control to any target.",
+      "power": "3",
+      "toughness": "2",
+    },
+    "Deadly Precision": {
+      "mana_cost": "{B}",
+      "type_line": "Sorcery",
+      "oracle_text": "As an additional cost to cast this spell, pay {4} or sacrifice an artifact or creature.\n\
+Destroy target creature.",
+    },
+    "Jeong Jeong, the Deserter": {
+      "mana_cost": "{2}{R}",
+      "type_line": "Legendary Creature — Human Rebel Ally",
+      "oracle_text": "Firebending 1 (Whenever this creature attacks, add {R}. This mana lasts until end of combat.)\n\
+Exhaust — {3}: Put a +1/+1 counter on Jeong Jeong. When you next cast a Lesson spell this turn, copy it and you may choose new targets for the copy. (Activate each exhaust ability only once.)",
+      "power": "2",
+      "toughness": "3",
+    },
+    "Koh, the Face Stealer": {
+      "mana_cost": "{4}{B}{B}",
+      "type_line": "Legendary Creature — Shapeshifter Spirit",
+      "oracle_text": "When Koh enters, exile up to one other target creature.\n\
+Whenever another nontoken creature dies, you may exile it.\n\
+Pay 1 life: Choose a creature card exiled with Koh.\n\
+Koh has all activated and triggered abilities of the last chosen card.",
+      "power": "6",
+      "toughness": "6",
+    },
+    "Merchant of Many Hats": {
+      "mana_cost": "{1}{B}",
+      "type_line": "Creature — Human Peasant Ally",
+      "oracle_text": "{2}{B}: Return this card from your graveyard to your hand.",
+      "power": "2",
+      "toughness": "2",
+    },
+    "Sozin's Comet": {
+      "mana_cost": "{3}{R}{R}",
+      "type_line": "Sorcery",
+      "oracle_text": "Each creature you control gains firebending 5 until end of turn. (Whenever it attacks, add {R}{R}{R}{R}{R}. This mana lasts until end of combat.)\n\
+Foretell {2}{R} (During your turn, you may pay {2} and exile this card from your hand face down. Cast it on a later turn for its foretell cost.)",
+    },
+    "Ty Lee, Artful Acrobat": {
+      "mana_cost": "{2}{R}",
+      "type_line": "Legendary Creature — Human Performer",
+      "oracle_text": "Prowess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)\n\
+Whenever Ty Lee attacks, you may pay {1}. When you do, target creature can't block this turn.",
+      "power": "3",
+      "toughness": "2",
+    },
+    "Yuyan Archers": {
+      "mana_cost": "{1}{R}",
+      "type_line": "Creature — Human Archer",
+      "oracle_text": "Reach\n\
+When this creature enters, you may discard a card. If you do, draw a card.",
+      "power": "3",
+      "toughness": "1",
+    },
+    "Zuko, Exiled Prince": {
+      "mana_cost": "{3}{R}",
+      "type_line": "Legendary Creature — Human Noble",
+      "oracle_text": "Firebending 3 (Whenever this creature attacks, add {R}{R}{R}. This mana lasts until end of combat.)\n\
+{3}: Exile the top card of your library. You may play that card this turn.",
+      "power": "4",
+      "toughness": "3",
+    },
+    "The Legend of Roku": {
+      "type_line": "Enchantment — Saga // Legendary Creature — Avatar",
+    },
+    "The Rise of Sozin": {
+      "type_line": "Enchantment — Saga // Legendary Creature — Human Noble",
     }
   },
   "decisions": [

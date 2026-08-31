@@ -119,6 +119,12 @@ export async function initGameReplayPage(options) {
         });
       }
 
+      if (visualizer.querySelector("#view-toggle")) {
+        import("./init-deck-explorer.js").then(function (mod) {
+          mod.initDeckExplorer({ root: visualizer, game: game, viewer: viewer });
+        });
+      }
+
       viewerContainer.focus({ preventScroll: true });
     })
     .catch(function (err) {

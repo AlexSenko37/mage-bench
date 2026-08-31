@@ -260,7 +260,7 @@ def build_decision_prompt(
 def evaluate_one_decision(
     client: OpenAI,
     model: str,
-    prices: dict[str, tuple[float, float]],
+    prices: dict[str, tuple[float, float, float]],
     overview: str,
     decision: Decision,
     oracle_texts: dict[str, dict],
@@ -417,7 +417,7 @@ def load_game_context(gz_path: str) -> dict:
     }
 
 
-def init_api() -> tuple[OpenAI, dict[str, tuple[float, float]]]:
+def init_api() -> tuple[OpenAI, dict[str, tuple[float, float, float]]]:
     """Initialize OpenRouter API client and fetch pricing.
 
     Shared by blunder_analysis.main() and blunder_eval.py.
@@ -438,7 +438,7 @@ def eval_decisions(
     decisions: Sequence[Decision],
     game_ctx: dict,
     client: OpenAI,
-    prices: dict[str, tuple[float, float]],
+    prices: dict[str, tuple[float, float, float]],
 ) -> dict[int, tuple[list[Annotation], float, bool, dict]]:
     """Evaluate a list of decisions in parallel. Returns {decision_index: result}."""
     preceding_by_idx = game_ctx["preceding_by_index"]

@@ -48,14 +48,19 @@ from magebench.pilot.pilot_recovery import (
 )
 from magebench.pilot.pilot_rendering import (
     CONTEXT_RECENT_COUNT,
-    RENDER_INTERVAL,
     _fetch_state_summary,
     _find_cache_breakpoint_idx,
     _with_cache_control,
+    compute_window_start,
     render_context,
     render_for_pilot,
 )
-from magebench.pilot.pilot_state import PilotLoopState, PilotTurnState, reset_context
+from magebench.pilot.pilot_state import (
+    PilotLoopState,
+    PilotTurnState,
+    compact_after_action,
+    reset_context,
+)
 from magebench.pilot.prompts import load_prompts
 from magebench.pilot.tool_error import ToolExecutionError
 
@@ -200,17 +205,24 @@ async def _build_loop_messages(
 ) -> list[dict]:
     """Render the next LLM request from the current history."""
     if len(state.history) > CONTEXT_RECENT_COUNT:
-        state.render_counter += 1
-        if not state.state_summary or state.render_counter % RENDER_INTERVAL == 0:
+        new_window_start = compute_window_start(len(state.history), state.window_start)
+        window_advanced = new_window_start != state.window_start
+        state.window_start = new_window_start
+        if not state.state_summary or window_advanced:
             state.state_summary = await _fetch_state_summary(session)
-            state.render_counter = 0
-        messages = render_context(state.history, system_prompt, state.state_summary, cache_control)
+        messages = render_context(
+            state.history,
+            system_prompt,
+            state.state_summary,
+            cache_control,
+            window_start=state.window_start,
+        )
         state.cache_breakpoint_idx = _find_cache_breakpoint_idx(messages)
         return messages
 
     messages = render_context(state.history, system_prompt, state.state_summary, cache_control)
     state.cache_breakpoint_idx = len(messages) - 1 if messages else None
-    state.render_counter = 0
+    state.window_start = 0
     return messages
 
 
@@ -266,6 +278,7 @@ async def _process_tool_calls(
 ) -> tuple[bool, set[str]]:
     """Execute a single LLM tool-calling turn."""
     turn_state = PilotTurnState()
+    pending_summary: str | None = None
 
     if choice.message.content:
         logger.info("[pilot] Thinking: %s", choice.message.content)
@@ -352,6 +365,17 @@ async def _process_tool_calls(
             else:
                 logger.warning("[pilot] Action failed: %s", choice_result.get("error"))
                 turn_state.had_actionable_opportunity = True
+
+            summary_text = (args.get("summary") or choice.message.content or "(no summary provided)").strip()
+            if game_log:
+                game_log.emit(
+                    "action_summary",
+                    turn=state.current_game_turn,
+                    action_taken=action_taken,
+                    summary=summary_text,
+                    game_seq=state.last_game_seq,
+                )
+            pending_summary = f"[Turn {state.current_game_turn}] {summary_text}"
         elif fn.name == "get_action_choices":
             choice_result = json.loads(result_text)
             action_type = choice_result.get("action_type")
@@ -459,6 +483,8 @@ async def _process_tool_calls(
         or turn_state.tools_called <= INFO_ONLY_TOOLS
     ):
         state.turns_without_progress += 1
+    if pending_summary is not None:
+        compact_after_action(state, pending_summary)
     return False, turn_state.tools_called
 
 
@@ -501,7 +527,7 @@ async def run_pilot_loop(
     model: str,
     system_prompt: str,
     tools: list[dict],
-    prices: dict[str, tuple[float, float]],
+    prices: dict[str, tuple[float, float, float]],
     username: str = "",
     game_dir: Path | None = None,
     game_log: GameLogWriter | None = None,
@@ -592,9 +618,17 @@ async def run_pilot_loop(
                     response=response.model_dump(),
                 )
 
+            cached_tokens = 0
+            if response.usage:
+                prompt_details = response.usage.prompt_tokens_details
+                if prompt_details and getattr(prompt_details, "cached_tokens", None):
+                    cached_tokens = min(prompt_details.cached_tokens, response.usage.prompt_tokens or 0)
+
             call_cost = 0.0
             if response.usage and model_price is not None:
-                input_cost = (response.usage.prompt_tokens or 0) * model_price[0] / 1_000_000
+                total_prompt = response.usage.prompt_tokens or 0
+                uncached_prompt = total_prompt - cached_tokens
+                input_cost = uncached_prompt * model_price[0] / 1_000_000 + cached_tokens * model_price[2] / 1_000_000
                 output_cost = (response.usage.completion_tokens or 0) * model_price[1] / 1_000_000
                 call_cost = input_cost + output_cost
                 state.cumulative_cost += call_cost
@@ -765,7 +799,7 @@ async def run_pilot(
     port: int,
     username: str,
     project_root: Path,
-    prices: dict[str, tuple[float, float]],
+    prices: dict[str, tuple[float, float, float]],
     deck_path: Path | None = None,
     api_key: str = "",
     model: str = DEFAULT_MODEL,

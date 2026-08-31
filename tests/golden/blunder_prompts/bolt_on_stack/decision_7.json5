@@ -85,6 +85,7 @@ You are evaluating **TestPlayer**'s decision.\n\
 Players respond to each pending action by calling choose_action. Respond to pending action. Blocks until an action is pending. Use choice for ID/index/yes/no, attackers/blockers for batch combat.\n\
 \n\
 Parameters:\n\
+- summary (string): Brief recap of what happened since your last action (opponent's plays, attacks, triggers) and why you're making this choice now. Required for every real decision; this becomes your only memory of prior turns.\n\
 - choice (string): ID (\"p3\"), index (\"0\"), or yes/no. yes=mulligan/confirm, no=keep/pass.\n\
 - amount (integer): Amount value (for amount actions)\n\
 - amounts (array): Multiple amount values (for multi_amount)\n\

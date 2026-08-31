@@ -16,7 +16,10 @@ from magebench.game.game_export_migrations import (
     CURRENT_GAME_EXPORT_VERSION,
 )
 from magebench.game.game_export_types import (
+    _LLM_EVENT_CLASSES,
+    _LLM_EVENT_TYPES,
     Action,
+    ActionSummaryEvent,
     Annotation,
     AutoPilotModeEvent,
     BuiltGameExport,
@@ -317,6 +320,7 @@ class TestExportSchema:
             ContextTrimEvent,
             LlmErrorEvent,
             AutoPilotModeEvent,
+            ActionSummaryEvent,
         ]
         all_keys: set[str] = set()
         all_required: set[str] | None = None
@@ -348,6 +352,13 @@ class TestExportSchema:
         _assert_dataclass_matches_schema(CombatCreature, schema=defs["CombatCreature"])
         _assert_dataclass_matches_schema(Choice, schema=defs["Choice"])
         _assert_dataclass_matches_schema(MultiAmountItem, schema=defs["MultiAmountItem"])
+
+    def test_llm_event_types_matches_llm_event_classes(self) -> None:
+        """export_game.py's runtime validator (_LLM_EVENT_TYPES) must list exactly the same
+        types as the dataclass dispatch table (_LLM_EVENT_CLASSES) — these two sets drifted
+        out of sync once already (action_summary was added to one but not the other), which
+        made every game export with an action_summary event fail validation."""
+        assert set(_LLM_EVENT_CLASSES) == _LLM_EVENT_TYPES
 
     def test_typed_loader_accepts_minimal_v9_export(self, tmp_path: Path) -> None:
         path = tmp_path / "game_v9.json5"

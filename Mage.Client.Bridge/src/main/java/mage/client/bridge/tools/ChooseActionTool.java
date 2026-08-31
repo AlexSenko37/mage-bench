@@ -49,6 +49,10 @@ public class ChooseActionTool {
     )
     public static Result execute(
             BridgeCallbackHandler handler,
+            @Param(description = "Brief recap of what happened since your last action "
+                + "(opponent's plays, attacks, triggers) and why you're making this choice now. "
+                + "Required for every real decision; this becomes your only memory of prior turns.",
+                required = true) String summary,
             @Param(description = "ID (\"p3\"), index (\"0\"), or yes/no. "
                 + "yes=mulligan/confirm, no=keep/pass.") String choice,
             @Param(description = "Amount value (for amount actions)") Integer amount,

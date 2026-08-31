@@ -20,7 +20,13 @@ from magebench.pilot.tool_error import ToolExecutionError
 CONTEXT_RECENT_COUNT = 40
 CONTEXT_SUMMARY_COUNT = 20
 TOOL_SUMMARY_TRIGGER_CHARS = 200
-RENDER_INTERVAL = 5
+
+# How far the recent-window anchor is allowed to lag behind history length before it
+# re-anchors. Keeping the anchor fixed across calls means the cacheable prefix (system
+# prompt + summarised history + state bridge) stays byte-identical across many consecutive
+# LLM calls, so providers can reuse their prompt cache instead of missing on every single
+# call as new messages get appended to history.
+CONTEXT_WINDOW_SLACK = 20
 
 _CACHE_BREAKPOINT_MARKER = "All cards listed are playable right now."
 
@@ -208,23 +214,22 @@ def _find_tool_name(history: list[dict], tool_result_idx: int, tool_call_id: str
     return ""
 
 
-def extract_last_reasoning(history: list[dict]) -> str:
-    """Extract the last assistant reasoning text from history (for context resets)."""
-    for msg in reversed(history):
-        if msg.get("role") != "assistant":
-            continue
-        content = msg.get("content")
-        if isinstance(content, str) and content:
-            return content[:300]
-    return ""
+def format_summary_log(summaries: list[str]) -> str:
+    """Render the accumulated action-summary log for inclusion in a prompt.
+
+    This is the model's only persistent memory of prior turns once context gets
+    compacted after each real action — see compact_after_action in pilot_state.py.
+    """
+    if not summaries:
+        return ""
+    return "Game so far:\n" + "\n".join(summaries) + "\n\n"
 
 
-def build_reset_message(base_text: str, last_reasoning: str) -> str:
+def build_reset_message(base_text: str, summary_log: str) -> str:
     """Build the user message for a context reset."""
-    parts = [base_text]
-    if last_reasoning:
-        parts.append(f"Before your context was reset, you were thinking: {last_reasoning}")
-    return "\n\n".join(parts)
+    if summary_log:
+        return f"{summary_log}{base_text}"
+    return base_text
 
 
 def _with_cache_control(msg: dict, cache_control: dict) -> dict:
@@ -272,11 +277,26 @@ def _find_cache_breakpoint_idx(messages: list[dict]) -> int:
     return len(messages) - 1
 
 
+def compute_window_start(history_len: int, window_start: int) -> int:
+    """Advance the sticky recent-window anchor only once it exceeds the slack budget.
+
+    Recomputing the anchor fresh on every call (`history_len - CONTEXT_RECENT_COUNT`) makes
+    the cacheable prefix a different set of messages every single call once history exceeds
+    CONTEXT_RECENT_COUNT, which defeats provider-side prompt caching entirely. Instead the
+    anchor only jumps forward once the window would exceed CONTEXT_RECENT_COUNT +
+    CONTEXT_WINDOW_SLACK, so the prefix stays stable across several consecutive calls.
+    """
+    if history_len - window_start > CONTEXT_RECENT_COUNT + CONTEXT_WINDOW_SLACK:
+        return history_len - CONTEXT_RECENT_COUNT
+    return window_start
+
+
 def render_context(
     history: list[dict],
     system_prompt: str,
     state_summary: str,
     cache_control: dict | None = None,
+    window_start: int | None = None,
 ) -> list[dict]:
     """Build the LLM messages list from append-only history."""
     messages: list[dict]
@@ -300,7 +320,7 @@ def render_context(
         messages.extend(history)
         return messages
 
-    recent_start = len(history) - CONTEXT_RECENT_COUNT
+    recent_start = len(history) - CONTEXT_RECENT_COUNT if window_start is None else window_start
     while recent_start > 0 and history[recent_start].get("role") == "tool":
         recent_start -= 1
 

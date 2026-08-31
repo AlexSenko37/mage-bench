@@ -312,6 +312,7 @@ _LLM_EVENT_TYPES = {
     "context_trim",
     "llm_error",
     "auto_pilot_mode",
+    "action_summary",
 }
 
 
@@ -331,6 +332,7 @@ class Player:
     placement: int | None = None
     tools: list[str] | None = None
     timed_out: bool | None = field(default=None, metadata={_JSON_KEY_METADATA: "timed_out"})
+    decklist: list[str] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -351,6 +353,7 @@ class PilotPlayer:
     placement: int | None = None
     tools: list[str] | None = None
     timed_out: bool | None = field(default=None, metadata={_JSON_KEY_METADATA: "timed_out"})
+    decklist: list[str] | None = None
 
 
 def is_pilot_player(player: Player) -> TypeGuard[PilotPlayer]:
@@ -500,6 +503,14 @@ class AutoPilotModeEvent(_LlmEventBase):
     reason: str | None = None
 
 
+@dataclass(kw_only=True)
+class ActionSummaryEvent(_LlmEventBase):
+    type: Literal["action_summary"]
+    summary: str
+    turn: int | None = field(default=None, metadata={_JSON_KEY_METADATA: "turn"})
+    action_taken: str | None = field(default=None, metadata={_JSON_KEY_METADATA: "action_taken"})
+
+
 LlmEvent: TypeAlias = (
     GameStartEvent
     | LlmResponseEvent
@@ -509,6 +520,7 @@ LlmEvent: TypeAlias = (
     | ContextTrimEvent
     | LlmErrorEvent
     | AutoPilotModeEvent
+    | ActionSummaryEvent
 )
 
 
@@ -521,6 +533,7 @@ _LLM_EVENT_CLASSES: dict[str, type[LlmEvent]] = {
     "context_trim": ContextTrimEvent,
     "llm_error": LlmErrorEvent,
     "auto_pilot_mode": AutoPilotModeEvent,
+    "action_summary": ActionSummaryEvent,
 }
 
 
@@ -1344,6 +1357,7 @@ def _validate_player(value: object, source: str) -> Player:
     placement = _load_optional(obj, "placement", _require_positive_int, source)
     tools = _load_optional(obj, "tools", _require_str_list, source)
     timed_out = _load_optional(obj, "timed_out", _require_bool, source)
+    decklist = _load_optional(obj, "decklist", _require_str_list, source)
     if player_type == "pilot":
         model = _load_required(obj, "model", _require_non_empty_str, source)
     return Player(
@@ -1361,6 +1375,7 @@ def _validate_player(value: object, source: str) -> Player:
         placement=placement,
         tools=tools,
         timed_out=timed_out,
+        decklist=decklist,
     )
 
 

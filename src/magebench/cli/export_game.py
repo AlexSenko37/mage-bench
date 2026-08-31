@@ -1,11 +1,10 @@
-"""Export a game log directory and refresh website data."""
+"""Export a game log directory to the website's games directory."""
 
 import sys
 from pathlib import Path
 
 from magebench.game import export_game as _export_game
 from magebench.game.game_exports import GAMES_DIR as WEBSITE_GAMES_DIR
-from magebench.leaderboard.website_data import generate_all_website_data
 
 LOGS_DIR = _export_game.LOGS_DIR
 GameExportError = _export_game.GameExportError
@@ -30,9 +29,6 @@ def main() -> None:
     output_path = export_game(game_dir, games_dir)
     size_kb = output_path.stat().st_size // 1024
     print(f"Exported {game_id} -> {output_path} ({size_kb} KB)")
-
-    generate_all_website_data(games_dir=games_dir)
-    print("Website data regenerated")
 
 
 if __name__ == "__main__":

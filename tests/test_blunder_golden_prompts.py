@@ -10,6 +10,7 @@ To update golden files after intentional changes:
 """
 
 import os
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -25,10 +26,12 @@ from magebench.analysis.blunder.blunder_eval_common import (
 from magebench.common.json5_utils import dumps_json5, loads_json5
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "blunder_prompts" / "game_20260216_074122_g2"
-_GAMES_DIR = Path(__file__).resolve().parent.parent / "website" / "public" / "games"
-GAME_PATH = _GAMES_DIR / "game_20260216_074122_g2.json5.gz"
-if not GAME_PATH.exists():
-    GAME_PATH = _GAMES_DIR / "game_20260216_074122_g2.json5"
+# Lives alongside its golden prompt fixtures rather than in website/public/games/ -- this
+# fork's site only publishes games we ran ourselves, not upstream fixture data.
+# load_game_context() only accepts paths under website/public/games/ or a temp dir (a
+# path-traversal guard for the real annotation pipeline), so the test copies it into a
+# temp dir before loading -- see the game_context fixture below.
+GAME_PATH = GOLDEN_DIR / "game_export.json5"
 ORACLE_CACHE = GOLDEN_DIR / "oracle_cache.json5"
 
 UPDATE_MODE = bool(os.environ.get("UPDATE_BLUNDER_GOLDEN"))
@@ -43,14 +46,20 @@ GOLDEN_DECISION_INDICES = [0, 11, 64, 113, 232]
 
 
 @pytest.fixture(scope="module")
-def game_context():
+def game_context(tmp_path_factory):
     """Load game context via the production code path, with cached oracle texts."""
+    # load_game_context -> load_game_for_annotation only accepts paths under
+    # website/public/games/ or a temp dir, so copy the fixture into one.
+    tmp_dir = tmp_path_factory.mktemp("blunder_golden")
+    tmp_game_path = tmp_dir / GAME_PATH.name
+    shutil.copyfile(GAME_PATH, tmp_game_path)
+
     oracle_texts = loads_json5(ORACLE_CACHE.read_text())
     with patch(
         "magebench.analysis.blunder.blunder_analysis.get_oracle_texts",
         return_value=oracle_texts,
     ):
-        return load_game_context(str(GAME_PATH))
+        return load_game_context(str(tmp_game_path))
 
 
 @pytest.mark.parametrize("decision_index", GOLDEN_DECISION_INDICES)

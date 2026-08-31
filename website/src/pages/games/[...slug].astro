@@ -5,9 +5,7 @@ import type { GameEntry } from '../../utils/load-games';
 import { loadAllGames } from '../../utils/load-games';
 import { loadFullGame } from '../../utils/load-full-game';
 import { prerenderTimeline } from '../../utils/prerender-timeline';
-import { loadBenchmarkResults } from '../../utils/season-data';
 
-const minBlunderVersion = loadBenchmarkResults().minBlunderVersion;
 const auditMode = !!process.env.AUDIT_API_PORT;
 
 interface Props {
@@ -33,7 +31,6 @@ const prerendered = prerenderTimeline(fullGame);
     game={game}
     fullGame={fullGame}
     prerendered={prerendered}
-    minBlunderVersion={minBlunderVersion}
     auditMode={auditMode}
   />
 </Base>

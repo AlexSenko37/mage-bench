@@ -1,6 +1,5 @@
 ---
 import '../styles/base.css';
-import { loadBenchmarkResults } from '../utils/season-data';
 
 interface Props {
   title: string;
@@ -9,22 +8,10 @@ interface Props {
 
 const { title, wide } = Astro.props;
 const currentPath = Astro.url.pathname;
-const availableSeasons = loadBenchmarkResults().availableSeasons;
-
-const docsLinks = [
-  { href: '/docs/about', label: 'About' },
-  { href: '/docs/architecture', label: 'Architecture' },
-  { href: '/scoring', label: 'Scoring' },
-  { href: '/internals', label: 'Internals' },
-];
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  ...[...availableSeasons].reverse().map(s => ({
-    href: `/season/${s}`,
-    label: `Season ${s}`,
-  })),
-  { href: '/blog', label: 'Blog' },
+  { href: '/games', label: 'Games' },
 ];
 ---
 
@@ -37,40 +24,21 @@ const navLinks = [
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-    <title>{title} | mage-bench</title>
+    <title>{title} | llm-mage-bench</title>
   </head>
   <body>
     <nav class="site-nav">
-      <a class="site-title" href="/">mage-bench</a>
+      <a class="site-title" href="/">llm-mage-bench</a>
       <ul class="site-nav-links">
-        {navLinks.map((link, i) => (
-          <Fragment>
-            <li>
-              <a
-                href={link.href}
-                class:list={['nav-link', { active: currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href)) }]}
-              >
-                {link.label}
-              </a>
-            </li>
-            {i === navLinks.length - 2 && (
-              <li class="nav-dropdown">
-                <span class:list={['nav-dropdown-trigger', { active: docsLinks.some(l => currentPath === l.href || currentPath.startsWith(l.href)) }]}>Docs</span>
-                <ul class="nav-dropdown-menu">
-                  {docsLinks.map(link => (
-                    <li>
-                      <a
-                        href={link.href}
-                        class:list={['nav-link', { active: currentPath === link.href || currentPath.startsWith(link.href) }]}
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            )}
-          </Fragment>
+        {navLinks.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class:list={['nav-link', { active: currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href)) }]}
+            >
+              {link.label}
+            </a>
+          </li>
         ))}
       </ul>
     </nav>
@@ -79,9 +47,7 @@ const navLinks = [
     </main>
     <footer class="site-footer">
       <div class="site-footer-links">
-        <a href="/docs/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="https://github.com/GregorStocks/mage-bench">GitHub</a>
+        <a href="https://github.com/AlexSenko37/mage-bench">GitHub</a>
       </div>
     </footer>
   </body>

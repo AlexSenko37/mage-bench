@@ -40,7 +40,7 @@ from magebench.game.game_exports import load_raw_game_export
 
 # Fake prices for testing
 _TEST_PRICES = {
-    OPUS_MODEL: (5.0, 25.0),
+    OPUS_MODEL: (5.0, 25.0, 0.5),
 }
 
 

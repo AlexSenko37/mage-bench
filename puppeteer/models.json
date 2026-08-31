@@ -192,6 +192,18 @@
       "_notes": "Absurdly cheap. No reasoning mode. Good for bulk/baseline testing to see if a non-thinking model can play Magic at all. May struggle with complex tool schemas."
     },
     {
+      "id": "deepseek/deepseek-v4-pro-0813",
+      "name": "DeepSeek V4 Pro",
+      "name_part": "DSV4P",
+      "_input_per_m": 1.188,
+      "_output_per_m": 3.564,
+      "_cache_read_per_m": 0.0396,
+      "_context_k": 1050,
+      "_thinking": true,
+      "_tier": "cheap",
+      "_notes": "GA release (2026-08-13), 1.6T param MoE, hybrid thinking/non-thinking. Reasoning content returned via reasoning_content, unlike Fable 5. Caches automatically server-side (no cache_control annotation needed) with cached tokens reported in usage.cached_tokens; cache reads are billed at ~96.7% off the input price. Pricing corrected 2026-08-20 against the live OpenRouter /models API — the 2026-08-17 figures ($0.66/$1.98) recorded here earlier were stale/inaccurate by ~1.8x; always verify against the live API, not web search, before trusting a number here."
+    },
+    {
       "id": "mistralai/mistral-large-2512",
       "name": "Mistral Large",
       "name_part": "MstLg",

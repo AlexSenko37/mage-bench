@@ -4,7 +4,6 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { parseJSON5 } from "../../src/utils/parse-json5.ts";
 import { normalizeGameExport } from "../../src/utils/normalize-game-export.ts";
-import { loadLatestCompletedTournament } from "../../src/utils/season-data.ts";
 import {
   buildReplayTitle,
   formatReplayBlunderSummary,
@@ -19,14 +18,6 @@ function readPage(pagePath) {
     ? path.join(distDir, "index.html")
     : path.join(distDir, pagePath, "index.html");
   return fs.readFileSync(filePath, "utf-8");
-}
-
-function readBuiltFile(relativePath) {
-  return fs.readFileSync(path.join(distDir, relativePath), "utf-8");
-}
-
-function readBuiltJson(relativePath) {
-  return JSON.parse(readBuiltFile(relativePath));
 }
 
 function escapeHtml(text) {
@@ -62,90 +53,15 @@ describe("static build exists", () => {
 describe("top-level pages load with expected content", () => {
   test("home page", () => {
     const html = readPage("/");
-    expect(html).toContain("mage-bench");
+    expect(html).toContain("llm-mage-bench");
     expect(html).toContain("LLMs play Magic");
-  });
-
-  test("home page championship banner follows current season data", () => {
-    const html = readPage("/");
-    const championship = loadLatestCompletedTournament();
-
-    if (championship == null) {
-      expect(html).not.toContain('class="champ-banner"');
-      return;
-    }
-
-    expect(html).toContain(`/season/${championship.season}/results`);
-    expect(html).toContain(`Season ${championship.season} Champion`);
-  });
-
-  test("season rankings page", () => {
-    const html = readPage("season/1/rankings");
-    expect(html).toContain("Leaderboard");
-    expect(html).toContain("leaderboard-table");
+    expect(html).toContain("Win rate by model");
   });
 
   test("games index page", () => {
     const html = readPage("games");
     expect(html).toContain("Games");
-    expect(html).toContain("Replay past mage-bench games");
-  });
-
-  test("scoring page", () => {
-    const html = readPage("scoring");
-    expect(html).toContain("Scoring");
-    expect(html).toContain("Ratings");
-  });
-
-  test("contact page", () => {
-    const html = readPage("contact");
-    expect(html).toContain("Contact");
-  });
-
-  test("internals page", () => {
-    const html = readPage("internals");
-    expect(html).toContain("Internals");
-    expect(html).toContain('data-data-url="/internals/data/trends.json"');
-    expect(html).toContain('data-data-url="/internals/data/model-stats.json"');
-    expect(html).toContain('data-data-url="/internals/data/blunder.json"');
-    expect(html).not.toContain('id="model-stats-data"');
-    expect(html).not.toContain('id="internals-data"');
-    expect(html).not.toContain('id="blunder-data"');
-  });
-});
-
-describe("internals data endpoints", () => {
-  test("internals dashboard JSON endpoints are prerendered", () => {
-    const trendData = readBuiltJson("internals/data/trends.json");
-    const modelStatsData = readBuiltJson("internals/data/model-stats.json");
-    const blunderData = readBuiltJson("internals/data/blunder.json");
-
-    expect(Array.isArray(trendData.games)).toBe(true);
-    expect(typeof modelStatsData.models).toBe("object");
-    expect(Array.isArray(blunderData.runs)).toBe(true);
-  });
-});
-
-describe("season rankings has data", () => {
-  test("rankings table has at least one model row", () => {
-    const html = readPage("season/1/rankings");
-    // Each model row has a data-model-id attribute
-    const modelRows = html.match(/data-model-id=/g);
-    expect(modelRows).not.toBeNull();
-    expect(modelRows.length).toBeGreaterThan(0);
-  });
-});
-
-describe("benchmark-results excluded games count is consistent", () => {
-  test("excludedGames matches actual count of games below minEpoch", () => {
-    const benchmarkPath = path.join(process.cwd(), "src", "data", "benchmark-results.json");
-    const data = JSON.parse(fs.readFileSync(benchmarkPath, "utf-8"));
-    const { excludedGames, minEpoch, epochCounts } = data;
-    if (!minEpoch || !epochCounts) return; // skip if fields missing
-    const countBelow = Object.entries(epochCounts)
-      .filter(([epoch]) => parseInt(epoch) < minEpoch)
-      .reduce((sum, [, count]) => sum + count, 0);
-    expect(excludedGames).toBe(countBelow);
+    expect(html).toContain("Replay past llm-mage-bench games");
   });
 });
 
@@ -187,7 +103,7 @@ describe("game pages", () => {
     const replayTitle = buildReplayTitle(game.players);
     const escapedReplayTitle = escapeHtml(replayTitle);
 
-    expect(html).toContain(`<title>${escapedReplayTitle} | mage-bench</title>`);
+    expect(html).toContain(`<title>${escapedReplayTitle} | llm-mage-bench</title>`);
     expect(html).toContain(escapedReplayTitle);
     expect(html).toContain(`Season ${game.season}`);
 
@@ -211,6 +127,23 @@ describe("game pages", () => {
     }
   });
 
+  test("first game page shows the deck explorer toggle when decklists are present", () => {
+    const gamesDir = path.join(distDir, "games");
+    const entries = fs.readdirSync(gamesDir, { withFileTypes: true });
+    const gameDirs = entries
+      .filter((e) => e.isDirectory() && e.name.startsWith("game_"))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const firstGame = gameDirs[0].name;
+    const html = readPage(`games/${firstGame}`);
+    const game = readGameExport(firstGame);
+
+    const hasDecklists = (game.players || []).some((p) => (p.decklist || []).length > 0);
+    if (hasDecklists) {
+      expect(html).toContain('id="view-toggle"');
+      expect(html).toContain('id="deck-explorer"');
+    }
+  });
+
   test("first game JSON has turns", () => {
     const publicGamesDir = path.join(process.cwd(), "public", "games");
     const gameFiles = fs
@@ -231,13 +164,5 @@ describe("game pages", () => {
     expect(gameCards).not.toBeNull();
     expect(gameCards.length).toBeGreaterThan(0);
     expect(html).not.toContain("Loading games...");
-  });
-
-  test("season results server-renders tournament game cards", () => {
-    const html = readPage("season/1/results");
-    expect(html).toContain("Tournament Games");
-    expect(html).toContain('id="tournament-games-list"');
-    expect(html).toContain("Tournament</span>");
-    expect(html).toContain('class="game-card surface-card"');
   });
 });
