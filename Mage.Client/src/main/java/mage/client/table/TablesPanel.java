@@ -18,7 +18,10 @@ import mage.components.table.MageTable;
 import mage.components.table.TableInfo;
 import mage.components.table.TimeAgoTableCellRenderer;
 import mage.constants.*;
+import mage.game.draft.DraftOptions;
+import mage.game.draft.DraftOptions.TimingOption;
 import mage.game.match.MatchOptions;
+import mage.game.tournament.TournamentOptions;
 import mage.players.PlayerType;
 import mage.remote.MageRemoteException;
 import mage.util.DeckUtil;
@@ -67,8 +70,10 @@ public class TablesPanel extends javax.swing.JPanel {
     private static final Logger LOGGER = Logger.getLogger(TablesPanel.class);
     private static final int[] DEFAULT_COLUMNS_WIDTH = {35, 150, 100, 50, 120, 180, 80, 120, 80, 60, 40, 40, 60};
     private static final String AI_PUPPETEER_AUTO_START_PROP = "xmage.aiPuppeteer.autoStart";
+    private static final String AI_PUPPETEER_AUTO_START_TOURNAMENT_PROP = "xmage.aiPuppeteer.autoStartTournament";
     private static final String AI_PUPPETEER_DECKS_DIR = "release/sample-decks/Commander";
     private static boolean aiPuppeteerAutoStartTriggered = false;
+    private static boolean aiPuppeteerAutoStartTournamentTriggered = false;
     private static boolean aiPuppeteerAutoWatchTriggered = false;
 
     // ping timeout (warning, must be less than UserManagerImpl.USER_CONNECTION_TIMEOUTS_CHECK_SECS)
@@ -791,6 +796,7 @@ public class TablesPanel extends javax.swing.JPanel {
             this.setVisible(true);
             this.repaint();
             maybeAutoStartAiPuppeteerGame();
+            maybeAutoStartAiPuppeteerTournament();
         } else {
             hideTables();
         }
@@ -1860,6 +1866,126 @@ public class TablesPanel extends javax.swing.JPanel {
         }
         aiPuppeteerAutoStartTriggered = true;
         SwingUtilities.invokeLater(this::createAiPuppeteerGame);
+    }
+
+    private void maybeAutoStartAiPuppeteerTournament() {
+        if (aiPuppeteerAutoStartTournamentTriggered) {
+            return;
+        }
+        if (!SessionHandler.isAiPuppeteerMode()) {
+            return;
+        }
+        if (!Boolean.parseBoolean(System.getProperty(AI_PUPPETEER_AUTO_START_TOURNAMENT_PROP, "false"))) {
+            return;
+        }
+        aiPuppeteerAutoStartTournamentTriggered = true;
+        SwingUtilities.invokeLater(this::createAiPuppeteerTournament);
+    }
+
+    private void createAiPuppeteerTournament() {
+        AiPuppeteerConfig config = AiPuppeteerConfig.load();
+        createConfiguredAiPuppeteerTournament(config);
+    }
+
+    /**
+     * Headless equivalent of NewTournamentDialog's btnOkActionPerformed(), for an all-bot
+     * draft (typically two LlmDraftPlayer seats with different models — see
+     * LlmDraftPlayer's per-seat -Dxmage.llmDraft.model.&lt;PlayerName&gt; property). Unlike the
+     * dialog, this never force-joins a HUMAN seat. Uses "Booster Draft Elimination (Rich
+     * Man)" since it's the only booster-draft tournament type with minPlayers=2 — plain
+     * "Booster Draft Elimination" requires 4+. The post-draft match is expected to end
+     * immediately (LlmDraftPlayer extends ComputerDraftPlayer, which concedes any real
+     * game) — only the two decklists saved by TournamentImpl.saveSubmittedDeckToDisk()
+     * matter here.
+     */
+    private void createConfiguredAiPuppeteerTournament(AiPuppeteerConfig config) {
+        try {
+            String testDeckFile = "test.dck";
+            File f = new File(testDeckFile);
+            if (!f.exists()) {
+                testDeckFile = DeckUtil.writeTextToTempFile(""
+                        + "5 Swamp" + System.lineSeparator()
+                        + "5 Forest" + System.lineSeparator()
+                        + "5 Island" + System.lineSeparator()
+                        + "5 Mountain" + System.lineSeparator()
+                        + "5 Plains");
+            }
+            DeckCardLists testDeck = DeckImporter.importDeckFromFile(testDeckFile, false);
+
+            String setCode = config.getDraftSetCode();
+            if (setCode == null || setCode.isEmpty()) {
+                LOGGER.error("AI Puppeteer: draftSetCode is required for tournament auto-start. Exiting.");
+                System.exit(1);
+                return;
+            }
+
+            TournamentOptions tOptions = new TournamentOptions("AI Puppeteer Draft", "", false);
+            tOptions.setPassword("");
+            tOptions.setTournamentType("Booster Draft Elimination (Rich Man)");
+            for (AiPuppeteerConfig.PlayerConfig player : config.getPlayers()) {
+                tOptions.getPlayerTypes().add(player.getPlayerType());
+            }
+            DraftOptions draftOptions = new DraftOptions();
+            draftOptions.setTiming(TimingOption.PROFESSIONAL);
+            for (int i = 0; i < config.getDraftPacksPerPlayer(); i++) {
+                draftOptions.getSetCodes().add(setCode);
+            }
+            tOptions.setLimitedOptions(draftOptions);
+            tOptions.getMatchOptions().setDeckType("Limited");
+            tOptions.getMatchOptions().setAttackOption(MultiplayerAttackOption.MULTIPLE);
+            tOptions.getMatchOptions().setRange(RangeOfInfluence.ALL);
+            tOptions.setWatchingAllowed(true);
+            tOptions.setQuitRatio(100);
+            tOptions.setMinimumRating(0);
+
+            TableView table = SessionHandler.createTournamentTable(roomId, tOptions);
+            if (table == null) {
+                LOGGER.error("AI Puppeteer: failed to create tournament table. Exiting.");
+                System.exit(1);
+                return;
+            }
+
+            for (AiPuppeteerConfig.PlayerConfig player : config.getPlayers()) {
+                String name = player.name != null ? player.name : "Draft Bot";
+                boolean joined = SessionHandler.joinTournamentTable(
+                        roomId, table.getTableId(), name, player.getPlayerType(), 1, testDeck, "");
+                LOGGER.info("AI Puppeteer: joined " + name + " (" + player.getPlayerType() + ") to tournament -> " + joined);
+                if (!joined) {
+                    LOGGER.error("AI Puppeteer: failed to join " + name + " to tournament. Exiting.");
+                    System.exit(1);
+                    return;
+                }
+            }
+
+            final UUID finalTableId = table.getTableId();
+            Thread starter = new Thread(() -> {
+                long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(60);
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        Collection<TableView> tables = SessionHandler.getTables(roomId);
+                        for (TableView tv : tables) {
+                            if (finalTableId.equals(tv.getTableId())) {
+                                if (tv.getTableState() == TableState.READY_TO_START) {
+                                    LOGGER.info("AI Puppeteer: all draft seats joined, starting tournament for table " + finalTableId);
+                                    SessionHandler.startTournament(roomId, finalTableId);
+                                    return;
+                                }
+                                break;
+                            }
+                        }
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                        LOGGER.warn("AI Puppeteer: error polling for tournament ready state", e);
+                    }
+                }
+                LOGGER.error("AI Puppeteer: timed out waiting for tournament table " + finalTableId + " to become ready (60s). Exiting.");
+                System.exit(1);
+            }, "AIPuppeteer-TournamentStarter");
+            starter.setDaemon(true);
+            starter.start();
+        } catch (HeadlessException ex) {
+            handleError(ex);
+        }
     }
 
     private void maybeAutoWatchAiPuppeteerTable(UUID tableId) {

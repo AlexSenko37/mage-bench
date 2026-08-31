@@ -41,6 +41,8 @@ public class AiPuppeteerConfig {
     private List<PlayerConfig> players = new ArrayList<>();
     private String gameType;   // e.g. "Two Player Duel", "Commander Free For All"
     private String deckType;   // e.g. "Constructed - Legacy", "Variant Magic - Freeform Commander"
+    private String draftSetCode;      // e.g. "TLA" — only read by the draft-tournament auto-start path
+    private int draftPacksPerPlayer = 3;
 
     public List<PlayerConfig> getPlayers() {
         return players;
@@ -56,6 +58,14 @@ public class AiPuppeteerConfig {
 
     public String getDeckType() {
         return deckType;
+    }
+
+    public String getDraftSetCode() {
+        return draftSetCode;
+    }
+
+    public int getDraftPacksPerPlayer() {
+        return draftPacksPerPlayer;
     }
 
     public int getBotCount() {

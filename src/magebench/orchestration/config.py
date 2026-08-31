@@ -53,6 +53,7 @@ class PilotPlayer:
     ignore_providers: list[str] | None = None  # OpenRouter providers to exclude (from models.json)
     provider_order: list[str] | None = None  # OpenRouter providers to prefer, in order (from models.json)
     cache_control: dict | None = None  # Prompt cache_control config (from models.json)
+    skip_bridge: bool = False  # Reserve a headless seat but don't spawn a bridge process (a real human joins it)
 
 
 @dataclass
@@ -497,8 +498,13 @@ class Config:
     bridge_delay: int = 5
     log_dir: Path = field(default_factory=lambda: Path.home() / ".mage-bench" / "logs")
     jvm_opens: str = "--add-opens=java.base/java.io=ALL-UNNAMED"
-    # Enable XRender pipeline for Java 2D — GPU-accelerated rendering on Linux
-    jvm_rendering: str = "-Dsun.java2d.xrender=true"
+    # Force software rendering for Java2D and JavaFX (Prism) — WSLg's compositor
+    # doesn't handle GPU-accelerated XRender/OpenGL rendering correctly, causing
+    # blank/frozen windows.
+    jvm_rendering: str = (
+        "-Dsun.java2d.xrender=false -Dsun.java2d.opengl=false "
+        "-Dsun.java2d.pmoffscreen=false -Dprism.order=sw"
+    )
 
     @property
     def jvm_bridge_opts(self) -> str:
@@ -669,6 +675,7 @@ class Config:
                         provider=provider,
                         personality=player.get("personality"),
                         tools=player.get("tools"),
+                        skip_bridge=player.get("skipBridge", False),
                     )
                     llm_players.append((p, has_explicit_name))
                     self.pilot_players.append(p)

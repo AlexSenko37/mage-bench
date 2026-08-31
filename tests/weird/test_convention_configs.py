@@ -70,6 +70,7 @@ class TestConfigDeckTypes:
         "Constructed - Standard",
         "Constructed - Modern",
         "Constructed - Legacy",
+        "Constructed - Freeform",
         "Limited",
         "Variant Magic - Freeform Commander",
         "Variant Magic - Commander",

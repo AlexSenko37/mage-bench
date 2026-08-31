@@ -135,10 +135,136 @@ public abstract class TournamentImpl implements Tournament {
     public void submitDeck(UUID playerId, Deck deck) {
         if (players.containsKey(playerId)) {
             players.get(playerId).submitDeck(deck);
+            saveSubmittedDeckToDisk(players.get(playerId), deck);
         }
         synchronized (this) {
             this.notifyAll();
         }
+    }
+
+    private void saveSubmittedDeckToDisk(TournamentPlayer tournamentPlayer, Deck deck) {
+        if (deck == null) {
+            return;
+        }
+        try {
+            String playerName = tournamentPlayer.getPlayer().getName();
+            String archetype = describeDeckColors(deck);
+            deck.setName(playerName + " - " + archetype);
+            String safeName = playerName.replaceAll("[^a-zA-Z0-9._-]", "_");
+            String safeArchetype = archetype.replaceAll("[^a-zA-Z0-9._-]", "_");
+            String shortId = this.getId().toString().substring(0, 8);
+            String fileName = safeName + "-" + safeArchetype + "-" + shortId + ".dck";
+            java.io.File dir = new java.io.File("data/decks/drafted");
+            new mage.cards.decks.exporter.XmageDeckExporter().writeDeck(dir, fileName, deck.prepareCardsOnlyDeck());
+            logger.info(playerName + " deck (" + archetype + ") saved to " + new java.io.File(dir, fileName).getPath());
+        } catch (Exception e) {
+            logger.error("Failed to save submitted deck to disk", e);
+        }
+    }
+
+    /**
+     * Derive a human-readable color-identity name for a deck (e.g. "Selesnya",
+     * "Mono-Red", "Colorless") by tallying maindeck card colors and mapping the
+     * top 1-2 colors to standard Magic guild/mono names. Used to auto-name
+     * saved decks so they don't need manual relabeling.
+     */
+    private static String describeDeckColors(Deck deck) {
+        java.util.Map<Character, Integer> counts = new java.util.LinkedHashMap<>();
+        counts.put('W', 0);
+        counts.put('U', 0);
+        counts.put('B', 0);
+        counts.put('R', 0);
+        counts.put('G', 0);
+        for (mage.cards.Card card : deck.getMaindeckCards()) {
+            mage.ObjectColor color = card.getColor();
+            if (color == null) {
+                continue;
+            }
+            if (color.isWhite()) {
+                counts.merge('W', 1, Integer::sum);
+            }
+            if (color.isBlue()) {
+                counts.merge('U', 1, Integer::sum);
+            }
+            if (color.isBlack()) {
+                counts.merge('B', 1, Integer::sum);
+            }
+            if (color.isRed()) {
+                counts.merge('R', 1, Integer::sum);
+            }
+            if (color.isGreen()) {
+                counts.merge('G', 1, Integer::sum);
+            }
+        }
+        java.util.List<Character> present = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<Character, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() > 0) {
+                present.add(entry.getKey());
+            }
+        }
+        present.sort((a, b) -> counts.get(b) - counts.get(a));
+        if (present.isEmpty()) {
+            return "Colorless";
+        }
+        if (present.size() == 1) {
+            return monoColorName(present.get(0));
+        }
+        String guild = guildName(present.get(0), present.get(1));
+        return guild != null ? guild : ("" + present.get(0) + present.get(1));
+    }
+
+    private static String monoColorName(char letter) {
+        switch (letter) {
+            case 'W':
+                return "Mono-White";
+            case 'U':
+                return "Mono-Blue";
+            case 'B':
+                return "Mono-Black";
+            case 'R':
+                return "Mono-Red";
+            case 'G':
+                return "Mono-Green";
+            default:
+                return "Colorless";
+        }
+    }
+
+    private static String guildName(char a, char b) {
+        java.util.Set<Character> pair = new java.util.HashSet<>();
+        pair.add(a);
+        pair.add(b);
+        if (pair.contains('W') && pair.contains('U')) {
+            return "Azorius";
+        }
+        if (pair.contains('U') && pair.contains('B')) {
+            return "Dimir";
+        }
+        if (pair.contains('B') && pair.contains('R')) {
+            return "Rakdos";
+        }
+        if (pair.contains('R') && pair.contains('G')) {
+            return "Gruul";
+        }
+        if (pair.contains('G') && pair.contains('W')) {
+            return "Selesnya";
+        }
+        if (pair.contains('W') && pair.contains('B')) {
+            return "Orzhov";
+        }
+        if (pair.contains('U') && pair.contains('R')) {
+            return "Izzet";
+        }
+        if (pair.contains('B') && pair.contains('G')) {
+            return "Golgari";
+        }
+        if (pair.contains('R') && pair.contains('W')) {
+            return "Boros";
+        }
+        if (pair.contains('U') && pair.contains('G')) {
+            return "Simic";
+        }
+        return null;
     }
 
     @Override

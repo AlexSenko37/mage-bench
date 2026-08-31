@@ -260,6 +260,18 @@
       "_notes": "#1 most popular model on OpenRouter by weekly tokens (1.59T). Trillion-param MoE with 32B active. Untested for Magic tool calling."
     },
     {
+      "id": "moonshotai/kimi-k3",
+      "name": "Kimi K3",
+      "name_part": "KimiK3",
+      "_input_per_m": 3.00,
+      "_output_per_m": 15.00,
+      "_cache_read_per_m": 0.30,
+      "_context_k": 1024,
+      "_thinking": true,
+      "_tier": "mid",
+      "_notes": "2.8T param MoE, successor to K2.5. Reasoning effort options are max/high/low -- no 'medium' tier. Reasoning enabled by default (not mandatory). Untested for Magic tool calling; unknown how verbose its reasoning is at each effort level."
+    },
+    {
       "id": "minimax/minimax-m2.1",
       "name": "MiniMax M2.1",
       "name_part": "MMx21",
@@ -505,6 +517,63 @@
       "_thinking": true,
       "_tier": "dirt-cheap",
       "_notes": "GPT-5.4 family smallest model (March 2026). Most cost-efficient 5.4 variant. Mandatory reasoning with configurable effort. Internal reasoning only — not exposed in response."
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "name": "GLM 5.3",
+      "name_part": "GLM53",
+      "_input_per_m": 1.40,
+      "_output_per_m": 4.40,
+      "_context_k": 1024,
+      "_thinking": true,
+      "_tier": "cheap",
+      "_notes": "Successor to GLM 4.7. 1M-token context, mandatory reasoning (no 'medium' effort - only max/high/low). Untested for Magic tool calling."
+    },
+    {
+      "id": "openai/gpt-5.6-sol",
+      "name": "GPT-5.6 Sol",
+      "name_part": "G56S",
+      "_input_per_m": 2.00,
+      "_output_per_m": 10.00,
+      "_cache_read_per_m": 0.20,
+      "_context_k": 1050,
+      "_thinking": true,
+      "_tier": "mid",
+      "_notes": "GPT-5.6 family flagship (July 2026 launch). 1.05M context, 128K max output. Reasoning optional, not mandatory; efforts are max/xhigh/high/medium/low/none, default medium. Untested for Magic tool calling. Pricing corrected 2026-08-31 against the live OpenRouter API -- the 2026-08-10 figures ($5/$30) were stale; the model now also tiers up to $4/$15 above 272K prompt tokens, which this repo's cost tracking does not account for (always uses the base rate)."
+    },
+    {
+      "id": "openai/gpt-5.6-terra",
+      "name": "GPT-5.6 Terra",
+      "name_part": "G56T",
+      "_input_per_m": 1.00,
+      "_output_per_m": 6.00,
+      "_context_k": 1050,
+      "_thinking": true,
+      "_tier": "mid",
+      "_notes": "GPT-5.6 family mid-tier model (July 2026 launch). 1.05M context, 128K max output. Mandatory reasoning with configurable effort. Untested for Magic tool calling. Pricing verified live via OpenRouter API 2026-08-10."
+    },
+    {
+      "id": "openai/gpt-5.6-luna",
+      "name": "GPT-5.6 Luna",
+      "name_part": "G56L",
+      "_input_per_m": 0.10,
+      "_output_per_m": 0.60,
+      "_context_k": 1050,
+      "_thinking": true,
+      "_tier": "dirt-cheap",
+      "_notes": "GPT-5.6 family fast/cheap model (July 2026 launch). 1.05M context, 128K max output. Mandatory reasoning with configurable effort. Untested for Magic tool calling. Pricing verified live via OpenRouter API 2026-08-10."
+    },
+    {
+      "id": "anthropic/claude-fable-5",
+      "name": "Claude Fable 5",
+      "name_part": "Fable5",
+      "_input_per_m": 10.00,
+      "_output_per_m": 50.00,
+      "_context_k": 1000,
+      "_thinking": true,
+      "_tier": "expensive",
+      "cache_control": {"type": "ephemeral"},
+      "_notes": "Anthropic 'Mythos-class' model for autonomous knowledge work/coding (June 2026 launch). Most expensive model in this file. Extended thinking is NOT exposed via reasoning_content, despite being an Anthropic model - opaque like OpenAI's o-series/GPT-5.x. Confirmed empirically 2026-08-17: in a 90-call game, reasoning_tokens accounted for 80% of completion tokens (19821/24742) per OpenRouter usage accounting, but reasoning_content text came back empty on all 90 calls. Budget for reasoning cost accordingly even though you will not see the reasoning text. Pricing verified live via OpenRouter 2026-08-16."
     }
   ],
   "_thinking_config": {
