@@ -29,7 +29,9 @@ function renderStatsSidebar(container, stats) {
   stats.curve.forEach(function (bucket) {
     var heightPct = Math.round((bucket.count / maxCount) * 100);
     html += '<div class="mana-curve-bar">';
+    html += '<div class="mana-curve-bar-track">';
     html += '<div class="mana-curve-bar-fill" style="height:' + heightPct + '%" title="' + bucket.count + '"></div>';
+    html += "</div>";
     html += '<div class="mana-curve-bar-label">' + bucket.bucket + "</div>";
     html += "</div>";
   });

@@ -83,6 +83,10 @@
   font-weight: 600;
 }
 
+/* The bar and its label live in a shared flex column, but a bar's height is set as an
+   inline percentage (see init-deck-explorer.js) -- that only resolves against a definite
+   height, so the "track" gets its own fixed pixel height instead of sharing .mana-curve's
+   64px with the label's own (variable, text-dependent) height. */
 #deck-stats .mana-curve {
   display: flex;
   align-items: flex-end;
@@ -94,6 +98,7 @@
 #deck-stats .mana-curve-bar {
   flex: 1;
   min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -101,7 +106,17 @@
   gap: 0.15rem;
 }
 
+#deck-stats .mana-curve-bar-track {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  flex-shrink: 0;
+}
+
 #deck-stats .mana-curve-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
   width: 100%;
   background: var(--accent-primary);
   border-radius: 2px 2px 0 0;
