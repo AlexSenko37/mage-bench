@@ -52,10 +52,14 @@ def required_api_key_env(provider: str | None) -> str:
     return _PROVIDER_API_KEY_ENVS[_resolve_llm_provider(provider)]
 
 
-def fetch_openrouter_prices() -> dict[str, tuple[float, float]]:
+def fetch_openrouter_prices() -> dict[str, tuple[float, float, float]]:
     """Fetch model pricing from OpenRouter.
 
-    Returns {model_id: (input_per_1M_tokens, output_per_1M_tokens)}.
+    Returns {model_id: (input_per_1M_tokens, output_per_1M_tokens, cache_read_per_1M_tokens)}.
+    cache_read is the discounted rate for cached prompt-token reads (e.g. Anthropic
+    cache_control hits, DeepSeek's automatic context cache). When OpenRouter doesn't report
+    one for a model, it defaults to the full input price (i.e. no assumed discount) rather
+    than inventing a number.
     Returns empty dict on any failure.
     """
     try:
@@ -70,7 +74,7 @@ def fetch_openrouter_prices() -> dict[str, tuple[float, float]]:
         logger.warning("[llm_cost] Failed to fetch OpenRouter prices: %s", e)
         return {}
 
-    prices: dict[str, tuple[float, float]] = {}
+    prices: dict[str, tuple[float, float, float]] = {}
     models = data.get("data")
     if models is None:
         logger.warning("[llm_cost] OpenRouter response missing 'data' field")
@@ -83,16 +87,19 @@ def fetch_openrouter_prices() -> dict[str, tuple[float, float]]:
         try:
             prompt_per_token = float(pricing.get("prompt") or "0")
             completion_per_token = float(pricing.get("completion") or "0")
+            cache_read_raw = pricing.get("input_cache_read")
+            cache_read_per_token = float(cache_read_raw) if cache_read_raw else prompt_per_token
             prices[model_id] = (
                 prompt_per_token * 1_000_000,
                 completion_per_token * 1_000_000,
+                cache_read_per_token * 1_000_000,
             )
         except (ValueError, TypeError):
             continue
     return prices
 
 
-def load_prices() -> dict[str, tuple[float, float]]:
+def load_prices() -> dict[str, tuple[float, float, float]]:
     """Fetch OpenRouter prices at startup. Returns empty dict on failure."""
     prices = fetch_openrouter_prices()
     if prices:
@@ -102,8 +109,8 @@ def load_prices() -> dict[str, tuple[float, float]]:
     return prices
 
 
-def get_model_price(model: str, prices: dict[str, tuple[float, float]]) -> tuple[float, float] | None:
-    """Get (input, output) price per 1M tokens, or None if unknown."""
+def get_model_price(model: str, prices: dict[str, tuple[float, float, float]]) -> tuple[float, float, float] | None:
+    """Get (input, output, cache_read) price per 1M tokens, or None if unknown."""
     if model in prices:
         return prices[model]
     best_match = ""

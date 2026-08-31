@@ -3,7 +3,7 @@
 import json
 from dataclasses import dataclass, field
 
-from magebench.pilot.pilot_rendering import build_reset_message, extract_last_reasoning
+from magebench.pilot.pilot_rendering import build_reset_message, format_summary_log
 
 _BOARD_CURSOR_TOOLS = frozenset({"pass_priority", "get_action_choices"})
 
@@ -56,7 +56,8 @@ class PilotLoopState:
     last_chat_turn: int = 0
     seen_oracle_cards: set[str] = field(default_factory=set)
     cache_breakpoint_idx: int | None = None
-    render_counter: int = 0
+    window_start: int = 0
+    turn_summaries: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -73,7 +74,7 @@ def _reset_render_cache(state: PilotLoopState) -> None:
     """Drop cached prompt metadata after a context reset."""
     state.state_summary = ""
     state.cache_breakpoint_idx = None
-    state.render_counter = 0
+    state.window_start = 0
 
 
 def reset_context(
@@ -82,12 +83,11 @@ def reset_context(
     *,
     reset_board_context: bool,
 ) -> None:
-    """Reset the conversation while preserving the last assistant reasoning."""
-    last_reasoning = extract_last_reasoning(state.history)
+    """Reset the conversation while preserving the accumulated action-summary log."""
     state.history = [
         {
             "role": "user",
-            "content": build_reset_message(base_text, last_reasoning),
+            "content": build_reset_message(base_text, format_summary_log(state.turn_summaries)),
         },
     ]
     _reset_render_cache(state)
@@ -95,3 +95,15 @@ def reset_context(
     if reset_board_context:
         state.board_tracker.reset()
         state.last_board = None
+
+
+def compact_after_action(state: PilotLoopState, summary_text: str) -> None:
+    """Record an action summary and collapse history down to just the summary log.
+
+    Called after every real (choose_action) decision so future LLM calls only see the
+    accumulated summaries plus a freshly re-fetched board state, instead of replaying the
+    full raw tool-call/board-state transcript. Always forces a full board resend, since the
+    compacted history no longer carries any board detail for the model to fall back on.
+    """
+    state.turn_summaries.append(summary_text)
+    reset_context(state, "Continue playing. Call pass_priority.", reset_board_context=True)

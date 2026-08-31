@@ -69,92 +69,12 @@ Check the `recent_chat` field in `pass_priority` results to see what others are 
     "role": "system",
   },
   {
-    "content": "The game is starting. Your first decision (GAME_TARGET): Select a starting player\n\
-Call get_action_choices to see your options, then choose_action to decide.",
+    "content": "Game so far:\n\
+[Turn 0] (no summary provided)\n\
+[Turn 1] (no summary provided)\n\
+\n\
+Continue playing. Call pass_priority.",
     "role": "user",
-  },
-  {
-    "content": null,
-    "role": "assistant",
-    "tool_calls": [
-      {
-        "function": {
-          "arguments": {
-            "index": 0,
-          },
-          "name": "choose_action",
-        },
-        "id": "call_1",
-        "type": "function",
-      }
-    ],
-  },
-  {
-    "content": "## Card Reference\n\
-- Ancient Tomb -- Land: {T}: Add {C}{C}. {this} deals 2 damage to you.\n\
-- Blood Moon {2}{R}: Nonbasic lands are Mountains.\n\
-\n\
-## Decision\n\
-\n\
-[Decision 0, snapshot=0] Turn 1 () - TestPlayer\n\
-  Board: TestPlayer: 20hp hand=[Ancient Tomb, Ancient Tomb, Ancient Tomb, Ancient Tomb, Blood Moon, Blood Moon, Blood Moon] lib=43 | Opponent: 20hp hand=7 lib=53\n\
-  Message: Mulligan down to 6 cards?\n\
-  Choices (0): \n\
-  Respond: choice=yes or choice=no",
-    "role": "tool",
-    "tool_call_id": "call_1",
-  },
-  {
-    "content": null,
-    "role": "assistant",
-    "tool_calls": [
-      {
-        "function": {
-          "arguments": {},
-          "name": "pass_priority",
-        },
-        "id": "call_2",
-        "type": "function",
-      }
-    ],
-  },
-  {
-    "content": "## Decision\n\
-\n\
-[Decision 0, snapshot=0] Turn 1 () - You\n\
-  Board: TestPlayer: 20hp hand=7 lib=43 | Opponent: 20hp hand=7 lib=53\n\
-  Message: Mulligan down to 6 cards?\n\
-  Choices (0): \n\
-  Respond: choice=yes or choice=no",
-    "role": "tool",
-    "tool_call_id": "call_2",
-  },
-  {
-    "content": null,
-    "role": "assistant",
-    "tool_calls": [
-      {
-        "function": {
-          "arguments": {
-            "answer": false,
-          },
-          "name": "choose_action",
-        },
-        "id": "call_3",
-        "type": "function",
-      }
-    ],
-  },
-  {
-    "content": {
-      "error": "GAME_ASK requires choice=\"yes\" or choice=\"no\". This is a yes/no question.",
-      "error_code": "missing_param",
-      "game_seq": 5,
-      "retryable": true,
-      "success": false,
-    },
-    "role": "tool",
-    "tool_call_id": "call_3",
   },
   {
     "content": null,
@@ -171,10 +91,14 @@ Call get_action_choices to see your options, then choose_action to decide.",
     ],
   },
   {
-    "content": "## Decision\n\
+    "content": "## Card Reference\n\
+- Ancient Tomb -- Land: {T}: Add {C}{C}. {this} deals 2 damage to you.\n\
+- Blood Moon {2}{R}: Nonbasic lands are Mountains.\n\
 \n\
-[Decision 0, snapshot=0] Turn 1 () - You\n\
-  Board: TestPlayer: 20hp hand=7 lib=43 | Opponent: 20hp hand=7 lib=53\n\
+## Decision\n\
+\n\
+[Decision 0, snapshot=0] Turn 1 () - TestPlayer\n\
+  Board: TestPlayer: 20hp hand=[Ancient Tomb, Ancient Tomb, Ancient Tomb, Ancient Tomb, Blood Moon, Blood Moon, Blood Moon] lib=43 | Opponent: 20hp hand=7 lib=53\n\
   Message: Mulligan down to 6 cards?\n\
   Choices (0): \n\
   Respond: choice=yes or choice=no",

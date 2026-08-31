@@ -12,16 +12,17 @@ from magebench.pilot.pilot import (
 from magebench.pilot.pilot_rendering import (
     CONTEXT_RECENT_COUNT,
     CONTEXT_SUMMARY_COUNT,
-    RENDER_INTERVAL,
+    CONTEXT_WINDOW_SLACK,
     TOOL_SUMMARY_TRIGGER_CHARS,
     _find_tool_name,
     _summarize_tool_result,
     _with_cache_control,
     build_reset_message,
-    extract_last_reasoning,
+    compute_window_start,
+    format_summary_log,
     render_context,
 )
-from magebench.pilot.pilot_state import PilotLoopState
+from magebench.pilot.pilot_state import PilotLoopState, compact_after_action, reset_context
 
 # ---------------------------------------------------------------------------
 # _summarize_tool_result
@@ -520,48 +521,24 @@ def test_render_keeps_tool_results_contiguous():
 
 
 # ---------------------------------------------------------------------------
-# extract_last_reasoning
+# format_summary_log
 # ---------------------------------------------------------------------------
 
 
-def test_extract_last_reasoning_basic():
-    history = [
-        {"role": "user", "content": "Start"},
-        {"role": "assistant", "content": "First thought"},
-        {"role": "assistant", "content": "Second thought"},
-    ]
-    assert extract_last_reasoning(history) == "Second thought"
+def test_format_summary_log_empty():
+    assert format_summary_log([]) == ""
 
 
-def test_extract_last_reasoning_skips_tool_messages():
-    history = [
-        {"role": "assistant", "content": "My plan"},
-        _make_tool_msg("call_1", "{}"),
-    ]
-    assert extract_last_reasoning(history) == "My plan"
+def test_format_summary_log_single():
+    result = format_summary_log(["[Turn 3] Played a Forest, passed."])
+    assert result.startswith("Game so far:\n")
+    assert "[Turn 3] Played a Forest, passed." in result
 
 
-def test_extract_last_reasoning_empty_history():
-    assert extract_last_reasoning([]) == ""
-
-
-def test_extract_last_reasoning_no_assistant():
-    history = [{"role": "user", "content": "hello"}]
-    assert extract_last_reasoning(history) == ""
-
-
-def test_extract_last_reasoning_truncates():
-    history = [{"role": "assistant", "content": "x" * 500}]
-    result = extract_last_reasoning(history)
-    assert len(result) == 300
-
-
-def test_extract_last_reasoning_skips_none_content():
-    history = [
-        {"role": "assistant", "content": "Good thought"},
-        {"role": "assistant", "content": None},
-    ]
-    assert extract_last_reasoning(history) == "Good thought"
+def test_format_summary_log_multiple_preserves_order():
+    summaries = ["[Turn 1] First.", "[Turn 2] Second.", "[Turn 3] Third."]
+    result = format_summary_log(summaries)
+    assert result.index("First.") < result.index("Second.") < result.index("Third.")
 
 
 # ---------------------------------------------------------------------------
@@ -574,10 +551,71 @@ def test_build_reset_message_base_only():
     assert result == "Continue playing."
 
 
-def test_build_reset_message_with_reasoning():
-    result = build_reset_message("Continue.", "I was about to attack")
+def test_build_reset_message_with_summary_log():
+    result = build_reset_message("Continue.", "Game so far:\n[Turn 1] Attacked.\n\n")
     assert "Continue." in result
-    assert "Before your context was reset, you were thinking: I was about to attack" in result
+    assert "[Turn 1] Attacked." in result
+    # The summary log comes first, so the model sees history before the instruction.
+    assert result.index("[Turn 1] Attacked.") < result.index("Continue.")
+
+
+# ---------------------------------------------------------------------------
+# reset_context / compact_after_action
+# ---------------------------------------------------------------------------
+
+
+def test_reset_context_uses_accumulated_summary_log():
+    """reset_context should carry forward the full turn_summaries log, not just the last
+    assistant message — this is the memory mechanism that replaces raw history replay."""
+    state = PilotLoopState(history=_make_history(5))
+    state.turn_summaries = ["[Turn 1] Played a land.", "[Turn 2] Attacked with a bear."]
+
+    reset_context(state, "Continue playing.", reset_board_context=False)
+
+    assert len(state.history) == 1
+    content = state.history[0]["content"]
+    assert "[Turn 1] Played a land." in content
+    assert "[Turn 2] Attacked with a bear." in content
+    assert "Continue playing." in content
+    # Persistent memory must survive the reset.
+    assert state.turn_summaries == ["[Turn 1] Played a land.", "[Turn 2] Attacked with a bear."]
+
+
+def test_reset_context_no_summaries_yet():
+    """Before any real action has happened, the reset message is just the base text."""
+    state = PilotLoopState(history=_make_history(3))
+
+    reset_context(state, "Continue playing.", reset_board_context=False)
+
+    assert state.history[0]["content"] == "Continue playing."
+
+
+def test_compact_after_action_appends_and_resets():
+    state = PilotLoopState(history=_make_history(10))
+    state.board_tracker.cursor = 42
+    state.last_board = [{"id": "p1"}]
+    state.seen_oracle_cards = {"Forest"}
+
+    compact_after_action(state, "[Turn 4] Cast a Bear, attacked for 2.")
+
+    assert state.turn_summaries == ["[Turn 4] Cast a Bear, attacked for 2."]
+    assert len(state.history) == 1
+    assert "[Turn 4] Cast a Bear, attacked for 2." in state.history[0]["content"]
+    # A full board resend must be forced — the compacted history has no board detail left.
+    assert state.board_tracker.cursor is None
+    assert state.last_board is None
+    assert state.seen_oracle_cards == set()
+
+
+def test_compact_after_action_accumulates_across_multiple_calls():
+    state = PilotLoopState(history=_make_history(3))
+
+    compact_after_action(state, "[Turn 1] First action.")
+    compact_after_action(state, "[Turn 2] Second action.")
+
+    assert state.turn_summaries == ["[Turn 1] First action.", "[Turn 2] Second action."]
+    assert "[Turn 1] First action." in state.history[0]["content"]
+    assert "[Turn 2] Second action." in state.history[0]["content"]
 
 
 # ---------------------------------------------------------------------------
@@ -607,9 +645,23 @@ def test_render_state_bridge_after_summarized():
     assert len(recent_messages) >= CONTEXT_RECENT_COUNT
 
 
+def test_compute_window_start_holds_within_slack():
+    """The anchor must not move while growth stays within the slack budget."""
+    history_len = CONTEXT_RECENT_COUNT + CONTEXT_WINDOW_SLACK
+    assert compute_window_start(history_len, window_start=0) == 0
+
+
+def test_compute_window_start_advances_past_slack():
+    """Once growth exceeds the slack budget the anchor re-anchors to a fresh window."""
+    history_len = CONTEXT_RECENT_COUNT + CONTEXT_WINDOW_SLACK + 1
+    assert compute_window_start(history_len, window_start=0) == history_len - CONTEXT_RECENT_COUNT
+
+
 @pytest.mark.asyncio
-async def test_build_loop_messages_matches_fresh_render_after_history_growth():
-    """Long-history builds should rerender the current history, not reuse a stale prompt."""
+async def test_build_loop_messages_holds_stable_prefix_within_slack():
+    """Small history growth should keep the cacheable prefix byte-identical — only the
+    uncached recent tail may grow — so provider-side prompt caching can reuse it instead of
+    missing on every call."""
     history = _make_history(CONTEXT_RECENT_COUNT + CONTEXT_SUMMARY_COUNT + 10)
     state = PilotLoopState(history=list(history))
     session = MagicMock()
@@ -620,7 +672,7 @@ async def test_build_loop_messages_matches_fresh_render_after_history_growth():
         return_value=STATE_SUMMARY,
     ) as fetch:
         first = await _build_loop_messages(state, session, SYSTEM_PROMPT, cache_control=None)
-        assert first == render_context(state.history, SYSTEM_PROMPT, STATE_SUMMARY)
+        first_window_start = state.window_start
 
         state.history.extend(
             [
@@ -636,14 +688,54 @@ async def test_build_loop_messages_matches_fresh_render_after_history_growth():
 
         second = await _build_loop_messages(state, session, SYSTEM_PROMPT, cache_control=None)
 
-    assert second == render_context(state.history, SYSTEM_PROMPT, STATE_SUMMARY)
+    # The anchor must not have moved: growth (4 messages) is well within CONTEXT_WINDOW_SLACK.
+    assert state.window_start == first_window_start
+    # Refetching the state summary would change the (cached) bridge text — must not happen.
     assert fetch.await_count == 1
+    # Everything up to and including the state-bridge message is byte-identical; only the
+    # recent tail (grown by the 4 new messages) may differ.
+    assert second[: len(first)] == first
+    assert len(second) == len(first) + 4
 
 
-def test_render_interval_constant():
-    """RENDER_INTERVAL should be a positive integer."""
-    assert isinstance(RENDER_INTERVAL, int)
-    assert RENDER_INTERVAL > 0
+@pytest.mark.asyncio
+async def test_build_loop_messages_advances_after_slack_exceeded():
+    """Once growth exceeds the slack budget, the window re-anchors to match a fresh render
+    (and the state summary is legitimately refetched, since the bridge text is now new)."""
+    history = _make_history(CONTEXT_RECENT_COUNT + CONTEXT_SUMMARY_COUNT + 10)
+    state = PilotLoopState(history=list(history))
+    session = MagicMock()
+
+    with patch(
+        "magebench.pilot.pilot._fetch_state_summary",
+        new_callable=AsyncMock,
+        return_value=STATE_SUMMARY,
+    ) as fetch:
+        await _build_loop_messages(state, session, SYSTEM_PROMPT, cache_control=None)
+
+        for i in range(6):
+            state.history.extend(
+                [
+                    _make_assistant_msg([(f"call_new_{i}a", "pass_priority")]),
+                    _make_tool_msg(f"call_new_{i}a", json.dumps({"timeout": True})),
+                    _make_assistant_msg([(f"call_new_{i}b", "choose_action")]),
+                    _make_tool_msg(
+                        f"call_new_{i}b",
+                        json.dumps({"success": True, "action_taken": "passed"}),
+                    ),
+                ]
+            )
+
+        second = await _build_loop_messages(state, session, SYSTEM_PROMPT, cache_control=None)
+
+    assert state.window_start == len(state.history) - CONTEXT_RECENT_COUNT
+    assert fetch.await_count == 2
+    assert second == render_context(
+        state.history,
+        SYSTEM_PROMPT,
+        STATE_SUMMARY,
+        window_start=state.window_start,
+    )
 
 
 # ---------------------------------------------------------------------------

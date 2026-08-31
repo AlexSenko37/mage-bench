@@ -163,6 +163,8 @@
       "type": "phase_change",
     }
   ],
+  "annotations": [],
+  "blunder_script_version": 0,
   "card_data": {
     "Plains": {
       "mana_cost": "",
@@ -191,7 +193,7 @@
       "is_forced": false,
       "llm_event_indices": [
         2,
-        3,
+        4,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -346,9 +348,9 @@
       "index": 1,
       "is_forced": false,
       "llm_event_indices": [
-        4,
         5,
         6,
+        7,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -407,8 +409,8 @@
       "index": 2,
       "is_forced": false,
       "llm_event_indices": [
-        6,
         7,
+        9,
       ],
       "message": "Play spells and abilities",
       "phase": "PRECOMBAT_MAIN",
@@ -584,9 +586,9 @@
       "index": 3,
       "is_forced": false,
       "llm_event_indices": [
-        8,
-        9,
         10,
+        11,
+        12,
       ],
       "message": "Play spells and abilities",
       "phase": "POSTCOMBAT_MAIN",
@@ -719,9 +721,9 @@
       "index": 4,
       "is_forced": false,
       "llm_event_indices": [
-        10,
-        11,
         12,
+        14,
+        15,
       ],
       "message": "Play spells and abilities",
       "phase": "POSTCOMBAT_MAIN",
@@ -750,8 +752,8 @@
       "index": 5,
       "is_forced": false,
       "llm_event_indices": [
-        12,
-        13,
+        15,
+        17,
       ],
       "message": "Play instants and activated abilities",
       "phase": "POSTCOMBAT_MAIN",
@@ -954,9 +956,9 @@
       "index": 6,
       "is_forced": false,
       "llm_event_indices": [
-        14,
-        15,
-        16,
+        18,
+        19,
+        20,
       ],
       "message": "Play spells and abilities",
       "phase": "PRECOMBAT_MAIN",
@@ -1005,8 +1007,8 @@
       "index": 7,
       "is_forced": false,
       "llm_event_indices": [
-        16,
-        17,
+        20,
+        22,
       ],
       "message": "Select attackers",
       "phase": "COMBAT",
@@ -1184,9 +1186,9 @@
       "index": 8,
       "is_forced": false,
       "llm_event_indices": [
-        18,
-        19,
-        20,
+        23,
+        24,
+        25,
       ],
       "message": "Select attackers",
       "phase": "COMBAT",
@@ -1212,9 +1214,9 @@
       "index": 9,
       "is_forced": false,
       "llm_event_indices": [
-        20,
-        21,
-        23,
+        25,
+        27,
+        29,
       ],
       "message": "Play instants and activated abilities",
       "phase": "COMBAT",
@@ -1282,8 +1284,8 @@
       "index": 10,
       "is_forced": false,
       "llm_event_indices": [
-        24,
-        25,
+        30,
+        31,
       ],
       "message": "Play spells and abilities",
       "phase": "COMBAT",
@@ -1498,11 +1500,20 @@
       "type": "tool_call",
     },
     {
+      "action_taken": "selected_target_0",
+      "game_seq": 5,
+      "player": "TestPlayer",
+      "seq": 4,
+      "summary": "(no summary provided)",
+      "turn": 0,
+      "type": "action_summary",
+    },
+    {
       "cost_usd": 0.0,
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 4,
+      "seq": 5,
       "tool_calls": [
         {
           "arguments": {},
@@ -1512,16 +1523,88 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 2,
-      },
+      "args": {},
       "game_seq": 5,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_ASK",
+        "board": [
+          {
+            "hand": [
+              {
+                "id": "p10",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p11",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p12",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p14",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p15",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p16",
+                "mana_cost": "{W}",
+                "name": "Savannah Lions",
+                "power": "2",
+                "toughness": "1",
+              }
+            ],
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": true,
+            "library_size": 53,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 53,
+            "life": 20,
+            "name": "Opponent",
+          }
+        ],
         "board_cursor": 2,
-        "board_unchanged": true,
         "context": "T1 ()",
         "game_seq": 5,
         "message": "Mulligan down to 6 cards?",
@@ -1579,7 +1662,7 @@
           }
         ],
       },
-      "seq": 5,
+      "seq": 6,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -1588,7 +1671,7 @@
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 6,
+      "seq": 7,
       "tool_calls": [
         {
           "arguments": {
@@ -1737,16 +1820,25 @@
         "response_type": "select",
         "success": true,
       },
-      "seq": 7,
+      "seq": 8,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "no",
+      "game_seq": 9,
+      "player": "TestPlayer",
+      "seq": 9,
+      "summary": "(no summary provided)",
+      "turn": 1,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 9,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 8,
+      "seq": 10,
       "tool_calls": [
         {
           "arguments": {},
@@ -1756,9 +1848,7 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 3,
-      },
+      "args": {},
       "game_seq": 15,
       "player": "TestPlayer",
       "result": {
@@ -1893,7 +1983,7 @@
         "response_type": "select",
         "stop_reason": "playable_cards",
       },
-      "seq": 9,
+      "seq": 11,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -1902,7 +1992,7 @@
       "game_seq": 15,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 10,
+      "seq": 12,
       "tool_calls": [
         {
           "arguments": {
@@ -2022,16 +2112,25 @@
         "success": true,
         "untapped_lands": 1,
       },
-      "seq": 11,
+      "seq": 13,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "selected_0",
+      "game_seq": 18,
+      "player": "TestPlayer",
+      "seq": 14,
+      "summary": "(no summary provided)",
+      "turn": 1,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 18,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 12,
+      "seq": 15,
       "tool_calls": [
         {
           "arguments": {
@@ -2137,16 +2236,25 @@
         ],
         "success": true,
       },
-      "seq": 13,
+      "seq": 16,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "selected_0",
+      "game_seq": 21,
+      "player": "TestPlayer",
+      "seq": 17,
+      "summary": "(no summary provided)",
+      "turn": 1,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 21,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 14,
+      "seq": 18,
       "tool_calls": [
         {
           "arguments": {},
@@ -2156,9 +2264,7 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 8,
-      },
+      "args": {},
       "game_seq": 44,
       "player": "TestPlayer",
       "result": {
@@ -2323,7 +2429,7 @@
         "stop_reason": "playable_cards",
         "untapped_lands": 1,
       },
-      "seq": 15,
+      "seq": 19,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -2332,7 +2438,7 @@
       "game_seq": 44,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 16,
+      "seq": 20,
       "tool_calls": [
         {
           "arguments": {
@@ -2483,16 +2589,25 @@
         "success": true,
         "untapped_lands": 1,
       },
-      "seq": 17,
+      "seq": 21,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "passed_priority",
+      "game_seq": 46,
+      "player": "TestPlayer",
+      "seq": 22,
+      "summary": "(no summary provided)",
+      "turn": 2,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 46,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 18,
+      "seq": 23,
       "tool_calls": [
         {
           "arguments": {},
@@ -2502,16 +2617,117 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 15,
-      },
+      "args": {},
       "game_seq": 46,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_SELECT",
+        "board": [
+          {
+            "battlefield": [
+              {
+                "id": "p10",
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ],
+                "tapped": false,
+              },
+              {
+                "id": "p16",
+                "name": "Savannah Lions",
+                "power": "2",
+                "summoning_sick": false,
+                "tapped": false,
+                "toughness": "1",
+              }
+            ],
+            "hand": [
+              {
+                "id": "p11",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p12",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p14",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p15",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+              {
+                "id": "p26",
+                "is_land": true,
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ]
+              },
+            ],
+            "hand_size": 6,
+            "is_active": true,
+            "is_you": true,
+            "library_size": 52,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "battlefield": [
+              {
+                "id": "p3",
+                "name": "Plains",
+                "rules": [
+                  "{T}: Add {W}.",
+                ],
+                "tapped": true,
+              },
+              {
+                "id": "p9",
+                "name": "Savannah Lions",
+                "power": "2",
+                "summoning_sick": true,
+                "tapped": false,
+                "toughness": "1",
+              }
+            ],
+            "hand_size": 6,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 52,
+            "life": 20,
+            "name": "Opponent",
+          }
+        ],
         "board_cursor": 15,
-        "board_unchanged": true,
         "choices": [
           {
             "choice_type": "attacker",
@@ -2537,7 +2753,7 @@
         "stop_reason": "combat",
         "untapped_lands": 1,
       },
-      "seq": 19,
+      "seq": 24,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -2546,7 +2762,7 @@
       "game_seq": 46,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 20,
+      "seq": 25,
       "tool_calls": [
         {
           "arguments": {
@@ -2699,16 +2915,25 @@
         "success": true,
         "untapped_lands": 1,
       },
-      "seq": 21,
+      "seq": 26,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "batch_attack",
+      "game_seq": 51,
+      "player": "TestPlayer",
+      "seq": 27,
+      "summary": "(no summary provided)",
+      "turn": 2,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 51,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 22,
+      "seq": 28,
       "tool_calls": [
         {
           "arguments": {},
@@ -2755,7 +2980,7 @@ Turn 3 (TestPlayer):\n\
     - TestPlayer drew Plains\n\
 ",
       },
-      "seq": 23,
+      "seq": 29,
       "tool": "get_game_history",
       "type": "tool_call",
     },
@@ -2764,7 +2989,7 @@ Turn 3 (TestPlayer):\n\
       "game_seq": 51,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 24,
+      "seq": 30,
       "tool_calls": [
         {
           "arguments": {
@@ -2777,7 +3002,6 @@ Turn 3 (TestPlayer):\n\
     },
     {
       "args": {
-        "board_cursor": 17,
         "until": "postcombat_main",
       },
       "game_seq": 66,
@@ -2940,7 +3164,7 @@ Turn 3 (TestPlayer):\n\
         "stop_reason": "reached_step",
         "untapped_lands": 1,
       },
-      "seq": 25,
+      "seq": 31,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -2949,7 +3173,7 @@ Turn 3 (TestPlayer):\n\
       "game_seq": 66,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 26,
+      "seq": 32,
       "tool_calls": [
         {
           "arguments": {},
@@ -3079,7 +3303,7 @@ Turn 3 (TestPlayer):\n\
         "step": "Postcombat Main",
         "turn": 2,
       },
-      "seq": 27,
+      "seq": 33,
       "tool": "get_game_state",
       "type": "tool_call",
     }

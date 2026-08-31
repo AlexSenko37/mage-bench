@@ -577,7 +577,7 @@ async def run_draft(tournament: dict, tournament_path: Path) -> None:
             pick_cost = 0.0
             price = get_model_price(model, prices)
             if price and usage:
-                input_price, output_price = price
+                input_price, output_price, _cache_read_price = price
                 pick_cost = (
                     usage.get("prompt_tokens", 0) * input_price / 1_000_000
                     + usage.get("completion_tokens", 0) * output_price / 1_000_000

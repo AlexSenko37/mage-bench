@@ -19,6 +19,8 @@
       "seq": 6,
     }
   ],
+  "annotations": [],
+  "blunder_script_version": 0,
   "card_data": {
     "Aether Vial": {
       "mana_cost": "{1}",
@@ -51,7 +53,7 @@
       "is_forced": false,
       "llm_event_indices": [
         2,
-        3,
+        4,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -81,10 +83,10 @@
       "index": 1,
       "is_forced": false,
       "llm_event_indices": [
-        4,
         5,
         6,
         7,
+        9,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -106,8 +108,8 @@
       "index": 2,
       "is_forced": false,
       "llm_event_indices": [
-        8,
-        9,
+        10,
+        11,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -313,11 +315,20 @@
       "type": "tool_call",
     },
     {
+      "action_taken": "auto_selected_required_target",
+      "game_seq": 5,
+      "player": "TestPlayer",
+      "seq": 4,
+      "summary": "(no summary provided)",
+      "turn": 0,
+      "type": "action_summary",
+    },
+    {
       "cost_usd": 0.0,
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 4,
+      "seq": 5,
       "tool_calls": [
         {
           "arguments": {},
@@ -327,16 +338,89 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 2,
-      },
+      "args": {},
       "game_seq": 5,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_ASK",
+        "board": [
+          {
+            "hand": [
+              {
+                "id": "p10",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p11",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p12",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p14",
+                "mana_cost": "{2}{R}",
+                "name": "Blood Moon",
+                "rules": [
+                  "Nonbasic lands are Mountains.",
+                ]
+              },
+              {
+                "id": "p15",
+                "mana_cost": "{2}{R}",
+                "name": "Blood Moon",
+                "rules": [
+                  "Nonbasic lands are Mountains.",
+                ]
+              },
+              {
+                "id": "p16",
+                "mana_cost": "{2}{R}",
+                "name": "Blood Moon",
+                "rules": [
+                  "Nonbasic lands are Mountains.",
+                ]
+              },
+            ],
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": true,
+            "library_size": 43,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 53,
+            "life": 20,
+            "name": "Opponent",
+          }
+        ],
         "board_cursor": 2,
-        "board_unchanged": true,
         "context": "T1 ()",
         "game_seq": 5,
         "message": "Mulligan down to 6 cards?",
@@ -395,7 +479,7 @@
           },
         ]
       },
-      "seq": 5,
+      "seq": 6,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -404,7 +488,7 @@
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 6,
+      "seq": 7,
       "tool_calls": [
         {
           "arguments": {
@@ -428,16 +512,24 @@
         "retryable": true,
         "success": false,
       },
-      "seq": 7,
+      "seq": 8,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "game_seq": 5,
+      "player": "TestPlayer",
+      "seq": 9,
+      "summary": "(no summary provided)",
+      "turn": 1,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 8,
+      "seq": 10,
       "tool_calls": [
         {
           "arguments": {},
@@ -447,16 +539,89 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 2,
-      },
+      "args": {},
       "game_seq": 5,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_ASK",
+        "board": [
+          {
+            "hand": [
+              {
+                "id": "p10",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p11",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p12",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Ancient Tomb",
+                "rules": [
+                  "{T}: Add {C}{C}. {this} deals 2 damage to you.",
+                ]
+              },
+              {
+                "id": "p14",
+                "mana_cost": "{2}{R}",
+                "name": "Blood Moon",
+                "rules": [
+                  "Nonbasic lands are Mountains.",
+                ]
+              },
+              {
+                "id": "p15",
+                "mana_cost": "{2}{R}",
+                "name": "Blood Moon",
+                "rules": [
+                  "Nonbasic lands are Mountains.",
+                ]
+              },
+              {
+                "id": "p16",
+                "mana_cost": "{2}{R}",
+                "name": "Blood Moon",
+                "rules": [
+                  "Nonbasic lands are Mountains.",
+                ]
+              },
+            ],
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": true,
+            "library_size": 43,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 53,
+            "life": 20,
+            "name": "Opponent",
+          }
+        ],
         "board_cursor": 2,
-        "board_unchanged": true,
         "context": "T1 ()",
         "game_seq": 5,
         "message": "Mulligan down to 6 cards?",
@@ -515,7 +680,7 @@
           },
         ]
       },
-      "seq": 9,
+      "seq": 11,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -524,7 +689,7 @@
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 10,
+      "seq": 12,
       "tool_calls": [
         {
           "arguments": {},
@@ -622,7 +787,7 @@
         "stack": [],
         "turn": 1,
       },
-      "seq": 11,
+      "seq": 13,
       "tool": "get_game_state",
       "type": "tool_call",
     }

@@ -51,29 +51,29 @@ def test_unknown_provider_raises():
 
 
 def test_get_model_price_exact():
-    prices = {"google/gemini-2.0-flash-001": (0.10, 0.40)}
+    prices = {"google/gemini-2.0-flash-001": (0.10, 0.40, 0.025)}
     result = get_model_price("google/gemini-2.0-flash-001", prices)
-    assert result == (0.10, 0.40)
+    assert result == (0.10, 0.40, 0.025)
 
 
 def test_get_model_price_prefix():
-    prices = {"google/gemini-2.0-flash": (0.10, 0.40)}
+    prices = {"google/gemini-2.0-flash": (0.10, 0.40, 0.025)}
     result = get_model_price("google/gemini-2.0-flash-001", prices)
-    assert result == (0.10, 0.40)
+    assert result == (0.10, 0.40, 0.025)
 
 
 def test_get_model_price_best_prefix():
     """When multiple prefixes match, should pick the longest."""
     prices = {
-        "google/gemini": (1.0, 2.0),
-        "google/gemini-2.0-flash": (0.10, 0.40),
+        "google/gemini": (1.0, 2.0, 0.25),
+        "google/gemini-2.0-flash": (0.10, 0.40, 0.025),
     }
     result = get_model_price("google/gemini-2.0-flash-001", prices)
-    assert result == (0.10, 0.40)
+    assert result == (0.10, 0.40, 0.025)
 
 
 def test_get_model_price_unknown():
-    prices = {"google/gemini-2.0-flash": (0.10, 0.40)}
+    prices = {"google/gemini-2.0-flash": (0.10, 0.40, 0.025)}
     result = get_model_price("anthropic/claude-sonnet-4", prices)
     assert result is None
 
@@ -122,7 +122,37 @@ def test_fetch_openrouter_prices_uses_validated_https_fetch(monkeypatch):
 
     monkeypatch.setattr(http_utils, "fetch_https_bytes", fake_fetch)
 
-    assert fetch_openrouter_prices() == {"openai/gpt-5": (1.5, 2.5)}
+    # No input_cache_read reported — defaults to the full input price (no assumed discount).
+    assert fetch_openrouter_prices() == {"openai/gpt-5": (1.5, 2.5, 1.5)}
     assert calls == [
         ("https://openrouter.ai/api/v1/models", frozenset({"openrouter.ai"}), 10),
     ]
+
+
+def test_fetch_openrouter_prices_captures_cache_read_price(monkeypatch):
+    """When OpenRouter reports a discounted cache-read rate, it should be captured
+    distinctly instead of defaulting to the full input price."""
+
+    def fake_fetch(_url: str, **_kwargs: object) -> bytes:
+        return json.dumps(
+            {
+                "data": [
+                    {
+                        "id": "deepseek/deepseek-v4-pro-0813",
+                        "pricing": {
+                            "prompt": "0.000001188",
+                            "completion": "0.000003564",
+                            "input_cache_read": "0.0000000396",
+                        },
+                    }
+                ]
+            }
+        ).encode()
+
+    monkeypatch.setattr(http_utils, "fetch_https_bytes", fake_fetch)
+
+    prices = fetch_openrouter_prices()
+    input_price, output_price, cache_read_price = prices["deepseek/deepseek-v4-pro-0813"]
+    assert input_price == pytest.approx(1.188)
+    assert output_price == pytest.approx(3.564)
+    assert cache_read_price == pytest.approx(0.0396)

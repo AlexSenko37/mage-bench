@@ -80,6 +80,7 @@ def _make_llm_response(tool_name: str, args: str) -> MagicMock:
     response = MagicMock()
     response.choices = [choice]
     response.usage = MagicMock(prompt_tokens=10, completion_tokens=5)
+    response.usage.prompt_tokens_details = None
     return response
 
 
@@ -103,7 +104,9 @@ def _no_prefetch():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_no_prefetch")
 async def test_board_cursor_injected_into_pass_priority():
-    """After receiving a board_cursor, the pilot injects it into the next pass_priority call."""
+    """After receiving a board_cursor, the pilot injects it into the next pass_priority call
+    (as long as no real action reset it in between — see test_choose_action_captures_summary_and_compacts_history
+    in test_pilot.py for the reset-after-action case)."""
     session = MagicMock()
     tool_calls: list[tuple[str, dict]] = []
 
@@ -111,7 +114,7 @@ async def test_board_cursor_injected_into_pass_priority():
         tool_calls.append((name, dict(args)))
         if name == "pass_priority":
             # First pass_priority returns board_cursor=5
-            if len(tool_calls) <= 2:
+            if len(tool_calls) <= 1:
                 return _mock_tool_result(
                     json.dumps(
                         {
@@ -125,18 +128,14 @@ async def test_board_cursor_injected_into_pass_priority():
                 )
             # Second pass_priority should have board_cursor=5 injected
             return _mock_tool_result('{"game_over": true}')
-        if name == "choose_action":
-            return _mock_tool_result('{"success": true, "action_taken": "pass"}')
         return _mock_tool_result("{}")
 
     session.call_tool = AsyncMock(side_effect=fake_call_tool)
 
     # LLM turn 1: pass_priority → gets board_cursor=5
-    # LLM turn 2: choose_action → pass
-    # LLM turn 3: pass_priority → should have board_cursor=5 injected → game_over
+    # LLM turn 2: pass_priority → should have board_cursor=5 injected → game_over
     llm_responses = [
         _make_llm_response("pass_priority", "{}"),
-        _make_llm_response("choose_action", '{"answer": false}'),
         _make_llm_response("pass_priority", "{}"),
     ]
 
@@ -215,7 +214,8 @@ async def test_board_cursor_injected_into_get_action_choices():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("_no_prefetch")
 async def test_board_cursor_updates_on_new_value():
-    """The board_cursor should update when a new value is returned."""
+    """The board_cursor should update when a new value is returned across consecutive
+    pass_priority calls (no intervening real action to reset it)."""
     session = MagicMock()
     tool_calls: list[tuple[str, dict]] = []
     call_count = 0
@@ -225,24 +225,20 @@ async def test_board_cursor_updates_on_new_value():
         tool_calls.append((name, dict(args)))
         call_count += 1
         if name == "pass_priority":
-            if call_count <= 2:
+            if call_count <= 1:
                 # First: board_cursor=3
                 return _mock_tool_result(json.dumps({"action_pending": True, "board_cursor": 3}))
-            if call_count <= 4:
-                # After choose_action: board_cursor=4 (board changed)
+            if call_count <= 2:
+                # Board changed: board_cursor=4
                 return _mock_tool_result(json.dumps({"action_pending": True, "board_cursor": 4}))
             return _mock_tool_result('{"game_over": true}')
-        if name == "choose_action":
-            return _mock_tool_result('{"success": true, "action_taken": "cast"}')
         return _mock_tool_result("{}")
 
     session.call_tool = AsyncMock(side_effect=fake_call_tool)
 
     llm_responses = [
         _make_llm_response("pass_priority", "{}"),
-        _make_llm_response("choose_action", '{"index": 0}'),
         _make_llm_response("pass_priority", "{}"),
-        _make_llm_response("choose_action", '{"index": 0}'),
         _make_llm_response("pass_priority", "{}"),
     ]
 

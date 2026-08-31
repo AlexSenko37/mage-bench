@@ -103,6 +103,8 @@
       "seq": 37,
     }
   ],
+  "annotations": [],
+  "blunder_script_version": 0,
   "card_data": {
     "Mountain": {
       "mana_cost": "",
@@ -124,7 +126,7 @@
       "is_forced": false,
       "llm_event_indices": [
         2,
-        3,
+        4,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -287,9 +289,9 @@
       "index": 1,
       "is_forced": false,
       "llm_event_indices": [
-        4,
         5,
         6,
+        7,
       ],
       "message": "Mulligan down to 6 cards?",
       "phase": null,
@@ -354,8 +356,8 @@
       "index": 2,
       "is_forced": false,
       "llm_event_indices": [
-        6,
         7,
+        9,
       ],
       "message": "Play spells and abilities",
       "phase": "PRECOMBAT_MAIN",
@@ -527,9 +529,9 @@
       "index": 3,
       "is_forced": false,
       "llm_event_indices": [
-        8,
-        9,
         10,
+        11,
+        12,
       ],
       "message": "Play spells and abilities",
       "phase": "POSTCOMBAT_MAIN",
@@ -563,10 +565,10 @@
       "index": 4,
       "is_forced": false,
       "llm_event_indices": [
-        10,
-        11,
-        13,
-        15,
+        12,
+        14,
+        16,
+        18,
       ],
       "message": "Play spells and abilities",
       "phase": "POSTCOMBAT_MAIN",
@@ -749,9 +751,9 @@
       "index": 5,
       "is_forced": false,
       "llm_event_indices": [
-        16,
-        17,
-        18,
+        19,
+        20,
+        21,
       ],
       "message": "Play spells and abilities",
       "phase": "PRECOMBAT_MAIN",
@@ -786,9 +788,9 @@
       "index": 6,
       "is_forced": false,
       "llm_event_indices": [
-        18,
-        19,
         21,
+        23,
+        25,
       ],
       "message": "Play spells and abilities",
       "phase": "PRECOMBAT_MAIN",
@@ -997,11 +999,20 @@
       "type": "tool_call",
     },
     {
+      "action_taken": "selected_target_0",
+      "game_seq": 5,
+      "player": "TestPlayer",
+      "seq": 4,
+      "summary": "(no summary provided)",
+      "turn": 0,
+      "type": "action_summary",
+    },
+    {
       "cost_usd": 0.0,
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 4,
+      "seq": 5,
       "tool_calls": [
         {
           "arguments": {},
@@ -1011,16 +1022,89 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 2,
-      },
+      "args": {},
       "game_seq": 5,
       "player": "TestPlayer",
       "result": {
         "action_pending": true,
         "action_type": "GAME_ASK",
+        "board": [
+          {
+            "hand": [
+              {
+                "id": "p10",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+              {
+                "id": "p11",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+              {
+                "id": "p12",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+              {
+                "id": "p13",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+              {
+                "id": "p14",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+              {
+                "id": "p15",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+              {
+                "id": "p16",
+                "is_land": true,
+                "name": "Mountain",
+                "rules": [
+                  "{T}: Add {R}.",
+                ]
+              },
+            ],
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": true,
+            "library_size": 53,
+            "life": 20,
+            "name": "TestPlayer",
+          },
+          {
+            "hand_size": 7,
+            "is_active": false,
+            "is_you": false,
+            "library_size": 53,
+            "life": 20,
+            "name": "Opponent",
+          }
+        ],
         "board_cursor": 2,
-        "board_unchanged": true,
         "context": "T1 ()",
         "game_seq": 5,
         "message": "Mulligan down to 6 cards?",
@@ -1079,7 +1163,7 @@
           },
         ]
       },
-      "seq": 5,
+      "seq": 6,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -1088,7 +1172,7 @@
       "game_seq": 5,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 6,
+      "seq": 7,
       "tool_calls": [
         {
           "arguments": {
@@ -1245,16 +1329,25 @@
         "response_type": "select",
         "success": true,
       },
-      "seq": 7,
+      "seq": 8,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "no",
+      "game_seq": 9,
+      "player": "TestPlayer",
+      "seq": 9,
+      "summary": "(no summary provided)",
+      "turn": 1,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 9,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 8,
+      "seq": 10,
       "tool_calls": [
         {
           "arguments": {},
@@ -1264,9 +1357,7 @@
       "type": "llm_response",
     },
     {
-      "args": {
-        "board_cursor": 3,
-      },
+      "args": {},
       "game_seq": 15,
       "player": "TestPlayer",
       "result": {
@@ -1409,7 +1500,7 @@
         "response_type": "select",
         "stop_reason": "playable_cards",
       },
-      "seq": 9,
+      "seq": 11,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -1418,7 +1509,7 @@
       "game_seq": 15,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 10,
+      "seq": 12,
       "tool_calls": [
         {
           "arguments": {
@@ -1527,16 +1618,25 @@
         "success": true,
         "untapped_lands": 1,
       },
-      "seq": 11,
+      "seq": 13,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "selected_0",
+      "game_seq": 18,
+      "player": "TestPlayer",
+      "seq": 14,
+      "summary": "(no summary provided)",
+      "turn": 1,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 18,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 12,
+      "seq": 15,
       "tool_calls": [
         {
           "arguments": {
@@ -1556,7 +1656,7 @@
       "result": {
         "success": true,
       },
-      "seq": 13,
+      "seq": 16,
       "tool": "send_chat_message",
       "type": "tool_call",
     },
@@ -1565,7 +1665,7 @@
       "game_seq": 18,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 14,
+      "seq": 17,
       "tool_calls": [
         {
           "arguments": {
@@ -1590,7 +1690,7 @@ TestPlayer played Mountain\n\
         "total_length": 84,
         "truncated": false,
       },
-      "seq": 15,
+      "seq": 18,
       "tool": "get_game_log",
       "type": "tool_call",
     },
@@ -1599,7 +1699,7 @@ TestPlayer played Mountain\n\
       "game_seq": 18,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 16,
+      "seq": 19,
       "tool_calls": [
         {
           "arguments": {
@@ -1612,7 +1712,6 @@ TestPlayer played Mountain\n\
     },
     {
       "args": {
-        "board_cursor": 6,
         "until": "my_turn",
       },
       "game_seq": 32,
@@ -1781,7 +1880,7 @@ TestPlayer played Mountain\n\
         "stop_reason": "playable_cards",
         "untapped_lands": 1,
       },
-      "seq": 17,
+      "seq": 20,
       "tool": "pass_priority",
       "type": "tool_call",
     },
@@ -1790,7 +1889,7 @@ TestPlayer played Mountain\n\
       "game_seq": 32,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 18,
+      "seq": 21,
       "tool_calls": [
         {
           "arguments": {
@@ -1917,16 +2016,25 @@ TestPlayer played Mountain\n\
         "success": true,
         "untapped_lands": 2,
       },
-      "seq": 19,
+      "seq": 22,
       "tool": "choose_action",
       "type": "tool_call",
+    },
+    {
+      "action_taken": "selected_0",
+      "game_seq": 36,
+      "player": "TestPlayer",
+      "seq": 23,
+      "summary": "(no summary provided)",
+      "turn": 2,
+      "type": "action_summary",
     },
     {
       "cost_usd": 0.0,
       "game_seq": 36,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 20,
+      "seq": 24,
       "tool_calls": [
         {
           "arguments": {
@@ -1958,7 +2066,7 @@ TestPlayer played Mountain",
         "total_length": 250,
         "truncated": false,
       },
-      "seq": 21,
+      "seq": 25,
       "tool": "get_game_log",
       "type": "tool_call",
     },
@@ -1967,7 +2075,7 @@ TestPlayer played Mountain",
       "game_seq": 36,
       "player": "TestPlayer",
       "reasoning": null,
-      "seq": 22,
+      "seq": 26,
       "tool_calls": [
         {
           "arguments": {},
@@ -2087,7 +2195,7 @@ TestPlayer played Mountain",
         "step": "Precombat Main",
         "turn": 2,
       },
-      "seq": 23,
+      "seq": 27,
       "tool": "get_game_state",
       "type": "tool_call",
     }

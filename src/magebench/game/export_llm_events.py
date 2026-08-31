@@ -12,6 +12,7 @@ _LLM_EVENT_TYPES = {
     "context_reset",
     "llm_error",
     "auto_pilot_mode",
+    "action_summary",
 }
 
 
@@ -180,6 +181,12 @@ def read_llm_events(
                 exported["error_message"] = raw["error_message"]
             elif event_type == "auto_pilot_mode":
                 exported["reason"] = raw["reason"]
+            elif event_type == "action_summary":
+                exported["summary"] = raw["summary"]
+                if raw.get("turn") is not None:
+                    exported["turn"] = raw["turn"]
+                if raw.get("action_taken") is not None:
+                    exported["action_taken"] = raw["action_taken"]
 
             if game_seq is not None:
                 exported["game_seq"] = game_seq
