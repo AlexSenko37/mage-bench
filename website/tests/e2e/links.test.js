@@ -145,7 +145,6 @@ describe("internal links", () => {
     for (const page of pages) {
       if (page === "/") continue; // homepage is always an entry point
       if (/^\/games\/game_/.test(page)) continue; // game pages linked dynamically via JS
-      if (page === "/games/live") continue; // live viewer accessed via direct URL
       if (!linkedTo.has(page)) {
         unreachable.push(page);
       }
@@ -160,7 +159,8 @@ describe("internal links", () => {
   });
 
   test("found a reasonable number of internal links", () => {
-    // Sanity check: the site should have many internal links
-    expect(links.size).toBeGreaterThan(10);
+    // Sanity check for this minimal (home/games/replay) site -- not the dozens of
+    // links a season/blog/docs-heavy site would have.
+    expect(links.size).toBeGreaterThan(2);
   });
 });

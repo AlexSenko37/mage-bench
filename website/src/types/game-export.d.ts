@@ -156,6 +156,10 @@ export interface Player {
    * True if this player lost by running out of time on the game timer.
    */
   timed_out?: boolean;
+  /**
+   * Raw decklist lines from the deck file, e.g. '1 [TLA:146] Lightning Strike'. An 'SB:' prefix marks sideboard/commander entries.
+   */
+  decklist?: string[];
 }
 /**
  * Scryfall card metadata baked at export time for offline rendering.

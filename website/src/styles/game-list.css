@@ -444,12 +444,6 @@
   color: var(--accent-primary);
 }
 
-.old-analysis-tag {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-style: italic;
-}
-
 /* Responsive */
 @media (max-width: 500px) {
   .game-players {

@@ -1,10 +1,9 @@
 {
-  "name": "mage-bench-website",
+  "name": "llm-mage-bench-website",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "node ensure-data.cjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
@@ -14,9 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@astrojs/rss": "^4.0.18",
-    "astro": "^7.0.5",
-    "chart.js": "^4.5.1"
+    "astro": "^7.0.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",

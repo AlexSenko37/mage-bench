@@ -74,12 +74,36 @@ def _collect_card_names(snapshots: list[dict]) -> tuple[set[str], set[str]]:
     return real_cards, tokens
 
 
-def build_card_data(card_images: dict[str, str], snapshots: list[dict]) -> tuple[dict[str, str], dict[str, dict]]:
+def decklist_card_names(players_meta: list[dict]) -> set[str]:
+    """Card names parsed from every player's raw decklist lines.
+
+    Covers the full 40+ card pool a deck explorer needs, not just the subset that
+    happened to appear in play (which is all _collect_card_names can see).
+    """
+    names: set[str] = set()
+    for player in players_meta:
+        decklist = player.get("decklist")
+        if decklist is None:
+            continue
+        for entry in decklist:
+            m = DECKLIST_RE.match(entry)
+            if m:
+                names.add(m.group(4).strip())
+    return names
+
+
+def build_card_data(
+    card_images: dict[str, str],
+    snapshots: list[dict],
+    players_meta: list[dict] | None = None,
+) -> tuple[dict[str, str], dict[str, dict]]:
     """Build cardData metadata and add token images to cardImages.
 
     Returns (updated_card_images, card_data).
     """
     real_cards, tokens = _collect_card_names(snapshots)
+    if players_meta:
+        real_cards |= decklist_card_names(players_meta)
 
     updated_images = dict(card_images)
     for token_name in sorted(tokens):
@@ -98,11 +122,18 @@ def build_card_data(card_images: dict[str, str], snapshots: list[dict]) -> tuple
         for card in found:
             card_data[card["name"]] = _trim_card(card)
 
-    fetched_names = set(card_data.keys())
     for name in names_to_fetch:
-        if name not in fetched_names:
-            lookup = scryfall.named(name)
-            if lookup:
-                card_data[lookup["name"]] = _trim_card(lookup)
+        if name in card_data:
+            continue
+        lookup = scryfall.named(name)
+        if lookup:
+            trimmed = _trim_card(lookup)
+            card_data[lookup["name"]] = trimmed
+            # Also alias under the name actually requested: a collection lookup by
+            # name can return a card under a slightly different canonical name (split
+            # cards, DFC front faces, old print variants) than what the decklist line
+            # or a snapshot recorded — without this, the deck explorer silently drops
+            # the card because it never finds it under the name it's looking up.
+            card_data[name] = trimmed
 
     return updated_images, card_data

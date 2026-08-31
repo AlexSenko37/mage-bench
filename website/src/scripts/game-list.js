@@ -18,6 +18,7 @@ window.GameList = {
       "standard": "Standard",
       "modern": "Modern",
       "legacy": "Legacy",
+      "freeform": "Freeform",
       "commander": "Commander (Exhibition)",
       "jumpstart": "Jumpstart",
     };
@@ -236,7 +237,7 @@ window.GameList = {
         counts[card.format] = (counts[card.format] || 0) + 1;
       });
 
-      var formats = ["standard", "modern", "legacy", "commander", "jumpstart"];
+      var formats = ["standard", "modern", "legacy", "freeform", "commander", "jumpstart"];
       var activeFormats = formats.filter(function (format) { return counts[format] > 0; });
       formatTabsEl.hidden = activeFormats.length <= 1;
       clear(formatTabsEl);

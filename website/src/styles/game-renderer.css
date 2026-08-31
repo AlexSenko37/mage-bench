@@ -1454,13 +1454,6 @@
   font-weight: 600;
 }
 
-#blunder-summary .old-analysis-tag {
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 400;
-  font-style: italic;
-}
-
 #error-summary {
   font-size: 0.8rem;
   color: #ef4444;

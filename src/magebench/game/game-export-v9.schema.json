@@ -241,6 +241,13 @@
         "timed_out": {
           "type": "boolean",
           "description": "True if this player lost by running out of time on the game timer."
+        },
+        "decklist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Raw decklist lines from the deck file, e.g. '1 [TLA:146] Lightning Strike'. An 'SB:' prefix marks sideboard/commander entries."
         }
       }
     },
@@ -516,7 +523,8 @@
             "context_reset",
             "context_trim",
             "llm_error",
-            "auto_pilot_mode"
+            "auto_pilot_mode",
+            "action_summary"
           ]
         },
         "game_seq": {
@@ -586,6 +594,23 @@
         },
         "messages_after": {
           "type": "integer"
+        },
+        "turn": {
+          "type": "integer",
+          "description": "Game turn number at the time of this action summary."
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Model-authored recap of what happened since its last action and why it made this choice — the compacted replacement for replaying raw board-state/tool-call history."
+        },
+        "action_taken": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

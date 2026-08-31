@@ -99,8 +99,21 @@ def _deck_display_name(player_meta: dict, deck_type: str) -> str | None:
         return deck_name
     # Legacy fallback for old game_metas
     if deck_type in _COMMANDER_DECK_TYPES:
-        return _extract_commander(player_meta)
-    return _deck_name_from_path(player_meta.get("deck_path"))
+        commander_name = _extract_commander(player_meta)
+        if commander_name:
+            return commander_name
+    else:
+        path_name = _deck_name_from_path(player_meta.get("deck_path"))
+        if path_name:
+            return path_name
+    # No registry name, no deck path (e.g. a human player who joined a seat
+    # and picked their deck interactively in the GUI, with no path recorded
+    # in game_meta) - name the deck after the player rather than leaving it
+    # unset, since the schema requires a string here.
+    player_name = player_meta.get("name")
+    if player_name:
+        return f"{player_name}'s deck"
+    return None
 
 
 def read_game_winner(game_dir: Path) -> str | None:
@@ -221,7 +234,7 @@ def build_export(game_dir: Path) -> BuiltGameExport:
     card_images = _build_card_images(meta["players"])
 
     # Build card data (Scryfall metadata) and add token images
-    card_images, card_data = build_card_data(card_images, snapshots)
+    card_images, card_data = build_card_data(card_images, snapshots, meta["players"])
 
     # Extract game metadata
     game_id = game_dir.name
@@ -300,6 +313,8 @@ def build_export(game_dir: Path) -> BuiltGameExport:
         }
         if p.get("deck_strategy"):
             entry["deck_strategy"] = p["deck_strategy"]
+        if p.get("decklist"):
+            entry["decklist"] = p["decklist"]
         if p.get("model"):
             entry["model"] = p["model"]
         if p.get("reasoning_effort"):
@@ -347,10 +362,9 @@ def build_export(game_dir: Path) -> BuiltGameExport:
         # Check tournament data for older games that predate the meta flag
         tournament_id = _find_tournament_for_game(game_dir.name)
     output["tournament"] = tournament_id
-    if tournament_id is not None:
-        # Tournament games may not have been annotated yet
-        output["annotations"] = []
-        output["blunder_script_version"] = 0
+    # Games may not have been annotated yet, tournament or not
+    output["annotations"] = []
+    output["blunder_script_version"] = 0
 
     # Build canonical decisions
     decisions = build_decisions(snapshots, actions, llm_events, harness_epoch)

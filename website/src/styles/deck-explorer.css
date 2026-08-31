@@ -1,0 +1,219 @@
+/* Deck explorer: a per-player decklist view toggled in on the replay page.
+   Layout mirrors #game-content/#game-left/#game-right (game-viewer.css) but with the
+   stack and log panels dropped -- just a card grid and a stats sidebar. */
+
+#deck-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#deck-explorer.hidden {
+  display: none;
+}
+
+#deck-explorer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+#deck-explorer-content {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+#deck-grid {
+  flex: 1;
+  min-width: 0;
+}
+
+#deck-stats {
+  flex: 0 1 280px;
+  min-width: 0;
+  position: sticky;
+  top: 0.5rem;
+  padding: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  #deck-explorer-content {
+    flex-direction: column;
+  }
+
+  #deck-stats {
+    width: 100%;
+    flex-basis: auto;
+    position: static;
+  }
+}
+
+/* Stats sidebar contents */
+#deck-stats .deck-stats-heading {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+#deck-stats .deck-stats-heading:not(:first-child) {
+  margin-top: 1rem;
+}
+
+#deck-stats .deck-stats-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+
+#deck-stats .deck-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0.15rem 0;
+}
+
+#deck-stats .deck-stat-row .deck-stat-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+#deck-stats .mana-curve {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.2rem;
+  height: 64px;
+  margin-top: 0.4rem;
+}
+
+#deck-stats .mana-curve-bar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
+#deck-stats .mana-curve-bar-fill {
+  width: 100%;
+  background: var(--accent-primary);
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+}
+
+#deck-stats .mana-curve-bar-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* Card grid - card images stacked by pile, ported from the CMC-grouped decklist
+   view (formerly season/[season]/player/[seed].astro). */
+.visual-deck {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.deck-col {
+  flex: 1 1 0;
+  min-width: 90px;
+  max-width: 160px;
+}
+
+.deck-col-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+  padding-left: 0.15rem;
+}
+
+.deck-col-label {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.deck-col-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.deck-col-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* makeCardThumbnail() emits .card-thumb; scope the overlap trick to cards rendered
+   inside a deck column so it doesn't affect the replay board's own .card-thumb rules. */
+.deck-col-stack .card-thumb {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* Overlap: hide ~77% of card height. Card aspect ratio is 488:680 ≈ 1:1.393
+     So 77% of height = 77% × 1.393 × width ≈ 107% of width */
+  margin-top: -107%;
+  position: relative;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.deck-col-stack .card-thumb:first-child {
+  margin-top: 0;
+}
+
+.deck-col-stack .card-thumb:hover {
+  transform: scale(2.2);
+  transform-origin: top center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+  z-index: 100;
+  border-radius: 8px;
+}
+
+.deck-col-card-wrap {
+  position: relative;
+}
+
+.deck-col-card-wrap .card-thumb {
+  margin-top: 0;
+}
+
+.deck-col-card-wrap:hover {
+  z-index: 100;
+}
+
+.deck-col-card-wrap + .deck-col-card-wrap,
+.deck-col-stack .card-thumb + .deck-col-card-wrap,
+.deck-col-card-wrap + .card-thumb {
+  margin-top: -107%;
+}
+
+.card-count-badge {
+  position: absolute;
+  top: 4%;
+  right: 5%;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  line-height: 1.2;
+  z-index: 5;
+}
+
+@media (max-width: 600px) {
+  .deck-col {
+    min-width: 70px;
+    max-width: 120px;
+  }
+}

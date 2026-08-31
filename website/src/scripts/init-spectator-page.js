@@ -2,12 +2,6 @@ const DEFAULT_IMPORTERS = {
   replay: async function () {
     return (await import("./init-game-replay.js")).initGameReplayPage;
   },
-  golden: async function () {
-    return (await import("./init-golden-viewer.js")).initGoldenViewerPage;
-  },
-  live: async function () {
-    return (await import("./init-live-game.js")).initLiveGamePage;
-  },
 };
 
 export async function initSpectatorPage(options) {

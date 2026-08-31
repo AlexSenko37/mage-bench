@@ -1,0 +1,21 @@
+---
+import '../styles/format-tabs.css';
+import '../styles/deck-explorer.css';
+---
+
+<div id="deck-explorer" class="hidden">
+  <div id="deck-explorer-toolbar">
+    <div id="deck-player-tabs" class="format-tabs"></div>
+    <div id="deck-group-tabs" class="format-tabs"></div>
+  </div>
+  <div id="deck-explorer-content">
+    <div id="deck-grid" class="visual-deck"></div>
+    <aside id="deck-stats" class="surface-card"></aside>
+  </div>
+</div>
+
+<style>
+  #deck-explorer-toolbar .format-tabs {
+    margin-bottom: 0;
+  }
+</style>

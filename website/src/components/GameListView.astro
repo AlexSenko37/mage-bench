@@ -5,12 +5,11 @@ import type { GameEntry } from '../utils/load-games';
 
 interface Props {
   games: GameEntry[];
-  minBlunderVersion: number;
   showSeasonFilter: boolean;
   showSeasonBadge: boolean;
 }
 
-const { games, minBlunderVersion, showSeasonFilter, showSeasonBadge } = Astro.props;
+const { games, showSeasonFilter, showSeasonBadge } = Astro.props;
 ---
 
 <div data-game-list-root data-show-season-filter={showSeasonFilter ? "1" : "0"}>
@@ -25,7 +24,6 @@ const { games, minBlunderVersion, showSeasonFilter, showSeasonBadge } = Astro.pr
       games.map((game) => (
         <GameListCard
           game={game}
-          minBlunderVersion={minBlunderVersion}
           showSeasonBadge={showSeasonBadge}
         />
       ))

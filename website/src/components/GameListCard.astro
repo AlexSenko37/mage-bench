@@ -5,14 +5,12 @@ import "../styles/shared.css";
 
 interface Props {
   game: GameEntry;
-  minBlunderVersion: number;
   showSeasonBadge: boolean;
   showBlunderScores?: boolean;
 }
 
 const {
   game,
-  minBlunderVersion,
   showSeasonBadge,
   showBlunderScores = true,
 } = Astro.props;
@@ -21,6 +19,7 @@ const DECK_TYPE_FORMATS: Record<string, string> = {
   "Constructed - Standard": "standard",
   "Constructed - Modern": "modern",
   "Constructed - Legacy": "legacy",
+  "Constructed - Freeform": "freeform",
   "Variant Magic - Freeform Commander": "commander",
   "Variant Magic - Commander": "commander",
   "Limited": "jumpstart",
@@ -30,6 +29,7 @@ const FORMAT_DISPLAY: Record<string, string> = {
   standard: "Standard",
   modern: "Modern",
   legacy: "Legacy",
+  freeform: "Freeform",
   commander: "Commander (Exhibition)",
   jumpstart: "Jumpstart",
 };
@@ -122,8 +122,6 @@ const youtube_url = game.youtube_url ? safeHttpUrl(game.youtube_url) : null;
           ? `${player.model}${player.reasoning_effort ? `::${player.reasoning_effort}` : ""}`
           : null;
         const playerScore = (game.blunderScoreByPlayer || {})[player.name];
-        const isOldAnalysis =
-          !game.blunder_script_version || game.blunder_script_version < minBlunderVersion;
         return (
           <div
             class:list={[
@@ -174,17 +172,6 @@ const youtube_url = game.youtube_url ? safeHttpUrl(game.youtube_url) : null;
                 ]}
               >
                 Blunder Index: {playerScore.toFixed(2)}
-                {isOldAnalysis && (
-                  <>
-                    {" "}
-                    <span
-                      class="old-analysis-tag"
-                      title={`Analyzed with blunder script v${game.blunder_script_version || 1} (min: v${minBlunderVersion})`}
-                    >
-                      (older analysis)
-                    </span>
-                  </>
-                )}
               </div>
             )}
           </div>

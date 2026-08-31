@@ -3,34 +3,30 @@ import '../styles/game-renderer.css';
 import '../styles/game-viewer.css';
 import '../styles/game-header.css';
 import '../styles/audit-panel.css';
+import '../styles/format-tabs.css';
 import '../styles/shared.css';
+import DeckExplorerView from './DeckExplorerView.astro';
 import type { GameEntry } from '../utils/load-games';
 import type { GameExportV9 } from '../types/game-export';
 import type { PrerenderResult } from '../utils/prerender-timeline';
 import { safeHttpUrl } from '../utils/safe-http-url';
-import {
-  formatReplayBlunderSummary,
-  normalizedBlunderScriptVersion,
-} from '../utils/replay-metadata';
+import { formatReplayBlunderSummary } from '../utils/replay-metadata';
 
 interface Props {
   game: GameEntry;
   fullGame: GameExportV9;
   prerendered: PrerenderResult;
-  minBlunderVersion: number;
   auditMode: boolean;
 }
 
-const { game, fullGame, prerendered, minBlunderVersion, auditMode } = Astro.props as Props;
+const { game, fullGame, prerendered, auditMode } = Astro.props as Props;
 const configJson = JSON.stringify({ auditMode }).replace(/</g, '\\u003c');
 
 const youtube_url = game.youtube_url ? safeHttpUrl(game.youtube_url) : null;
 const blunderSummary = game.replayBlunderSummary
   ? formatReplayBlunderSummary(game.replayBlunderSummary)
   : null;
-const blunder_script_version = normalizedBlunderScriptVersion(game.blunder_script_version);
-const isOldBlunderAnalysis =
-  game.replayBlunderSummary != null && blunder_script_version < minBlunderVersion;
+const hasDecklists = fullGame.players.some((p) => (p.decklist ?? []).length > 0);
 
 // Serialize game JSON for inline embedding, stripping actions and llm_events
 // which are already prerendered into the action log HTML.
@@ -60,17 +56,6 @@ const runningCostsJson = JSON.stringify(runningCostBySnapshot).replace(/</g, '\\
       {blunderSummary && (
         <div id="blunder-summary">
           {blunderSummary}
-          {isOldBlunderAnalysis && (
-            <>
-              {' '}
-              <span
-                class="old-analysis-tag"
-                title={`Analyzed with blunder script v${blunder_script_version} (min: v${minBlunderVersion})`}
-              >
-                (older analysis)
-              </span>
-            </>
-          )}
         </div>
       )}
       {game.errors.length > 0 && (
@@ -90,6 +75,13 @@ const runningCostsJson = JSON.stringify(runningCostBySnapshot).replace(/</g, '\\
       <div id="season-banner">
         This is a Season 0 game. MCP tools and priority semantics have changed since this
         game was played, so its results are excluded from Season 1 ratings.
+      </div>
+    )}
+
+    {hasDecklists && (
+      <div id="view-toggle" class="format-tabs">
+        <button type="button" class="format-tab active" data-view="replay">Replay</button>
+        <button type="button" class="format-tab" data-view="decks">Decks</button>
       </div>
     )}
 
@@ -148,6 +140,7 @@ const runningCostsJson = JSON.stringify(runningCostBySnapshot).replace(/</g, '\\
         </div>
       </div>
     </div>
+    {hasDecklists && <DeckExplorerView />}
     {auditMode && <div id="audit-container"></div>}
   </div>
 </div>
