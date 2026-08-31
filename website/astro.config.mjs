@@ -188,7 +188,7 @@ const auditProxy = auditApiPort
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://mage-bench.com',
+  site: 'https://llm-mage-bench.pages.dev',
   vite: {
     plugins: [serveGzPlugin()],
     server: {
