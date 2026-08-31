@@ -133,7 +133,7 @@ public enum ExpansionRepository {
             // only with boosters and cards
             GenericRawResults<ExpansionInfo> setsList = expansionDao.queryRaw(
                     "select * from expansion e "
-                            + " where e.boosters = 1 "
+                            + " where e.boosters = true "
                             + "   and exists(select (1) from  card c where c.setcode = e.code) "
                             + " order by e.releasedate desc",
                     expansionDao.getRawRowMapper());

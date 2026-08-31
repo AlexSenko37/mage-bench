@@ -34,9 +34,16 @@ public class AbilityResolvedWatcher extends Watcher {
     }
 
     public static int getResolutionCount(Game game, Ability source) {
-        return game
-                .getState()
-                .getWatcher(AbilityResolvedWatcher.class)
+        AbilityResolvedWatcher watcher = game.getState().getWatcher(AbilityResolvedWatcher.class);
+        // A card whose ability uses this count (e.g. via IfAbilityHasResolvedXTimesEffect) must
+        // register an AbilityResolvedWatcher alongside it (addAbility(ability, new
+        // AbilityResolvedWatcher())) - if none is registered for this game, treat it as "never
+        // resolved" instead of crashing the game with a NullPointerException. Found via a card
+        // that was missing that registration (SouthPoleVoyager).
+        if (watcher == null) {
+            return 0;
+        }
+        return watcher
                 .resolutionMap
                 .getOrDefault(source.getOriginalId().toString() + game.getState().getZoneChangeCounter(source.getSourceId()), 0);
     }
