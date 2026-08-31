@@ -10,6 +10,7 @@ package mage.players;
 public enum PlayerType {
     HUMAN("Human", false, true),
     COMPUTER_DRAFT_BOT("Computer - draftbot", true, false),
+    COMPUTER_LLM_DRAFT_BOT("Computer - LLM draftbot", true, false),
     COMPUTER_MONTE_CARLO("Computer - monte carlo", true, true),
     COMPUTER_MAD("Computer - mad", true, true);
 

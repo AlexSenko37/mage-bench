@@ -4,12 +4,14 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from magebench.orchestration.batch_coordination import (
+    POST_PILOT_GRACE_SECS,
     GameSession,
     finalize_game,
     setup_game,
@@ -24,7 +26,10 @@ from magebench.orchestration.game_finalization import (
     write_game_meta,
 )
 from magebench.orchestration.game_processes import (
+    start_draft_client,
+    start_gui_client,
     start_observer_client,
+    wait_for_draft_completion,
     wait_for_game_start,
     wait_with_pilot_monitoring,
 )
@@ -34,6 +39,104 @@ from magebench.orchestration.orchestrator import (
     compile_project,
     parse_args,
 )
+
+
+def test_start_gui_client_sets_observer_game_dir_when_provided(tmp_path: Path):
+    """start_gui_client must forward game_dir as -Dxmage.observer.gameDir — without it,
+    TablesPanel.createConfiguredAiPuppeteerGame() never sets MatchOptions.gameLogDir,
+    ServerGameEventLogCollector silently no-ops, and server_game_events.jsonl (required by
+    export_game.py) never gets written."""
+    pm = MagicMock()
+    config = Config()
+    game_dir = tmp_path / "game_1"
+
+    start_gui_client(pm, tmp_path, config, tmp_path / "log.txt", game_dir=game_dir)
+
+    jvm_opts = pm.start_jvm_process.call_args.kwargs["env"]["MAVEN_OPTS"]
+    assert f"-Dxmage.observer.gameDir={game_dir}" in jvm_opts
+
+
+def test_start_gui_client_omits_observer_game_dir_when_absent(tmp_path: Path):
+    pm = MagicMock()
+    config = Config()
+
+    start_gui_client(pm, tmp_path, config, tmp_path / "log.txt", game_dir=None)
+
+    jvm_opts = pm.start_jvm_process.call_args.kwargs["env"]["MAVEN_OPTS"]
+    assert "xmage.observer.gameDir" not in jvm_opts
+
+
+def test_start_draft_client_sets_per_seat_models_and_tournament_flag(tmp_path: Path):
+    """Each seat must get its own -Dxmage.llmDraft.model.<name> property (the whole point
+    is two different models drafting against each other in the same server JVM), and the
+    tournament auto-start flag — not the regular-game autoStart flag — must be set."""
+    pm = MagicMock()
+    config = Config()
+
+    start_draft_client(
+        pm,
+        tmp_path,
+        config,
+        seat_a_name="ModelA-A",
+        seat_a_model="deepseek/deepseek-v4-pro-0813",
+        seat_b_name="ModelB-B",
+        seat_b_model="openai/gpt-5.6-terra",
+        set_code="TLA",
+        log_path=tmp_path / "log.txt",
+        packs_per_player=3,
+    )
+
+    call_kwargs = pm.start_jvm_process.call_args.kwargs
+    jvm_opts = call_kwargs["env"]["MAVEN_OPTS"]
+    assert "-Dxmage.aiPuppeteer.autoStartTournament=true" in jvm_opts
+    assert "-Dxmage.aiPuppeteer.autoStart=true" not in jvm_opts
+    assert "-Dxmage.llmDraft.model.ModelA-A=deepseek/deepseek-v4-pro-0813" in jvm_opts
+    assert "-Dxmage.llmDraft.model.ModelB-B=openai/gpt-5.6-terra" in jvm_opts
+
+    players_config = json.loads(call_kwargs["env"]["XMAGE_AI_PUPPETEER_PLAYERS_CONFIG"])
+    assert players_config["draftSetCode"] == "TLA"
+    assert players_config["draftPacksPerPlayer"] == 3
+    names = {p["name"] for p in players_config["players"]}
+    assert names == {"ModelA-A", "ModelB-B"}
+    assert all(p["ai"] == "COMPUTER_LLM_DRAFT_BOT" for p in players_config["players"])
+
+
+def test_wait_for_draft_completion_finds_both_decks(tmp_path: Path):
+    decks_dir = tmp_path / "Mage.Server" / "data" / "decks" / "drafted"
+    decks_dir.mkdir(parents=True)
+    since = time.time() - 1
+    (decks_dir / "SeatA-Azorius-abcd1234.dck").write_text("NAME:x\n")
+    (decks_dir / "SeatB-Rakdos-abcd1234.dck").write_text("NAME:y\n")
+    proc = MagicMock()
+    proc.poll.return_value = None
+
+    deck_a, deck_b = wait_for_draft_completion(tmp_path, "SeatA", "SeatB", since, proc, timeout=5)
+
+    assert deck_a.name == "SeatA-Azorius-abcd1234.dck"
+    assert deck_b.name == "SeatB-Rakdos-abcd1234.dck"
+
+
+def test_wait_for_draft_completion_ignores_stale_deck(tmp_path: Path):
+    """A leftover deck from a previous run with the same seat name must not be mistaken for
+    a fresh one — only files modified after `since` should match."""
+    decks_dir = tmp_path / "Mage.Server" / "data" / "decks" / "drafted"
+    decks_dir.mkdir(parents=True)
+    stale = decks_dir / "SeatA-Azorius-oldrun1.dck"
+    stale.write_text("NAME:old\n")
+    since = time.time() + 5  # pretend the launch happened after the stale file was written
+    proc = MagicMock()
+    proc.poll.return_value = None
+
+    with pytest.raises(TimeoutError):
+        wait_for_draft_completion(tmp_path, "SeatA", "SeatB", since, proc, timeout=1)
+
+
+def test_wait_for_draft_completion_raises_if_process_exits_early(tmp_path: Path):
+    proc = MagicMock()
+    proc.poll.return_value = 1
+
+    with pytest.raises(RuntimeError, match="Draft process exited"):
+        wait_for_draft_completion(tmp_path, "SeatA", "SeatB", time.time(), proc, timeout=5)
 
 
 def test_missing_llm_api_keys_none():
@@ -635,6 +738,25 @@ def test_pilot_monitoring_pilot_exits_zero_ignored(_mock_sleep):
     pm.cleanup.assert_not_called()
 
 
+@patch("magebench.orchestration.game_processes.time.monotonic")
+@patch("magebench.orchestration.game_processes.time.sleep")
+def test_pilot_monitoring_completes_when_pilots_clean_but_spectator_hangs(_mock_sleep, mock_monotonic):
+    """The single-game (non-batch) path has its own polling loop, separate from
+    batch_coordination.wait_for_all_games — it needs the same grace-period fallback so a
+    spectator that never self-terminates doesn't hang a plain (non-batch) run forever."""
+    spectator = _mock_proc([None, None, None])  # never exits on its own
+    pilot = _mock_proc([0, 0, 0])  # already exited cleanly every time it's polled
+    pm = MagicMock()
+
+    mock_monotonic.side_effect = [0.0, 1.0, POST_PILOT_GRACE_SECS + 1.0]
+
+    rc = wait_with_pilot_monitoring(spectator, [("alice", pilot)], pm)
+
+    assert rc == 0
+    spectator.terminate.assert_called_once()
+    pm.cleanup.assert_not_called()
+
+
 # --- wait_for_game_start tests ---
 
 
@@ -715,6 +837,27 @@ def test_wait_for_all_games_pilot_fails(_mock_sleep):
     assert results[0] == 0
     assert results[1] == -1
     s2.spectator_proc.terminate.assert_called_once()
+
+
+@patch("magebench.orchestration.batch_coordination.time.sleep")
+@patch("magebench.orchestration.batch_coordination.time.monotonic")
+def test_wait_for_all_games_completes_when_pilots_clean_but_spectator_hangs(
+    mock_monotonic, _mock_sleep
+):
+    """A spectator that never self-terminates (the headless pilot-vs-pilot case) should not
+    hang the wait forever — once all pilots have exited cleanly for POST_PILOT_GRACE_SECS,
+    the session is force-completed."""
+    s1 = GameSession(index=0, game_dir=Path("/fake/g1"), config=Config())
+    s1.spectator_proc = _mock_proc([None, None, None])  # never exits on its own
+    bot_proc = _mock_proc([0, 0, 0])  # exited cleanly before the wait even starts
+    s1.pilot_procs = [("bot", bot_proc)]
+
+    mock_monotonic.side_effect = [0.0, 1.0, POST_PILOT_GRACE_SECS + 1.0]
+
+    results = wait_for_all_games([s1])
+
+    assert results == {0: 0}
+    s1.spectator_proc.terminate.assert_called_once()
 
 
 # --- finalize_game tests ---

@@ -23,6 +23,7 @@ from magebench.orchestration.game_finalization import (
     write_game_meta,
 )
 from magebench.orchestration.game_processes import (
+    POST_PILOT_GRACE_SECS,
     start_gui_client,
     start_observer_client,
     start_pilot_client,
@@ -167,6 +168,13 @@ def setup_game(
                 )
 
             for pilot_player in game_config.pilot_players:
+                if pilot_player.skip_bridge:
+                    logger.info(
+                        "%sSeat reserved for external client: %s (no bridge spawned)",
+                        game_label,
+                        pilot_player.name,
+                    )
+                    continue
                 log_path = game_dir / f"{pilot_player.name}_pilot.log"
                 logger.info("%sPilot (%s) log: %s", game_label, pilot_player.name, log_path)
                 proc = start_pilot_client(
@@ -214,9 +222,11 @@ def wait_for_all_games(
     """Wait for all parallel games to complete."""
     results: dict[int, int] = {}
     active = list(sessions)
+    pilots_done_since: dict[int, float] = {}
 
     while active:
         time.sleep(poll_interval)
+        now = time.monotonic()
         for session in list(active):
             assert session.spectator_proc is not None
 
@@ -234,8 +244,11 @@ def wait_for_all_games(
                             kill_tree(pilot_proc.pid)
                 results[session.index] = spectator_rc
                 active.remove(session)
+                pilots_done_since.pop(session.index, None)
                 continue
 
+            pilot_error = False
+            all_pilots_clean = bool(session.pilot_procs)
             for name, pilot_proc in session.pilot_procs:
                 pilot_rc = pilot_proc.poll()
                 if pilot_rc is not None and pilot_rc != 0:
@@ -251,7 +264,29 @@ def wait_for_all_games(
                             kill_tree(proc.pid)
                     results[session.index] = -1
                     active.remove(session)
+                    pilots_done_since.pop(session.index, None)
+                    pilot_error = True
                     break
+                if pilot_rc != 0:
+                    all_pilots_clean = False
+            if pilot_error:
+                continue
+
+            if all_pilots_clean:
+                first_seen = pilots_done_since.setdefault(session.index, now)
+                if now - first_seen >= POST_PILOT_GRACE_SECS:
+                    logger.warning(
+                        "Game %d: all pilots exited cleanly but spectator did not self-"
+                        "terminate within %.0fs — forcing shutdown.",
+                        session.index + 1,
+                        POST_PILOT_GRACE_SECS,
+                    )
+                    session.spectator_proc.terminate()
+                    results[session.index] = 0
+                    active.remove(session)
+                    pilots_done_since.pop(session.index, None)
+            else:
+                pilots_done_since.pop(session.index, None)
 
     return results
 

@@ -25,7 +25,7 @@ RETIRED_MODELS: set[str] = {
 }
 
 # The canonical set of deck format directories under data/decks/.
-EXPECTED_DECK_FORMATS = {"standard", "modern", "legacy", "commander", "jumpstart"}
+EXPECTED_DECK_FORMATS = {"standard", "modern", "legacy", "commander", "jumpstart", "drafted"}
 
 
 def load_json(path: Path) -> object:

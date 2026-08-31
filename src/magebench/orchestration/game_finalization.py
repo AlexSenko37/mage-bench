@@ -115,7 +115,7 @@ def write_game_meta(game_dir: Path, config: Config, project_root: Path) -> None:
     assert config.deck_type, "game_meta requires non-empty config.deck_type"
     players = []
     all_players: list[tuple[Player, str]] = [
-        *((p, "pilot") for p in config.pilot_players),
+        *((p, "human" if p.skip_bridge else "pilot") for p in config.pilot_players),
         *((p, "sleepwalker") for p in config.sleepwalker_players),
         *((p, "cpu") for p in config.cpu_players),
     ]
@@ -129,7 +129,7 @@ def write_game_meta(game_dir: Path, config: Config, project_root: Path) -> None:
             entry["deck_name"] = player.deck_name
         if player.deck_strategy:
             entry["deck_strategy"] = player.deck_strategy
-        if isinstance(player, PilotPlayer):
+        if isinstance(player, PilotPlayer) and not player.skip_bridge:
             assert player.model, f"Pilot player {player.name} has no model (check preset)"
             entry["model"] = player.model
             if player.personality:

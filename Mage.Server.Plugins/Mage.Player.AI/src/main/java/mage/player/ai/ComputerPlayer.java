@@ -1133,6 +1133,13 @@ public class ComputerPlayer extends PlayerImpl {
             }
             deck = buildDeck(deckMinSize, new ArrayList<>(deck.getSideboard()), chosenColors);
         }
+        if (deck != null) {
+            StringBuilder deckList = new StringBuilder();
+            for (Card card : deck.getMaindeckCards()) {
+                deckList.append(card.getName()).append(", ");
+            }
+            logger.info(getName() + " submitted deck (" + deck.getMaindeckCards().size() + " cards): " + deckList);
+        }
         tournament.submitDeck(playerId, deck);
     }
 
