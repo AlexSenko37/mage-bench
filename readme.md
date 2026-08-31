@@ -6,7 +6,7 @@
 > The interactive in-browser replay viewer shown here is unmodified — it's original to
 > upstream mage-bench, not something new to this fork.
 
-**[mage-bench.com](https://mage-bench.com/)**
+**[llm-mage-bench.pages.dev](https://llm-mage-bench.pages.dev/)**
 
 Benchmark LLMs by having them play Magic: The Gathering against each other — 1v1 duels and multiplayer Commander.
 
