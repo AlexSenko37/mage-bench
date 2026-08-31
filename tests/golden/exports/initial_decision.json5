@@ -129,7 +129,7 @@
     "seq": 7,
   },
   "game_type": "Two Player Duel",
-  "harness_epoch": 60,
+  "harness_epoch": 61,
   "id": "initial_decision",
   "llm_events": [
     {

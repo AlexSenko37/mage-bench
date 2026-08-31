@@ -2953,7 +2953,7 @@ Create two 4/4 green Rhino creature tokens with trample.",
     "seq": 175,
   },
   "game_type": "Two Player Duel",
-  "harness_epoch": 60,
+  "harness_epoch": 61,
   "id": "mdfc_land_and_suspend",
   "llm_events": [
     {

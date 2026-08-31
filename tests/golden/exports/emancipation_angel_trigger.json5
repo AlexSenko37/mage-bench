@@ -1061,7 +1061,7 @@ When this creature enters, return a permanent you control to its owner's hand.",
     "seq": 37,
   },
   "game_type": "Two Player Duel",
-  "harness_epoch": 60,
+  "harness_epoch": 61,
   "id": "emancipation_angel_trigger",
   "llm_events": [
     {

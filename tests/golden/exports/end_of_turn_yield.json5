@@ -656,7 +656,7 @@
     "seq": 25,
   },
   "game_type": "Two Player Duel",
-  "harness_epoch": 60,
+  "harness_epoch": 61,
   "id": "end_of_turn_yield",
   "llm_events": [
     {

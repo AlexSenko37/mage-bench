@@ -814,7 +814,7 @@
     "seq": 38,
   },
   "game_type": "Two Player Duel",
-  "harness_epoch": 60,
+  "harness_epoch": 61,
   "id": "chat_between_players",
   "llm_events": [
     {

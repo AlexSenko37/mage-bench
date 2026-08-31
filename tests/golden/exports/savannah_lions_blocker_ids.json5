@@ -1175,7 +1175,7 @@
     "seq": 73,
   },
   "game_type": "Two Player Duel",
-  "harness_epoch": 60,
+  "harness_epoch": 61,
   "id": "savannah_lions_blocker_ids",
   "llm_events": [
     {
