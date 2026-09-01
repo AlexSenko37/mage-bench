@@ -1106,7 +1106,8 @@ public class ComputerPlayer extends PlayerImpl {
             int number = (int) Math.round(mana.getRed() / total * DECK_LANDS_COUNT);
             addBasicLands(deck, "Mountain", number);
             if (number > mostLand) {
-                mostLandName = "Plains";
+                mostLand = number;
+                mostLandName = "Mountain";
             }
         }
 
