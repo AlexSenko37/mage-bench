@@ -22,6 +22,7 @@ from magebench.game.game_export_types import (
     ActionSummaryEvent,
     Annotation,
     AutoPilotModeEvent,
+    HarnessAutoPassEvent,
     BuiltGameExport,
     CardMetadata,
     Choice,
@@ -320,6 +321,7 @@ class TestExportSchema:
             ContextTrimEvent,
             LlmErrorEvent,
             AutoPilotModeEvent,
+            HarnessAutoPassEvent,
             ActionSummaryEvent,
         ]
         all_keys: set[str] = set()

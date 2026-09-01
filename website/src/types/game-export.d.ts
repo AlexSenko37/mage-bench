@@ -355,11 +355,24 @@ export interface LlmEvent {
     | "context_trim"
     | "llm_error"
     | "auto_pilot_mode"
+    | "harness_auto_pass"
     | "action_summary";
   /**
    * Server seq number for cross-referencing with snapshots/actions.
    */
   game_seq?: number;
+  /**
+   * harness_auto_pass: consecutive LLM timeouts before the harness passed for the player.
+   */
+  timeouts?: number;
+  /**
+   * harness_auto_pass: phase/step of the decision that was passed away.
+   */
+  pending_context?: string;
+  /**
+   * harness_auto_pass: prompt text of the decision that was passed away.
+   */
+  pending_message?: string;
   model?: string;
   available_tools?: string[];
   reasoning?: string | null;

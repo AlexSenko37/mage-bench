@@ -16,7 +16,7 @@ describe("GameList", () => {
           <article
             class="game-card"
             data-game-id="game_test_123"
-            data-format="jumpstart"
+            data-format="draft"
             data-season="1"
             data-model-entries='[{"model":"openai/gpt-5","effort":"medium"}]'
           >

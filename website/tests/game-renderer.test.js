@@ -582,6 +582,40 @@ describe("renderPlayers", () => {
     expect(cards[1].classList.contains("active-turn")).toBe(false);
   });
 
+  it("shows the model display label instead of the opaque seat name", () => {
+    // Seats are named PilotA/PilotB in-game so a model can't tell who it faces. The
+    // replay should show who was actually behind the seat -- game-viewer.js puts the
+    // label on playerMeta, and renderPlayers prefers it over the raw seat name.
+    const container = document.createElement("div");
+    const players = [
+      { name: "PilotA", life: 20, library_size: 30, hand_count: 5, is_active: true, has_left: false, counters: [], commanders: [], battlefield: [], hand: [], graveyard: [], exile: [] },
+      { name: "PilotB", life: 20, library_size: 30, hand_count: 5, is_active: false, has_left: false, counters: [], commanders: [], battlefield: [], hand: [], graveyard: [], exile: [] },
+    ];
+    R.renderPlayers(container, players, {
+      playerColorMap: { PilotA: 0, PilotB: 1 },
+      playerMeta: {
+        PilotA: { model: "anthropic/claude-fable-5", displayLabel: "Fable5-low" },
+        PilotB: { model: "moonshotai/kimi-k3", displayLabel: "KimiK3-max" },
+      },
+      previewEls: mockPreviewEls,
+    });
+    const names = container.querySelectorAll(".player-name");
+    expect(names[0].textContent).toBe("Fable5-low");
+    expect(names[1].textContent).toBe("KimiK3-max");
+  });
+
+  it("falls back to the seat name when no display label is available", () => {
+    const container = document.createElement("div");
+    const players = [
+      { name: "Human", life: 20, library_size: 30, hand_count: 5, is_active: true, has_left: false, counters: [], commanders: [], battlefield: [], hand: [], graveyard: [], exile: [] },
+    ];
+    R.renderPlayers(container, players, {
+      playerColorMap: { Human: 0 },
+      previewEls: mockPreviewEls,
+    });
+    expect(container.querySelector(".player-name").textContent).toBe("Human");
+  });
+
   it("adds has-priority class to the priority player name", () => {
     const container = document.createElement("div");
     const players = [
