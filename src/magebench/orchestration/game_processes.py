@@ -268,6 +268,8 @@ def start_draft_client(
     set_code: str,
     log_path: Path,
     packs_per_player: int = 3,
+    seat_a_effort: str | None = None,
+    seat_b_effort: str | None = None,
 ) -> subprocess.Popen:
     """Start an all-bot LLM-drafted-booster-draft tournament between two named models.
 
@@ -303,6 +305,10 @@ def start_draft_client(
             f"-Dxmage.aiPuppeteer.password={config.password}",
             f"-Dxmage.llmDraft.model.{seat_a_name}={seat_a_model}",
             f"-Dxmage.llmDraft.model.{seat_b_name}={seat_b_model}",
+            # Without these the draft/deckbuild calls run at the provider's default effort,
+            # so a preset's reasoning_effort would apply to gameplay but not to drafting.
+            *([f"-Dxmage.llmDraft.effort.{seat_a_name}={seat_a_effort}"] if seat_a_effort else []),
+            *([f"-Dxmage.llmDraft.effort.{seat_b_name}={seat_b_effort}"] if seat_b_effort else []),
         ]
     )
 

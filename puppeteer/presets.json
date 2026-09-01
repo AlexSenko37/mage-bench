@@ -57,6 +57,8 @@
     "kimik3-high":       { "model": "moonshotai/kimi-k3", "status": "active", "reasoning_effort": "high", "system_prompt": "default", "toolset": "default" },
     "kimik3-max":        { "model": "moonshotai/kimi-k3", "status": "active", "reasoning_effort": "max", "system_prompt": "default", "toolset": "default" },
     "dsv4pro-low":       { "model": "deepseek/deepseek-v4-pro-0813", "status": "active", "reasoning_effort": "low", "system_prompt": "default", "toolset": "default" },
+    "dsv4pro-high":      { "model": "deepseek/deepseek-v4-pro-0813", "status": "active", "reasoning_effort": "high", "system_prompt": "default", "toolset": "default" },
+    "dsv4pro-max":       { "model": "deepseek/deepseek-v4-pro-0813", "status": "active", "reasoning_effort": "max", "system_prompt": "default", "toolset": "default" },
     "glm53-low":         { "model": "z-ai/glm-5.3", "status": "active", "reasoning_effort": "low", "system_prompt": "default", "toolset": "default" }
   }
 }
