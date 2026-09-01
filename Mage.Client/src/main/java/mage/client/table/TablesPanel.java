@@ -1921,7 +1921,7 @@ public class TablesPanel extends javax.swing.JPanel {
 
             TournamentOptions tOptions = new TournamentOptions("AI Puppeteer Draft", "", false);
             tOptions.setPassword("");
-            tOptions.setTournamentType("Booster Draft Elimination (Rich Man)");
+            tOptions.setTournamentType(config.getDraftTournamentType());
             for (AiPuppeteerConfig.PlayerConfig player : config.getPlayers()) {
                 tOptions.getPlayerTypes().add(player.getPlayerType());
             }

@@ -96,9 +96,43 @@ def test_start_draft_client_sets_per_seat_models_and_tournament_flag(tmp_path: P
     players_config = json.loads(call_kwargs["env"]["XMAGE_AI_PUPPETEER_PLAYERS_CONFIG"])
     assert players_config["draftSetCode"] == "TLA"
     assert players_config["draftPacksPerPlayer"] == 3
-    names = {p["name"] for p in players_config["players"]}
-    assert names == {"ModelA-A", "ModelB-B"}
-    assert all(p["ai"] == "COMPUTER_LLM_DRAFT_BOT" for p in players_config["players"])
+    # A real booster draft passes packs around a pod, so the two LLMs are seated with
+    # heuristic bots. Eight is the standard pod size, and Booster Draft Elimination
+    # requires at least 4 seats -- the 2-seat "Rich Man" type it replaced was not really
+    # a draft at all (it deals every player a brand-new booster on every pick).
+    assert players_config["draftTournamentType"] == "Booster Draft Elimination"
+    players = players_config["players"]
+    assert len(players) == 8
+
+    llm_seats = [p for p in players if p["ai"] == "COMPUTER_LLM_DRAFT_BOT"]
+    filler_seats = [p for p in players if p["ai"] == "COMPUTER_DRAFT_BOT"]
+    assert {p["name"] for p in llm_seats} == {"ModelA-A", "ModelB-B"}
+    assert len(filler_seats) == 6
+    assert len({p["name"] for p in players}) == 8, "seat names must be unique"
+
+
+def test_start_draft_client_filler_bot_count_is_configurable(tmp_path):
+    """A smaller pod is allowed, down to the tournament type's 4-seat minimum."""
+    pm = MagicMock()
+    config = Config()
+    start_draft_client(
+        pm,
+        tmp_path,
+        config,
+        seat_a_name="ModelA-A",
+        seat_a_model="deepseek/deepseek-v4-pro-0813",
+        seat_b_name="ModelB-B",
+        seat_b_model="openai/gpt-5.6-terra",
+        set_code="TLA",
+        log_path=tmp_path / "log.txt",
+        packs_per_player=3,
+        filler_bots=2,
+    )
+    players = json.loads(
+        pm.start_jvm_process.call_args.kwargs["env"]["XMAGE_AI_PUPPETEER_PLAYERS_CONFIG"]
+    )["players"]
+    assert len(players) == 4
+    assert len([p for p in players if p["ai"] == "COMPUTER_DRAFT_BOT"]) == 2
 
 
 def test_wait_for_draft_completion_finds_both_decks(tmp_path: Path):

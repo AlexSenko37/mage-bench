@@ -491,12 +491,23 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         sb.append("The finished deck will be exactly ").append(deckMinSize)
                 .append(" cards including lands. A typical limited deck is 17 lands and 23 spells, ")
                 .append("so aim for about 23 spells.\n");
-        sb.append("Most limited decks are two colours. A splash for a powerful card is fine, ")
-                .append("but each extra colour costs consistency: a splashed card needs enough ")
-                .append("sources to cast it on time, and every land devoted to it is a land not ")
-                .append("supporting your main colours.\n");
-        sb.append("\nIn \"analysis\", briefly say what your deck is trying to do and which ")
-                .append("colours you settled on. Then list the card numbers in \"chosen_spells\".");
+        // Stronger than the earlier wording, which did not move spell selection at all --
+        // every deck still came out five colours. Splashing is normal in this set, so the
+        // splash is still allowed; what is spelled out is the price, and that a third
+        // colour has to earn its place rather than being where the leftovers go.
+        sb.append("Build a two-colour deck. Pick the two colours where your best cards are ")
+                .append("and play essentially all of your playables in them.\n");
+        sb.append("A splash of a third colour is allowed, but only for a card that is worth ")
+                .append("bending the deck around -- a bomb or premium removal, not merely a good ")
+                .append("card. A splash costs you 2-3 lands that then do not cast your main ")
+                .append("colours, which makes every other card in the deck less reliable. ")
+                .append("Splashing a fourth colour is almost never right, and a five-colour ")
+                .append("deck loses more games to bad mana than it wins on card quality.\n");
+        sb.append("Cards outside your colours stay in the sideboard even when they are strong. ")
+                .append("A powerful card you cannot cast on time is worse than a modest one you can.\n");
+        sb.append("\nIn \"analysis\", name your two main colours and say why. If you are ")
+                .append("splashing, name the card and say what makes it worth the mana cost. ")
+                .append("Then list the card numbers in \"chosen_spells\".");
         return sb.toString();
     }
 

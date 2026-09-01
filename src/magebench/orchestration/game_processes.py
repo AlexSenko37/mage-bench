@@ -270,6 +270,8 @@ def start_draft_client(
     packs_per_player: int = 3,
     seat_a_effort: str | None = None,
     seat_b_effort: str | None = None,
+    filler_bots: int = 6,
+    tournament_type: str = "Booster Draft Elimination",
 ) -> subprocess.Popen:
     """Start an all-bot LLM-drafted-booster-draft tournament between two named models.
 
@@ -280,14 +282,24 @@ def start_draft_client(
     JVM. The post-draft match is expected to auto-concede immediately — only the two
     decklists TournamentImpl saves to data/decks/drafted/ matter.
     """
+    # A real booster draft needs a pod: packs are passed around the table, so the seats
+    # between the two LLMs are what make signal-reading and wheeling exist at all. Eight is
+    # the standard pod size (paper, MTGO and Arena premier draft all seat 8). The filler
+    # seats are the heuristic ComputerDraftPlayer; they draft and then concede immediately,
+    # since only the two LLM decklists matter.
+    players: list[dict[str, str]] = [
+        {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_a_name},
+        {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_b_name},
+    ]
+    for i in range(filler_bots):
+        players.append({"type": "bot", "ai": "COMPUTER_DRAFT_BOT", "name": f"DraftBot{i + 1}"})
+
     players_config = json.dumps(
         {
-            "players": [
-                {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_a_name},
-                {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_b_name},
-            ],
+            "players": players,
             "draftSetCode": set_code,
             "draftPacksPerPlayer": packs_per_player,
+            "draftTournamentType": tournament_type,
         }
     )
 
