@@ -1883,6 +1883,111 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
+    void batchBlockKeepsDeclareBlockersWindowOpenWhenEveryAssignmentFails() throws Exception {
+        // Regression test: when every requested "blocker:attacker" pair is rejected (e.g. a
+        // ground creature named as the blocker for a flying attacker), the batch used to fall
+        // through to sendPlayerBoolean(true) -- confirming a no-blocks declaration and
+        // permanently closing the declare-blockers window. The caller then ate full combat
+        // damage, and its corrected retry hit an unrelated "GAME_SELECT requires choice=pN"
+        // error because the real decision had already moved on. Nothing may be confirmed here:
+        // the pending GAME_SELECT must survive so a corrected retry can still block.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID blockerUuid = UUID.randomUUID();
+        UUID attackerUuid = UUID.randomUUID();
+        UUID otherAttackerUuid = UUID.randomUUID();
+        AtomicInteger sendPlayerUuidCalls = new AtomicInteger();
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        List<Boolean> booleansSent = Collections.synchronizedList(new ArrayList<>());
+        GameView combatView = gameView(56);
+        GameView targetView = gameView(57);
+
+        registerShortId(handler, blockerUuid, "p5");
+        registerShortId(handler, attackerUuid, "p1");
+
+        var combatOptions = new LinkedHashMap<String, Serializable>();
+        combatOptions.put("possibleBlockers", new ArrayList<>(List.of(blockerUuid)));
+        GameClientMessage combatMessage = new GameClientMessage(combatView, combatOptions, "Declare blockers");
+        // targets deliberately excludes attackerUuid -- p1 is not a legal block target for p5.
+        GameClientMessage targetMessage = new GameClientMessage(
+            targetView,
+            Collections.<String, Serializable>emptyMap(),
+            "Choose attacker to block",
+            new CardsView(),
+            Set.of(otherAttackerUuid),
+            true
+        );
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "sendPlayerUUID" -> {
+                        sendPlayerUuidCalls.incrementAndGet();
+                        assertThat(args[1]).isEqualTo(blockerUuid);
+                        enqueueCallback(handler, ClientCallbackMethod.GAME_TARGET, gameId, targetMessage);
+                        return true;
+                    }
+                    case "sendPlayerBoolean" -> {
+                        sendPlayerBooleanCalls.incrementAndGet();
+                        booleansSent.add((Boolean) args[1]);
+                        // The rejected target is cancelled with false; the server then re-asks
+                        // for blockers. Without the fix the flow answers that with true.
+                        enqueueCallback(handler, ClientCallbackMethod.GAME_SELECT, gameId, combatMessage);
+                        return true;
+                    }
+                    default -> {
+                        return defaultReturnValue(method.getReturnType());
+                    }
+                }
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", combatView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            combatMessage,
+            "Declare blockers",
+            56
+        ));
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<ChooseActionTool.Result> future = executor.submit(() -> handler.chooseAction(
+                null, null, null, null, null, null, null, null, null, null, new String[]{"p5:p1"}
+            ));
+
+            ChooseActionTool.Result result = future.get(2, TimeUnit.SECONDS);
+
+            assertThat(result.success).isFalse();
+            assertThat(result.error_code).isEqualTo("batch_failed");
+            assertThat(result.retryable).isTrue();
+            assertThat(result.error).contains("not a valid block target");
+            assertThat(result.error).contains("still open");
+            assertThat(result.declared).isEmpty();
+            assertThat(result.failed).hasSize(1);
+
+            // The cancel (false) is expected; a confirm (true) would close the window.
+            assertThat(booleansSent).containsExactly(false);
+            assertThat(sendPlayerUuidCalls.get()).isEqualTo(1);
+
+            BridgeDecisionState decisionState = (BridgeDecisionState) getField(handler, "decisionState");
+            PendingAction stillPending = decisionState.pendingAction();
+            assertThat(stillPending).isNotNull();
+            assertThat(stillPending.method()).isEqualTo(ClientCallbackMethod.GAME_SELECT);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void chooseActionReturnsCancelledResultWhenCallerThreadIsInterrupted() throws Exception {
         BridgeMageClient client = new BridgeMageClient("TestPlayer");
         BridgeCallbackHandler handler = client.getCallbackHandler();

@@ -54,6 +54,19 @@ When you see `combat_phase="declare_blockers"`, use batch declaration:
 - Use IDs from `incoming_attackers` for the attacker ID.
 - To not block, call `choose_action(choice="no")`.
 
+Two rules that are easy to get backwards:
+
+- **Summoning sickness does not stop a creature from blocking.** It only stops attacking and `{T}` abilities. A creature you cast this turn can block normally.
+- **A creature with flying can only be blocked by creatures with flying or reach.** Check the attacker for flying before assigning a ground blocker to it — an illegal pair is rejected.
+
+If a blocker assignment is rejected, the whole batch declares nothing and the window stays open: fix the offending pair and call `choose_action(blockers=...)` again, or `pass_priority` to decline blocking.
+
+## Reporting Unexpected Game Behavior
+
+If the game engine does something you did not expect — a rules interaction resolving the wrong way, an action rejected that you believe was legal, a tool error you cannot make sense of, or state that contradicts what you were shown — say so in your next `summary`, starting that sentence with `UNEXPECTED:`.
+
+Describe what you expected and what happened instead. Keep playing; this is a bug report, not a reason to stop. Do not use the marker for ordinary misplays or bad luck — only for behavior you believe is genuinely wrong.
+
 ## Chat
 
 Use `send_chat_message` to talk to your opponents during the game. **Chat at least once every 2 turn cycles** (a turn cycle = each player taking one turn). Ideas for what to say:

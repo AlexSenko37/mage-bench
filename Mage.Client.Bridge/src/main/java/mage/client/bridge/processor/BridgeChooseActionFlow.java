@@ -320,6 +320,28 @@ public final class BridgeChooseActionFlow {
                     return;
                 }
 
+                if (batchDeclared.isEmpty() && !batchFailed.isEmpty()) {
+                    // Every requested assignment failed, so confirming here would lock in a
+                    // no-blocks declaration and permanently close the declare-blockers window --
+                    // the caller would eat full combat damage with no way to correct a single bad
+                    // "blocker:attacker" pair (e.g. naming a flying attacker a ground creature
+                    // cannot legally block). Leave the pending GAME_SELECT in place instead, so a
+                    // corrected choose_action(blockers=...) can still declare blocks this combat.
+                    // A partial failure still confirms: those blocks are already locked in
+                    // server-side and cannot be taken back.
+                    finalizeBatchResult(false);
+                    result.complete(context.buildChooseActionError(
+                        partialResult,
+                        "batch_failed",
+                        batchFailedMessage() + ". No blockers were declared, and the "
+                            + "declare-blockers window is still open -- call choose_action again "
+                            + "with corrected blockers, or pass_priority to decline blocking.",
+                        true,
+                        action
+                    ));
+                    return;
+                }
+
                 context.clearPendingActionIfCurrent(action);
                 context.sendBooleanOrDie(action.gameId(), true, "batchBlock:confirm");
                 transitionBatchToNextDecision(false);
