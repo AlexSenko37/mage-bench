@@ -72,6 +72,16 @@ def _compile_draft_bot(project_root: Path) -> bool:
     return result.returncode == 0
 
 
+def _effort_for_preset(preset_name: str) -> str | None:
+    """Reasoning effort configured for a preset, or None to use the provider default."""
+    presets = load_presets(None)["presets"]
+    pdata = presets.get(preset_name)
+    if pdata is None:
+        raise ValueError(f"Unknown preset: {preset_name!r}")
+    effort = pdata.get("reasoning_effort")
+    return str(effort) if effort else None
+
+
 def _model_for_preset(preset_name: str) -> str:
     presets = load_presets(None)["presets"]
     pdata = presets.get(preset_name)
@@ -142,6 +152,8 @@ def run_draft(
             set_code=set_code,
             log_path=client_log,
             packs_per_player=packs_per_player,
+            seat_a_effort=_effort_for_preset(preset_a),
+            seat_b_effort=_effort_for_preset(preset_b),
         )
         deck_a, deck_b = wait_for_draft_completion(project_root, seat_a_name, seat_b_name, since, proc)
         logger.info("Draft complete: %s, %s", deck_a.name, deck_b.name)
