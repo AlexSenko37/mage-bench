@@ -1,4 +1,5 @@
 ---
+import { playerDisplayLabel } from "../scripts/player-label.js";
 import type { GameEntry } from "../utils/load-games";
 import { safeHttpUrl } from "../utils/safe-http-url";
 import "../styles/shared.css";
@@ -6,13 +7,11 @@ import "../styles/shared.css";
 interface Props {
   game: GameEntry;
   showSeasonBadge: boolean;
-  showBlunderScores?: boolean;
 }
 
 const {
   game,
   showSeasonBadge,
-  showBlunderScores = true,
 } = Astro.props;
 
 const DECK_TYPE_FORMATS: Record<string, string> = {
@@ -22,7 +21,7 @@ const DECK_TYPE_FORMATS: Record<string, string> = {
   "Constructed - Freeform": "freeform",
   "Variant Magic - Freeform Commander": "commander",
   "Variant Magic - Commander": "commander",
-  "Limited": "jumpstart",
+  "Limited": "draft",
 };
 
 const FORMAT_DISPLAY: Record<string, string> = {
@@ -31,7 +30,7 @@ const FORMAT_DISPLAY: Record<string, string> = {
   legacy: "Legacy",
   freeform: "Freeform",
   commander: "Commander (Exhibition)",
-  jumpstart: "Jumpstart",
+  draft: "Booster Draft",
 };
 
 function getGameFormat(deck_type: string): string {
@@ -61,11 +60,6 @@ function formatGameTimestamp(timestamp: string): string {
     hour: "numeric",
     minute: "2-digit",
   })}`;
-}
-
-function displayModelName(model: string): string {
-  const slash = model.indexOf("/");
-  return slash === -1 ? model : model.substring(slash + 1);
 }
 
 const formatKey = getGameFormat(game.deck_type);
@@ -121,7 +115,6 @@ const youtube_url = game.youtube_url ? safeHttpUrl(game.youtube_url) : null;
         const ratingKey = player.model
           ? `${player.model}${player.reasoning_effort ? `::${player.reasoning_effort}` : ""}`
           : null;
-        const playerScore = (game.blunderScoreByPlayer || {})[player.name];
         return (
           <div
             class:list={[
@@ -144,14 +137,11 @@ const youtube_url = game.youtube_url ? safeHttpUrl(game.youtube_url) : null;
                   {player.placement! > 4 && `${player.placement}th`}
                 </span>
               )}
-              {player.name}
+              {playerDisplayLabel(player)}
               {!isCommander && game.winner && player.name === game.winner && (
                 <span class="winner-badge">WINNER</span>
               )}
               {player.timed_out && <span class="timeout-badge">TIMEOUT</span>}
-              {player.model && (
-                <span class="player-model-inline">({displayModelName(player.model)})</span>
-              )}
             </div>
 
             <div class="player-commander">{player.deck_name || player.commander || ""}</div>
@@ -160,20 +150,6 @@ const youtube_url = game.youtube_url ? safeHttpUrl(game.youtube_url) : null;
               <div class="player-cost">${player.total_cost_usd.toFixed(2)}</div>
             )}
 
-            {showBlunderScores && playerScore != null && (
-              <div
-                class:list={[
-                  "player-blunder-score",
-                  {
-                    "blunder-high": playerScore >= 1.5,
-                    "blunder-med": playerScore >= 0.5 && playerScore < 1.5,
-                    "blunder-low": playerScore < 0.5,
-                  },
-                ]}
-              >
-                Blunder Index: {playerScore.toFixed(2)}
-              </div>
-            )}
           </div>
         );
       })}

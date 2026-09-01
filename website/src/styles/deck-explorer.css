@@ -185,12 +185,15 @@
   margin-top: 0;
 }
 
+/* Deliberately no scale-up here: makeCardThumbnail() already wires the shared
+   #card-preview popup, which shows the full image plus oracle text. Doing both
+   meant two overlapping enlargements of the same card fighting for the same
+   screen space. The popup wins -- it carries strictly more information. */
 .deck-col-stack .card-thumb:hover {
-  transform: scale(2.2);
-  transform-origin: top center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-radius: 4px;
   z-index: 100;
-  border-radius: 8px;
 }
 
 .deck-col-card-wrap {

@@ -205,7 +205,7 @@
 .game-card[data-format="modern"] { border-left: 3px solid var(--format-modern); }
 .game-card[data-format="legacy"] { border-left: 3px solid var(--format-legacy); }
 .game-card[data-format="commander"] { border-left: 3px solid var(--format-commander); }
-.game-card[data-format="jumpstart"] { border-left: 3px solid var(--format-jumpstart); }
+.game-card[data-format="draft"] { border-left: 3px solid var(--format-draft); }
 
 .game-header {
   display: flex;
@@ -427,22 +427,9 @@
   text-align: left;
 }
 
-.player-blunder-score {
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-}
 
-.player-blunder-score.blunder-low {
-  color: var(--color-success);
-}
 
-.player-blunder-score.blunder-med {
-  color: var(--color-warning);
-}
 
-.player-blunder-score.blunder-high {
-  color: var(--accent-primary);
-}
 
 /* Responsive */
 @media (max-width: 500px) {

@@ -987,7 +987,9 @@
       nameEl.className = "player-name";
       if (pColorIdx != null) nameEl.classList.add(PLAYER_COLORS[pColorIdx]);
       if (player.name === priorityPlayerName) nameEl.classList.add("has-priority");
-      nameEl.textContent = player.name || "?";
+      // Prefer the model label ("Fable5-low") over the opaque seat name ("PilotA");
+      // falls back to the seat name for human/CPU seats.
+      nameEl.textContent = meta.displayLabel || player.name || "?";
       header.appendChild(nameEl);
 
       // Model + cost badges

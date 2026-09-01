@@ -7,6 +7,8 @@
  * In the browser this attaches to window.GameViewer.
  * In Node/Vitest it is importable as a module.
  */
+import { playerDisplayLabel } from "./player-label.js";
+
 (function (root) {
   "use strict";
 
@@ -1167,7 +1169,13 @@
     (game.players || []).forEach(function (p, i) {
       playerColorMap[p.name] = i % 4;
       if (p.model || p.total_cost_usd != null) {
-        playerMeta[p.name] = { model: p.model, total_cost_usd: 0 };
+        playerMeta[p.name] = {
+          model: p.model,
+          total_cost_usd: 0,
+          // Seat names are opaque on purpose (PilotA/PilotB) so a model can't tell which
+          // opponent it faces; the replay has no such constraint. See player-label.js.
+          displayLabel: playerDisplayLabel(p),
+        };
       }
     });
 
