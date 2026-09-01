@@ -102,6 +102,7 @@ def run_draft(
     set_code: str,
     packs_per_player: int,
     project_root: Path,
+    filler_bots: int = 6,
 ) -> tuple[Path, Path, str, str]:
     """Run one headless all-bot draft tournament; return (deck_a, deck_b, seat_a_name, seat_b_name)."""
     draft_dir = _LOGS_DIR / f"draft_{_timestamp()}"
@@ -154,6 +155,7 @@ def run_draft(
             packs_per_player=packs_per_player,
             seat_a_effort=_effort_for_preset(preset_a),
             seat_b_effort=_effort_for_preset(preset_b),
+            filler_bots=filler_bots,
         )
         deck_a, deck_b = wait_for_draft_completion(project_root, seat_a_name, seat_b_name, since, proc)
         logger.info("Draft complete: %s, %s", deck_a.name, deck_b.name)
@@ -201,6 +203,15 @@ def main() -> int:
     parser.add_argument("--set", required=True, dest="set_code", help="Set code to draft from, e.g. TLA")
     parser.add_argument("--games", type=int, default=1)
     parser.add_argument("--packs-per-player", type=int, default=3)
+    parser.add_argument(
+        "--filler-bots",
+        type=int,
+        default=6,
+        help=(
+            "Heuristic draft bots seated alongside the two LLMs. Default 6 makes an "
+            "8-seat pod, the standard draft size; Booster Draft Elimination needs 4+."
+        ),
+    )
     args = parser.parse_args()
 
     logger.info("Compiling project...")
@@ -219,7 +230,12 @@ def main() -> int:
             # (per-seat JVM properties, drafted-deck filenames) - the play phase logs
             # in under its own fixed _PILOT_A_NAME/_PILOT_B_NAME, so they're discarded here.
             deck_a, deck_b, _, _ = run_draft(
-                args.preset_a, args.preset_b, args.set_code, args.packs_per_player, _ROOT
+                args.preset_a,
+                args.preset_b,
+                args.set_code,
+                args.packs_per_player,
+                _ROOT,
+                filler_bots=args.filler_bots,
             )
         except (RuntimeError, TimeoutError) as exc:
             logger.error("Game %d: draft failed: %s", i, exc)
