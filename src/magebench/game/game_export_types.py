@@ -312,6 +312,7 @@ _LLM_EVENT_TYPES = {
     "context_trim",
     "llm_error",
     "auto_pilot_mode",
+    "harness_auto_pass",
     "action_summary",
 }
 
@@ -504,6 +505,23 @@ class AutoPilotModeEvent(_LlmEventBase):
 
 
 @dataclass(kw_only=True)
+class HarnessAutoPassEvent(_LlmEventBase):
+    """A move the harness made FOR the player, not a decision the model made.
+
+    Emitted when the LLM timed out enough consecutive times to exhaust its retry budget
+    and the harness passed priority on the player's behalf to keep the game moving. Kept
+    distinct from a model-chosen pass so a replay (or any analysis of the game record)
+    can never attribute it to the model.
+    """
+
+    type: Literal["harness_auto_pass"]
+    reason: str | None = None
+    timeouts: int | None = field(default=None, metadata={_JSON_KEY_METADATA: "timeouts"})
+    pending_context: str | None = field(default=None, metadata={_JSON_KEY_METADATA: "pending_context"})
+    pending_message: str | None = field(default=None, metadata={_JSON_KEY_METADATA: "pending_message"})
+
+
+@dataclass(kw_only=True)
 class ActionSummaryEvent(_LlmEventBase):
     type: Literal["action_summary"]
     summary: str
@@ -520,6 +538,7 @@ LlmEvent: TypeAlias = (
     | ContextTrimEvent
     | LlmErrorEvent
     | AutoPilotModeEvent
+    | HarnessAutoPassEvent
     | ActionSummaryEvent
 )
 
@@ -533,6 +552,7 @@ _LLM_EVENT_CLASSES: dict[str, type[LlmEvent]] = {
     "context_trim": ContextTrimEvent,
     "llm_error": LlmErrorEvent,
     "auto_pilot_mode": AutoPilotModeEvent,
+    "harness_auto_pass": HarnessAutoPassEvent,
     "action_summary": ActionSummaryEvent,
 }
 

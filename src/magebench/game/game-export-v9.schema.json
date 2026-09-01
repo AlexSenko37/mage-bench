@@ -524,12 +524,25 @@
             "context_trim",
             "llm_error",
             "auto_pilot_mode",
+            "harness_auto_pass",
             "action_summary"
           ]
         },
         "game_seq": {
           "type": "integer",
           "description": "Server seq number for cross-referencing with snapshots/actions."
+        },
+        "timeouts": {
+          "type": "integer",
+          "description": "harness_auto_pass: consecutive LLM timeouts before the harness passed for the player."
+        },
+        "pending_context": {
+          "type": "string",
+          "description": "harness_auto_pass: phase/step of the decision that was passed away."
+        },
+        "pending_message": {
+          "type": "string",
+          "description": "harness_auto_pass: prompt text of the decision that was passed away."
         },
         "model": {
           "type": "string"

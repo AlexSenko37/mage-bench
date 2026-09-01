@@ -12,6 +12,7 @@ _LLM_EVENT_TYPES = {
     "context_reset",
     "llm_error",
     "auto_pilot_mode",
+    "harness_auto_pass",
     "action_summary",
 }
 
@@ -181,6 +182,16 @@ def read_llm_events(
                 exported["error_message"] = raw["error_message"]
             elif event_type == "auto_pilot_mode":
                 exported["reason"] = raw["reason"]
+            elif event_type == "harness_auto_pass":
+                # A move the harness made FOR the player after its retry budget ran out.
+                # Exported so a replay can never present it as the model's own decision.
+                exported["reason"] = raw["reason"]
+                if raw.get("timeouts") is not None:
+                    exported["timeouts"] = raw["timeouts"]
+                if raw.get("pending_context") is not None:
+                    exported["pending_context"] = raw["pending_context"]
+                if raw.get("pending_message") is not None:
+                    exported["pending_message"] = raw["pending_message"]
             elif event_type == "action_summary":
                 exported["summary"] = raw["summary"]
                 if raw.get("turn") is not None:
