@@ -38,6 +38,13 @@ Every game object (cards in hand, permanents, stack items, graveyard/exile cards
 - **Select choices:** Cards listed are confirmed playable with your current mana. Play a card with `choose_action(choice="p3")`. Pass with `choose_action(choice="no")` to decline acting and move to the next phase.
 - **Boolean choices with no playable cards:** Pass with `choose_action(choice="no")`.
 
+## Combat — Two Rules That Are Easy To Get Backwards
+
+Apply these on **both** sides of combat — when you attack, they decide what your opponent can block with; when you block, they decide what you can legally assign.
+
+- **Summoning sickness does not stop a creature from blocking.** It only stops attacking and `{T}` abilities. A creature cast this turn — yours *or your opponent's* — is still a live blocker. When working out whether an attack gets through, never write off an opponent's freshly-cast creature as unable to block.
+- **A creature with flying can only be blocked by creatures with flying or reach.** Both ways: your flyers get past ground defenders, and assigning a ground blocker to a flying attacker is rejected as illegal.
+
 ## Combat — Attacking
 
 When you see `combat_phase="declare_attackers"`, use batch declaration:
@@ -53,11 +60,6 @@ When you see `combat_phase="declare_blockers"`, use batch declaration:
 - `choose_action(blockers="p5:p1,p6:p2")` declares blockers at once. Format: `"blocker_id:attacker_id"`.
 - Use IDs from `incoming_attackers` for the attacker ID.
 - To not block, call `choose_action(choice="no")`.
-
-Two rules that are easy to get backwards:
-
-- **Summoning sickness does not stop a creature from blocking.** It only stops attacking and `{T}` abilities. A creature you cast this turn can block normally.
-- **A creature with flying can only be blocked by creatures with flying or reach.** Check the attacker for flying before assigning a ground blocker to it — an illegal pair is rejected.
 
 If a blocker assignment is rejected, the whole batch declares nothing and the window stays open: fix the offending pair and call `choose_action(blockers=...)` again, or `pass_priority` to decline blocking.
 
