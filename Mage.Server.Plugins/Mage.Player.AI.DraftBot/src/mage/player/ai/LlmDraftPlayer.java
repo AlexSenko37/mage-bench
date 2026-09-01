@@ -57,6 +57,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     private static final Duration DECKBUILD_TIMEOUT = Duration.ofSeconds(300);
     private static final List<String> BASIC_LAND_NAMES =
             List.of("Plains", "Island", "Swamp", "Mountain", "Forest");
+    // A deckbuild answer that won't parse costs the whole deck (it falls back to the
+    // heuristic builder), so it is worth a couple of retries before giving up.
+    private static final int DECKBUILD_ATTEMPTS = 3;
+    // How far under the legal minimum we will quietly patch a deck. Past this the answer
+    // is broken rather than slightly miscounted, and the heuristic builder is a better deck.
+    private static final int MAX_TOPUP_CARDS = 3;
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
             .build();
@@ -238,22 +244,10 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             return false;
         }
 
-        JsonObject payload = new JsonObject();
-        payload.addProperty("model", resolveModel(getName()));
-        JsonArray messages = new JsonArray();
-        messages.add(chatMessage("system",
-                "You are building a Magic: The Gathering deck from cards you just drafted. "
-                        + "Respond with ONLY a JSON object, no prose and no code fences."));
-        messages.add(chatMessage("user", buildDeckPrompt(pool, deckMinSize)));
-        payload.add("messages", messages);
-        applyReasoningEffort(payload);
-
-        String content = sendChatCompletion(payload, requireApiKey(), DECKBUILD_TIMEOUT);
-        logger.info("LlmDraftPlayer(" + getName() + "): deckbuild response: " + content);
-
-        JsonObject choice = parseJsonObject(content);
+        JsonObject choice = requestDeckJson(pool, deckMinSize);
         if (choice == null) {
-            logger.error("LlmDraftPlayer(" + getName() + "): could not parse deckbuild JSON");
+            logger.error("LlmDraftPlayer(" + getName() + "): no parseable deckbuild JSON after "
+                    + DECKBUILD_ATTEMPTS + " attempts");
             return false;
         }
 
@@ -275,17 +269,132 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 + " spells + " + landTotal + " basic lands = " + size + " cards"
                 + " (legal minimum " + deckMinSize + "); lands=" + lands);
 
-        if (size < deckMinSize) {
-            // Submitting an undersized deck gets it rejected outright, and then there is
-            // nothing to review. Top up with the model's own most-requested basic so the
-            // deck is legal, and say loudly that we had to.
+        int shortfall = deckMinSize - size;
+        if (shortfall > MAX_TOPUP_CARDS) {
+            // Anything past a rounding slip is a broken answer, not a near-miss. Topping it
+            // up produces a legal-looking deck that is nothing like a deck: seat A of
+            // draft_20260901_115822 returned 9 spells and 5 Forests, which this guard had
+            // happily "fixed" into 9 spells and 31 Forests. Fall back to the heuristic
+            // builder instead, which at least returns something coherent.
+            logger.error("LlmDraftPlayer(" + getName() + "): deck was " + shortfall
+                    + " cards under the legal minimum (more than the " + MAX_TOPUP_CARDS
+                    + " this will patch); discarding it and falling back to the heuristic builder");
+            deck.getCards().clear();
+            deck.getSideboard().addAll(chosen);
+            return false;
+        }
+        if (shortfall > 0) {
+            // A card or two short is a counting slip; patch it with the model's own
+            // most-requested basic rather than throwing the whole deck away.
             String filler = mostRequestedBasic(lands);
-            int shortfall = deckMinSize - size;
             logger.warn("LlmDraftPlayer(" + getName() + "): deck was " + shortfall
                     + " cards under the legal minimum; topping up with " + shortfall + " " + filler);
             addBasicLands(deck, filler, shortfall);
         }
         return true;
+    }
+
+    /**
+     * Ask for the deck, retrying on an unparseable answer.
+     *
+     * The first attempt constrains the reply with a JSON schema (response_format), which
+     * models supporting structured outputs will honour exactly. Seat B of
+     * draft_20260901_111325 answered with commentary inside the JSON array
+     * ("spells": [1, key: 23 is a duplicate, 4, ...]) and lost its whole deck to the
+     * heuristic fallback, which is what this is for. If the provider rejects the schema
+     * outright, later attempts drop it and rely on the prompt alone.
+     */
+    private JsonObject requestDeckJson(List<Card> pool, int deckMinSize)
+            throws IOException, InterruptedException {
+        String apiKey = requireApiKey();
+        String userPrompt = buildDeckPrompt(pool, deckMinSize);
+        boolean useSchema = true;
+
+        for (int attempt = 1; attempt <= DECKBUILD_ATTEMPTS; attempt++) {
+            JsonObject payload = new JsonObject();
+            payload.addProperty("model", resolveModel(getName()));
+            JsonArray messages = new JsonArray();
+            messages.add(chatMessage("system",
+                    "You are building a Magic: The Gathering deck from cards you just drafted. "
+                            + "Respond with ONLY a JSON object, no prose and no code fences."));
+            messages.add(chatMessage("user", userPrompt));
+            payload.add("messages", messages);
+            applyReasoningEffort(payload);
+            if (useSchema) {
+                payload.add("response_format", deckResponseFormat());
+            }
+
+            String content;
+            try {
+                content = sendChatCompletion(payload, apiKey, DECKBUILD_TIMEOUT);
+            } catch (IOException e) {
+                if (useSchema) {
+                    // Most likely the provider doesn't support structured outputs for this
+                    // model; drop the schema and let the remaining attempts use the prompt.
+                    logger.warn("LlmDraftPlayer(" + getName() + "): deckbuild attempt " + attempt
+                            + " failed with response_format set, retrying without it: " + e.getMessage());
+                    useSchema = false;
+                    continue;
+                }
+                throw e;
+            }
+
+            logger.info("LlmDraftPlayer(" + getName() + "): deckbuild response (attempt "
+                    + attempt + "): " + content);
+            JsonObject parsed = parseJsonObject(content);
+            if (parsed != null) {
+                return parsed;
+            }
+            logger.warn("LlmDraftPlayer(" + getName() + "): deckbuild attempt " + attempt
+                    + " was not parseable JSON");
+        }
+        return null;
+    }
+
+    /** JSON-schema response format pinning the deck reply to exactly the shape we parse. */
+    private static JsonObject deckResponseFormat() {
+        JsonObject landProps = new JsonObject();
+        JsonArray landRequired = new JsonArray();
+        for (String name : BASIC_LAND_NAMES) {
+            JsonObject intType = new JsonObject();
+            intType.addProperty("type", "integer");
+            landProps.add(name, intType);
+            landRequired.add(name);
+        }
+        JsonObject lands = new JsonObject();
+        lands.addProperty("type", "object");
+        lands.add("properties", landProps);
+        lands.add("required", landRequired);
+        lands.addProperty("additionalProperties", false);
+
+        JsonObject itemType = new JsonObject();
+        itemType.addProperty("type", "integer");
+        JsonObject spells = new JsonObject();
+        spells.addProperty("type", "array");
+        spells.add("items", itemType);
+
+        JsonObject props = new JsonObject();
+        props.add("spells", spells);
+        props.add("basic_lands", lands);
+        JsonArray required = new JsonArray();
+        required.add("spells");
+        required.add("basic_lands");
+
+        JsonObject schema = new JsonObject();
+        schema.addProperty("type", "object");
+        schema.add("properties", props);
+        schema.add("required", required);
+        schema.addProperty("additionalProperties", false);
+
+        JsonObject jsonSchema = new JsonObject();
+        jsonSchema.addProperty("name", "drafted_deck");
+        jsonSchema.addProperty("strict", true);
+        jsonSchema.add("schema", schema);
+
+        JsonObject format = new JsonObject();
+        format.addProperty("type", "json_schema");
+        format.add("json_schema", jsonSchema);
+        return format;
     }
 
     private String buildDeckPrompt(List<Card> pool, int deckMinSize) {
@@ -297,7 +406,22 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         sb.append("\nBuild your deck from them. You may also add any number of basic lands ")
                 .append("(Plains, Island, Swamp, Mountain, Forest), which are not in the list above ")
                 .append("and are available in unlimited quantities.\n");
-        sb.append("The deck must contain at least ").append(deckMinSize).append(" cards in total.\n");
+        // Deckbuilding conventions, added after an unaided run (draft_20260901_115429)
+        // produced 48- and 44-card decks, and one seat with 11 blue and 5 black pips but
+        // zero Islands and zero Swamps -- a third of its spells uncastable. These are
+        // format conventions and a correctness check, deliberately not strategy advice.
+        sb.append("\nBuild a deck of exactly ").append(deckMinSize)
+                .append(" cards in total, counting basic lands. More than ")
+                .append(deckMinSize).append(" is legal but worse: a bigger deck draws its best cards less often.\n");
+        sb.append("A typical limited deck is 17 lands and 23 spells.\n");
+        sb.append("Most limited decks are two colours. A splash for a powerful card is fine, ")
+                .append("but each extra colour costs consistency: a splashed card needs enough ")
+                .append("sources to cast it on time, and every land devoted to it is a land not ")
+                .append("supporting your main colours.\n");
+        sb.append("Check your mana before you finish: every coloured symbol in the spells you ")
+                .append("play needs basic lands producing that colour, in rough proportion to how ")
+                .append("often it appears. A spell whose colour you have no sources for is a dead card.\n");
+        sb.append("Use 0 for a basic land type you are not playing. Never use a negative number.\n");
         sb.append("\nRespond with ONLY this JSON:\n");
         sb.append("{\"spells\": [<numbers of the cards above to play>], ");
         sb.append("\"basic_lands\": {\"Plains\": 0, \"Island\": 0, \"Swamp\": 0, ");
@@ -366,6 +490,11 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 count = obj.get(name).getAsInt();
             } catch (RuntimeException e) {
                 logger.warn("LlmDraftPlayer(" + getName() + "): ignoring non-numeric land count for " + name);
+                continue;
+            }
+            if (count < 0) {
+                logger.warn("LlmDraftPlayer(" + getName() + "): ignoring negative land count for "
+                        + name + " (" + count + ")");
                 continue;
             }
             if (count > 0) {
