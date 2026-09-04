@@ -193,6 +193,7 @@
     },
     {
       "id": "deepseek/deepseek-v4-pro-0813",
+      "provider_order": ["deepinfra/fp8", "streamlake", "gmicloud/fp8"],
       "name": "DeepSeek V4 Pro",
       "name_part": "DSV4P",
       "_input_per_m": 1.188,
