@@ -11,6 +11,7 @@
 
 export var MODEL_SHORT_NAMES = {
   "anthropic/claude-fable-5": "Fable5",
+  "anthropic/claude-fable-5.1": "Fabl51",
   "anthropic/claude-haiku-4.5": "Haiku",
   "anthropic/claude-opus-4.6": "Opus",
   "anthropic/claude-sonnet-4.5": "Sonnet",

@@ -565,6 +565,21 @@
       "_notes": "GPT-5.6 family fast/cheap model (July 2026 launch). 1.05M context, 128K max output. Mandatory reasoning with configurable effort. Untested for Magic tool calling. Pricing verified live via OpenRouter API 2026-08-10."
     },
     {
+      "id": "anthropic/claude-fable-5.1",
+      "name": "Claude Fable 5.1",
+      "name_part": "Fabl51",
+      "_input_per_m": 10.0,
+      "_output_per_m": 50.0,
+      "_cache_read_per_m": 0.25,
+      "_context_k": 1000,
+      "_thinking": true,
+      "_tier": "expensive",
+      "cache_control": {
+        "type": "ephemeral"
+      },
+      "_notes": "Successor to Claude Fable 5. Same headline pricing ($10/$50 per M) but cache reads are $0.25/M against Fable 5's $1.00 -- a 4x improvement that matters here, since measured games run 74-80% cache hits. Reasoning is MANDATORY (no 'none' tier); efforts are max/xhigh/high/medium/low, default high. 1M context, 128K max output. Untested for Magic tool calling. Verified live against the OpenRouter API 2026-09-04."
+    },
+    {
       "id": "anthropic/claude-fable-5",
       "name": "Claude Fable 5",
       "name_part": "Fable5",
