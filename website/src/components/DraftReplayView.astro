@@ -1,0 +1,28 @@
+---
+import '../styles/format-tabs.css';
+import '../styles/draft-replay.css';
+---
+
+<div id="draft-replay" class="hidden">
+  <div id="draft-toolbar">
+    <div id="draft-seat-tabs" class="format-tabs"></div>
+    <div id="draft-summary"></div>
+  </div>
+  <div id="draft-content">
+    <nav id="draft-timeline" aria-label="Draft picks"></nav>
+    <div id="draft-main">
+      <section id="draft-pack"></section>
+      <aside id="draft-side">
+        <div id="draft-reasoning" class="surface-card"></div>
+        <div id="draft-deckbuild" class="surface-card"></div>
+      </aside>
+    </div>
+  </div>
+  <p class="draft-hint">Left and right arrow keys step through picks.</p>
+</div>
+
+<style>
+  #draft-toolbar .format-tabs {
+    margin-bottom: 0;
+  }
+</style>

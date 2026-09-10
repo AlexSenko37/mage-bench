@@ -608,6 +608,59 @@ class GameOver:
     message: str
 
 
+@dataclass(frozen=True, kw_only=True)
+class DraftSeat:
+    """Per-seat draft totals.
+
+    `model` is what actually served the picks, read back from each response rather than
+    from the preset -- the two disagreed silently for the whole life of the draft harness.
+    """
+
+    seat: str
+    model: str | None
+    picks: int
+    fallbacks: int
+    cost_usd: float = field(metadata={_JSON_KEY_METADATA: "cost_usd"})
+
+
+@dataclass(frozen=True, kw_only=True)
+class DraftPick:
+    """One booster pick: the pack as shown, the card taken, and the reasoning for it."""
+
+    seat: str
+    pick_number: int = field(metadata={_JSON_KEY_METADATA: "pick_number"})
+    round: int
+    pack: str
+    pack_cards: list[str] = field(metadata={_JSON_KEY_METADATA: "pack_cards"})
+    picked: str | None
+    picked_index: int | None = field(metadata={_JSON_KEY_METADATA: "picked_index"})
+    wheeled: list[str]
+    pool_size: int = field(metadata={_JSON_KEY_METADATA: "pool_size"})
+    reasoning: str
+    elapsed_secs: float | None = field(metadata={_JSON_KEY_METADATA: "elapsed_secs"})
+    cost_usd: float = field(metadata={_JSON_KEY_METADATA: "cost_usd"})
+
+
+@dataclass(frozen=True, kw_only=True)
+class DraftDeckbuildStep:
+    """One post-draft deckbuilding call: the spells proposal, its review, or the lands."""
+
+    seat: str
+    stage: str
+    content: str
+    reasoning: str
+    cost_usd: float = field(metadata={_JSON_KEY_METADATA: "cost_usd"})
+
+
+@dataclass(frozen=True, kw_only=True)
+class Draft:
+    """Pick-by-pick record of the draft that produced this game's decks."""
+
+    seats: list[DraftSeat]
+    picks: list[DraftPick]
+    deckbuild: list[DraftDeckbuildStep]
+
+
 @dataclass
 class Annotation:
     decision_index: int = field(metadata={_JSON_KEY_METADATA: "decision_index"})
@@ -928,6 +981,7 @@ class BuiltGameExport:
     card_data: dict[str, CardMetadata] | None = field(default=None, metadata={_JSON_KEY_METADATA: "card_data"})
     decisions: list[Decision] | None = None
     errors: list[GameError] | None = None
+    draft: Draft | None = None
     annotations: list[Annotation] | None = None
     blunder_script_version: int | None = field(default=None, metadata={_JSON_KEY_METADATA: "blunder_script_version"})
 
@@ -965,6 +1019,7 @@ class GameExport:
     card_data: dict[str, CardMetadata] | None = field(default=None, metadata={_JSON_KEY_METADATA: "card_data"})
     decisions: list[Decision] | None = None
     errors: list[GameError] | None = None
+    draft: Draft | None = None
 
     def to_dict(self) -> JsonObject:
         return _game_export_to_dict(self)
@@ -1872,7 +1927,34 @@ def _coerce_common_game_export(obj: JsonObject, source: str) -> JsonObject:
             _coerce_decision(decision, f"{source}.decisions[{index}]")
             for index, decision in enumerate(_require_list(obj["decisions"], f"{source}.decisions"))
         ]
+    if obj.get("draft") is not None:
+        coerced["draft"] = _coerce_draft(obj["draft"], f"{source}.draft")
     return coerced
+
+
+def _coerce_draft(value: object, source: str) -> Draft:
+    """Build the Draft dataclass tree from its JSON form.
+
+    Absent on every game that predates the draft record and on constructed games, so the
+    caller checks for None rather than this raising.
+    """
+    if isinstance(value, Draft):
+        return value
+    obj = _require_object(value, source)
+    return Draft(
+        seats=[
+            DraftSeat(**_require_object(seat, f"{source}.seats[{index}]"))
+            for index, seat in enumerate(_require_list(obj["seats"], f"{source}.seats"))
+        ],
+        picks=[
+            DraftPick(**_require_object(pick, f"{source}.picks[{index}]"))
+            for index, pick in enumerate(_require_list(obj["picks"], f"{source}.picks"))
+        ],
+        deckbuild=[
+            DraftDeckbuildStep(**_require_object(step, f"{source}.deckbuild[{index}]"))
+            for index, step in enumerate(_require_list(obj["deckbuild"], f"{source}.deckbuild"))
+        ],
+    )
 
 
 def _validate_common_game_export(value: object, source: str) -> JsonObject:

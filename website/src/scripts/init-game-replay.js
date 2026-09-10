@@ -120,8 +120,8 @@ export async function initGameReplayPage(options) {
       }
 
       if (visualizer.querySelector("#view-toggle")) {
-        import("./init-deck-explorer.js").then(function (mod) {
-          mod.initDeckExplorer({ root: visualizer, game: game, viewer: viewer });
+        import("./init-replay-views.js").then(function (mod) {
+          mod.initReplayViews({ root: visualizer, game: game, viewer: viewer });
         });
       }
 

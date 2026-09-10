@@ -154,6 +154,10 @@
       },
       "description": "Canonical decision records built at export time. Each references a snapshot and overlays pilot-specific context (choices, playable cards, etc.). See doc/unified-decisions-plan.md."
     },
+    "draft": {
+      "$ref": "#/$defs/Draft",
+      "description": "Pick-by-pick record of the draft that produced these decks. Absent for constructed games and for any game drafted before this record existed."
+    },
     "errors": {
       "type": "array",
       "items": {
@@ -163,6 +167,178 @@
     }
   },
   "$defs": {
+    "Draft": {
+      "type": "object",
+      "required": [
+        "deckbuild",
+        "picks",
+        "seats"
+      ],
+      "additionalProperties": false,
+      "description": "Pick-by-pick record of one booster draft, for replay and review.",
+      "properties": {
+        "seats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DraftSeat"
+          }
+        },
+        "picks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DraftPick"
+          }
+        },
+        "deckbuild": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DraftDeckbuildStep"
+          }
+        }
+      }
+    },
+    "DraftSeat": {
+      "type": "object",
+      "required": [
+        "cost_usd",
+        "fallbacks",
+        "model",
+        "picks",
+        "seat"
+      ],
+      "additionalProperties": false,
+      "description": "Per-seat draft totals.",
+      "properties": {
+        "seat": {
+          "type": "string"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The model that actually served this seat's picks, as reported per call."
+        },
+        "picks": {
+          "type": "integer"
+        },
+        "fallbacks": {
+          "type": "integer",
+          "description": "Picks made by the RateCard heuristic after an LLM error, not by the model."
+        },
+        "cost_usd": {
+          "type": "number"
+        }
+      }
+    },
+    "DraftPick": {
+      "type": "object",
+      "required": [
+        "cost_usd",
+        "elapsed_secs",
+        "pack",
+        "pack_cards",
+        "pick_number",
+        "picked",
+        "picked_index",
+        "pool_size",
+        "reasoning",
+        "round",
+        "seat",
+        "wheeled"
+      ],
+      "additionalProperties": false,
+      "description": "One booster pick: the pack exactly as the model saw it, what it took, and why.",
+      "properties": {
+        "seat": {
+          "type": "string"
+        },
+        "pick_number": {
+          "type": "integer",
+          "description": "1-based, per seat, across the whole draft."
+        },
+        "round": {
+          "type": "integer",
+          "description": "Which booster round (1-3)."
+        },
+        "pack": {
+          "type": "string",
+          "description": "Label threading one physical booster across its trips round the pod, so a wheel can be read."
+        },
+        "pack_cards": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Card names in the order the model was shown them."
+        },
+        "picked": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "picked_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Index into pack_cards, or null when the reply could not be matched to a card."
+        },
+        "wheeled": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Cards this seat saw in this pack on an earlier pass and passed."
+        },
+        "pool_size": {
+          "type": "integer"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "Provider reasoning trace. Empty when the model reports no reasoning tokens, which is normal at low effort."
+        },
+        "elapsed_secs": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "cost_usd": {
+          "type": "number"
+        }
+      }
+    },
+    "DraftDeckbuildStep": {
+      "type": "object",
+      "required": [
+        "content",
+        "cost_usd",
+        "reasoning",
+        "seat",
+        "stage"
+      ],
+      "additionalProperties": false,
+      "description": "One post-draft deckbuilding call: the spells proposal, its review, or the lands.",
+      "properties": {
+        "seat": {
+          "type": "string"
+        },
+        "stage": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "reasoning": {
+          "type": "string"
+        },
+        "cost_usd": {
+          "type": "number"
+        }
+      }
+    },
     "Player": {
       "type": "object",
       "required": [

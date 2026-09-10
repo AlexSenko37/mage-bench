@@ -168,13 +168,28 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // The tokens are billed regardless of whether we ask for the trace back.
         payload.addProperty("include_reasoning", true);
 
-        String content = sendChatCompletion(payload, apiKey, REQUEST_TIMEOUT, getName(), "pick");
-        return parsePick(content, cards);
+        CallResult result =
+                sendChatCompletionRaw(payload, apiKey, REQUEST_TIMEOUT, getName(), "pick");
+        Card picked = parsePick(result.content, cards);
+        // The pack is what makes a pick reviewable: without the cards that were passed up,
+        // a replay can only show what was taken, which is the least interesting half. The
+        // prompt itself is rebuilt from these two lists, so storing them beats storing prose.
+        result.record.add("pack", cardNames(cards));
+        result.record.add("pool", cardNames(deck.getCards().stream().toList()));
+        result.record.addProperty("picked", picked.getName());
+        result.record.addProperty("picked_id", picked.getId().toString());
+        // Card instance ids are globally unique and travel with the physical booster, so two
+        // observations of the same pack always share ids and two different packs never do.
+        // That is enough to thread a pack across its trips round the pod offline, without
+        // needing DraftImpl to expose a booster identity it does not currently have.
+        result.record.add("pack_ids", cardIds(cards));
+        appendRecord(result.record);
+        return picked;
     }
 
     /**
      * POST a chat-completion payload to OpenRouter and return the assistant's text, writing a
-     * structured record of the call to draft_llm.jsonl.
+     * structured record of the call to draft_picks.jsonl.
      *
      * <p>The draft used to be entirely unaccounted for: draft_match.py sums pilot_costs, which
      * covers only the play phase, so a "$6.42 game" excluded every pick and deckbuild call.
@@ -182,6 +197,30 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
      * from a rate table that can drift.
      */
     private static String sendChatCompletion(
+            JsonObject payload, String apiKey, Duration timeout, String seat, String stage)
+            throws IOException, InterruptedException {
+        CallResult result = sendChatCompletionRaw(payload, apiKey, timeout, seat, stage);
+        appendRecord(result.record);
+        return result.content;
+    }
+
+    /** A completed call: the assistant's text, plus the not-yet-written record of it. */
+    private static final class CallResult {
+        private final String content;
+        private final JsonObject record;
+
+        private CallResult(String content, JsonObject record) {
+            this.content = content;
+            this.record = record;
+        }
+    }
+
+    /**
+     * As {@link #sendChatCompletion}, but hands back the record instead of writing it, so the
+     * caller can attach context it only knows after parsing the reply. A draft replay needs
+     * the pack and the resulting pick on the same line as the reasoning that connects them.
+     */
+    private static CallResult sendChatCompletionRaw(
             JsonObject payload, String apiKey, Duration timeout, String seat, String stage)
             throws IOException, InterruptedException {
         // usage.include makes OpenRouter return token counts and its authoritative cost for
@@ -231,13 +270,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
         record.addProperty("reasoning", reasoning);
         record.addProperty("content", content);
-        appendRecord(record);
 
-        return content;
+        return new CallResult(content, record);
     }
 
     /**
-     * Append one JSON line to draft_llm.jsonl. Synchronized because the two LlmDraftPlayer
+     * Append one JSON line to draft_picks.jsonl. Synchronized because the two LlmDraftPlayer
      * seats pick on the same scheduler thread but deckbuild off their own, and a torn line
      * would make the whole file unparseable. Recording must never break a draft, so an IO
      * failure here is logged and swallowed.
@@ -247,7 +285,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             return;
         }
         try {
-            Path path = Paths.get(LOG_DIR).resolve("draft_llm.jsonl");
+            Path path = Paths.get(LOG_DIR).resolve("draft_picks.jsonl");
             synchronized (LOG_LOCK) {
                 Files.createDirectories(path.getParent());
                 Files.writeString(
@@ -257,7 +295,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                         StandardOpenOption.APPEND);
             }
         } catch (IOException | UncheckedIOException e) {
-            logger.warn("LlmDraftPlayer: failed to write draft_llm.jsonl: " + e.getMessage());
+            logger.warn("LlmDraftPlayer: failed to write draft_picks.jsonl: " + e.getMessage());
         }
     }
 
@@ -1048,6 +1086,24 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
 
         sb.append("\nRespond with ONLY the number (1-").append(cards.size()).append(") of the card to pick.");
         return sb.toString();
+    }
+
+    /** Card instance ids, positionally aligned with cardNames(), for threading packs. */
+    private static JsonArray cardIds(List<Card> cards) {
+        JsonArray ids = new JsonArray();
+        for (Card card : cards) {
+            ids.add(card.getId().toString());
+        }
+        return ids;
+    }
+
+    /** Card names in presentation order, so a replay can show the pack as the model saw it. */
+    private static JsonArray cardNames(List<Card> cards) {
+        JsonArray names = new JsonArray();
+        for (Card card : cards) {
+            names.add(card.getName());
+        }
+        return names;
     }
 
     private static String cardSummary(Card card) {

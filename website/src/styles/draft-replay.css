@@ -1,0 +1,265 @@
+/* Draft replay: step through one seat's picks, seeing each pack as the model saw it.
+   Layout mirrors #deck-explorer-content -- a scrolling pick timeline on the left, the
+   pack grid in the middle, and the model's reasoning down the right. */
+
+#draft-replay {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#draft-replay.hidden {
+  display: none;
+}
+
+#draft-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#draft-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.draft-summary-item {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.draft-summary-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.draft-summary-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+#draft-content {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+/* ---------------------------------------------------------------- timeline */
+
+#draft-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.draft-timeline-round {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0.5rem 0.35rem 0.2rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+}
+
+.draft-timeline-pick {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr) auto;
+  gap: 0.35rem;
+  align-items: baseline;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  padding: 0.25rem 0.35rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.draft-timeline-pick:hover {
+  background: var(--bg-secondary);
+}
+
+.draft-timeline-pick.active {
+  border-left-color: var(--accent-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.draft-timeline-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.draft-timeline-card {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-wheel-dot {
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+}
+
+/* -------------------------------------------------------------- pack + side */
+
+#draft-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.draft-pack-header h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.draft-pack-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.5rem;
+}
+
+.draft-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.draft-pack-card {
+  position: relative;
+  border-radius: 4px;
+}
+
+/* The taken card and the cards that came back round are the two things worth spotting at
+   a glance, so they get the only two treatments; everything else stays quiet. */
+.draft-pack-card.is-picked {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.draft-pack-card.is-wheeled {
+  outline: 1px dashed var(--text-muted);
+  outline-offset: 2px;
+}
+
+.draft-pack-card.is-passed {
+  opacity: 0.72;
+}
+
+.draft-pack-card.is-passed:hover {
+  opacity: 1;
+}
+
+.draft-pack-tag {
+  display: none;
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+.draft-pack-card.is-picked .draft-pack-tag,
+.draft-pack-card.is-wheeled .draft-pack-tag {
+  display: block;
+}
+
+.draft-pack-card.is-wheeled .draft-pack-tag {
+  background: var(--text-muted);
+}
+
+#draft-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.draft-panel-heading {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.draft-reasoning-body {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.draft-empty,
+.draft-deckbuild-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 0.4rem;
+}
+
+.draft-deckbuild-step {
+  border-top: 1px solid var(--border-subtle, rgba(128, 128, 128, 0.25));
+  padding: 0.35rem 0;
+}
+
+.draft-deckbuild-step summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.draft-deckbuild-cost {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  #draft-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  #draft-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #draft-timeline {
+    max-height: 14rem;
+  }
+}
