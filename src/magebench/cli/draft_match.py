@@ -203,6 +203,23 @@ def _report_draft_cost(draft_dir: Path, seat_a_name: str, seat_b_name: str) -> f
     return total
 
 
+def attach_draft_record(draft_dir: Path, game_dir: Path) -> bool:
+    """Copy the draft record into the game directory. True if one was attached.
+
+    The draft runs in its own log directory, before the game directory exists, but
+    export_game.py only ever looks inside the game directory -- and a draft replay
+    detached from the game its decks were built for is meaningless. A missing record is
+    warned about rather than passed over, since the draft replay then silently will not
+    appear on the published game.
+    """
+    source = draft_dir / DRAFT_LOG_NAME
+    if not source.exists():
+        logger.warning("No %s in %s to attach to %s", DRAFT_LOG_NAME, draft_dir, game_dir)
+        return False
+    shutil.copy2(source, game_dir / DRAFT_LOG_NAME)
+    return True
+
+
 def run_draft(
     preset_a: str,
     preset_b: str,
@@ -391,14 +408,7 @@ def main() -> int:
             continue
 
         session = result.sessions[0]
-        # The draft ran in its own log directory before the game directory existed, so its
-        # record is copied in here. export_game.py only ever looks inside the game dir, and
-        # a draft replay is meaningless detached from the game its decks were built for.
-        draft_log = draft.draft_dir / DRAFT_LOG_NAME
-        if draft_log.exists():
-            shutil.copy2(draft_log, session.game_dir / DRAFT_LOG_NAME)
-        else:
-            logger.warning("No %s to attach to %s", DRAFT_LOG_NAME, session.game_dir)
+        attach_draft_record(draft.draft_dir, session.game_dir)
         winner_name = read_game_winner(session.game_dir)
         play_cost = sum(result.pilot_costs.values())
         # The draft is a real LLM expense (roughly 40 picks plus the deckbuild round trips per

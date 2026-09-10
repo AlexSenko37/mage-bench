@@ -68,6 +68,17 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             Duration.ofSeconds(Long.getLong("xmage.llmDraft.pickTimeoutSecs", 180L));
     // Deckbuilding is one call over a 45-card pool, so it needs far more room than a pick.
     private static final Duration DECKBUILD_TIMEOUT = Duration.ofSeconds(300);
+    // OpenRouter does not require max_tokens, but some providers treat its absence as a
+    // request to reserve the whole remaining context for the completion, and then reject
+    // the call for exceeding the model's limit. qwen3-235b via GMICloud fails every draft
+    // pick this way ("You requested a total of 132152 tokens: 1080 from the input messages
+    // and 131072 for the completion"), and because pickCard() swallows the error into a
+    // heuristic fallback, the draft still finishes -- just with no model in it. These caps
+    // are far above what either call actually uses: picks average well under 1k completion
+    // tokens even at max reasoning effort, and a deckbuild reply is a 23-name list.
+    private static final int PICK_MAX_TOKENS = 16_000;
+    private static final int DECKBUILD_MAX_TOKENS = 32_000;
+
     /**
      * Directory for the structured per-call record, set by the harness with
      * -Dxmage.llmDraft.logDir. Unset (a plain XMage run) disables recording entirely.
@@ -162,6 +173,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                         + "Respond with ONLY the pack number of your pick, nothing else."));
         messages.add(chatMessage("user", buildPrompt(cards, deck)));
         payload.add("messages", messages);
+        payload.addProperty("max_tokens", PICK_MAX_TOKENS);
         applyReasoningEffort(payload);
         // Picks were the one call whose reasoning was never requested, and the system prompt
         // asks for a bare number -- so there was no record at all of why any card was taken.
@@ -175,7 +187,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // a replay can only show what was taken, which is the least interesting half. The
         // prompt itself is rebuilt from these two lists, so storing them beats storing prose.
         result.record.add("pack", cardNames(cards));
-        result.record.add("pool", cardNames(deck.getCards().stream().toList()));
+        result.record.add("pool", cardNames(new ArrayList<>(deck.getSideboard())));
         result.record.addProperty("picked", picked.getName());
         result.record.addProperty("picked_id", picked.getId().toString());
         // Card instance ids are globally unique and travel with the physical booster, so two
@@ -811,6 +823,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                             + "Respond with ONLY a JSON object, no prose and no code fences."));
             messages.add(chatMessage("user", userPrompt));
             payload.add("messages", messages);
+            payload.addProperty("max_tokens", DECKBUILD_MAX_TOKENS);
             applyReasoningEffort(payload);
             // We are already paying for this model's reasoning tokens; capturing the trace
             // costs nothing extra and shows what it actually weighed.
@@ -1069,7 +1082,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     private String buildPrompt(List<Card> cards, Deck deck) {
         StringBuilder sb = new StringBuilder();
 
-        List<Card> pool = deck.getCards().stream().toList();
+        // DraftPlayer.addPick() files every pick into the sideboard, never into
+        // deck.getCards() -- which is what construct() reads too (see the pool it builds
+        // from getSideboard()). Reading getCards() here meant the pool section rendered as
+        // "(none yet - this is your first pick)" on all 42 picks of every draft ever run:
+        // the model was choosing each card with no idea what it had already taken.
+        List<Card> pool = new ArrayList<>(deck.getSideboard());
         sb.append("Your pool so far (").append(pool.size()).append(" cards):\n");
         if (pool.isEmpty()) {
             sb.append("(none yet - this is your first pick)\n");
