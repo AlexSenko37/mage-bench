@@ -26,9 +26,11 @@ from magebench.orchestration.game_finalization import (
     write_game_meta,
 )
 from magebench.orchestration.game_processes import (
+    draft_seat_jvm_args,
     start_draft_client,
     start_gui_client,
     start_observer_client,
+    start_server,
     wait_for_draft_completion,
     wait_for_game_start,
     wait_with_pilot_monitoring,
@@ -66,10 +68,59 @@ def test_start_gui_client_omits_observer_game_dir_when_absent(tmp_path: Path):
     assert "xmage.observer.gameDir" not in jvm_opts
 
 
-def test_start_draft_client_sets_per_seat_models_and_tournament_flag(tmp_path: Path):
-    """Each seat must get its own -Dxmage.llmDraft.model.<name> property (the whole point
-    is two different models drafting against each other in the same server JVM), and the
-    tournament auto-start flag — not the regular-game autoStart flag — must be set."""
+def test_draft_seat_config_goes_to_the_server_jvm(tmp_path: Path):
+    """Per-seat draft config must reach the *server* JVM.
+
+    LlmDraftPlayer is a Player object the tournament instantiates server-side, and it reads
+    its model with System.getProperty at pick time. These properties used to be set on the
+    draft *client* instead, where nothing reads them: every seat silently fell through to
+    LlmDraftPlayer's DEFAULT_MODEL at the provider's default effort, so no draft ever used
+    the models its presets named and no log line said otherwise. Both drafters in the last
+    published game showed the same ~1.4s median pick latency, which is what gave it away.
+    """
+    pm = MagicMock()
+    config = Config()
+
+    start_server(
+        pm,
+        tmp_path,
+        config,
+        tmp_path / "config.xml",
+        tmp_path / "server.log",
+        extra_jvm_args=draft_seat_jvm_args(
+            seat_a_name="ModelA-A",
+            seat_a_model="deepseek/deepseek-v4-pro-0813",
+            seat_b_name="ModelB-B",
+            seat_b_model="openai/gpt-5.6-terra",
+            log_dir=tmp_path / "draftlogs",
+            seat_a_effort="high",
+            seat_b_effort="max",
+        ),
+    )
+
+    jvm_opts = pm.start_jvm_process.call_args.kwargs["env"]["MAVEN_OPTS"]
+    assert "-Dxmage.llmDraft.model.ModelA-A=deepseek/deepseek-v4-pro-0813" in jvm_opts
+    assert "-Dxmage.llmDraft.model.ModelB-B=openai/gpt-5.6-terra" in jvm_opts
+    assert "-Dxmage.llmDraft.effort.ModelA-A=high" in jvm_opts
+    assert "-Dxmage.llmDraft.effort.ModelB-B=max" in jvm_opts
+    assert f"-Dxmage.llmDraft.logDir={tmp_path / 'draftlogs'}" in jvm_opts
+
+
+def test_draft_seat_config_omits_effort_when_unset(tmp_path: Path):
+    """No effort configured means no reasoning.effort field, so the provider default applies."""
+    args = draft_seat_jvm_args(
+        seat_a_name="A",
+        seat_a_model="m/a",
+        seat_b_name="B",
+        seat_b_model="m/b",
+        log_dir=tmp_path,
+    )
+    assert not [a for a in args if "effort" in a]
+
+
+def test_start_draft_client_sets_tournament_flag(tmp_path: Path):
+    """The tournament auto-start flag — not the regular-game autoStart flag — must be set,
+    and the client must not carry draft seat properties it cannot deliver."""
     pm = MagicMock()
     config = Config()
 
@@ -78,9 +129,7 @@ def test_start_draft_client_sets_per_seat_models_and_tournament_flag(tmp_path: P
         tmp_path,
         config,
         seat_a_name="ModelA-A",
-        seat_a_model="deepseek/deepseek-v4-pro-0813",
         seat_b_name="ModelB-B",
-        seat_b_model="openai/gpt-5.6-terra",
         set_code="TLA",
         log_path=tmp_path / "log.txt",
         packs_per_player=3,
@@ -90,8 +139,9 @@ def test_start_draft_client_sets_per_seat_models_and_tournament_flag(tmp_path: P
     jvm_opts = call_kwargs["env"]["MAVEN_OPTS"]
     assert "-Dxmage.aiPuppeteer.autoStartTournament=true" in jvm_opts
     assert "-Dxmage.aiPuppeteer.autoStart=true" not in jvm_opts
-    assert "-Dxmage.llmDraft.model.ModelA-A=deepseek/deepseek-v4-pro-0813" in jvm_opts
-    assert "-Dxmage.llmDraft.model.ModelB-B=openai/gpt-5.6-terra" in jvm_opts
+    assert "xmage.llmDraft" not in jvm_opts, (
+        "draft seat properties on the client are a silent no-op — they belong on the server"
+    )
 
     players_config = json.loads(call_kwargs["env"]["XMAGE_AI_PUPPETEER_PLAYERS_CONFIG"])
     assert players_config["draftSetCode"] == "TLA"
@@ -120,9 +170,7 @@ def test_start_draft_client_filler_bot_count_is_configurable(tmp_path):
         tmp_path,
         config,
         seat_a_name="ModelA-A",
-        seat_a_model="deepseek/deepseek-v4-pro-0813",
         seat_b_name="ModelB-B",
-        seat_b_model="openai/gpt-5.6-terra",
         set_code="TLA",
         log_path=tmp_path / "log.txt",
         packs_per_player=3,
