@@ -6,6 +6,7 @@ import '../styles/audit-panel.css';
 import '../styles/format-tabs.css';
 import '../styles/shared.css';
 import DeckExplorerView from './DeckExplorerView.astro';
+import DraftReplayView from './DraftReplayView.astro';
 import type { GameEntry } from '../utils/load-games';
 import type { GameExportV9 } from '../types/game-export';
 import type { PrerenderResult } from '../utils/prerender-timeline';
@@ -27,6 +28,10 @@ const blunderSummary = game.replayBlunderSummary
   ? formatReplayBlunderSummary(game.replayBlunderSummary)
   : null;
 const hasDecklists = fullGame.players.some((p) => (p.decklist ?? []).length > 0);
+// Only games drafted after the draft record existed carry one, and constructed games
+// never will, so both extra views are independently optional.
+const hasDraft = (fullGame.draft?.picks ?? []).length > 0;
+const hasAltViews = hasDecklists || hasDraft;
 
 // Serialize game JSON for inline embedding, stripping actions and llm_events
 // which are already prerendered into the action log HTML.
@@ -78,10 +83,11 @@ const runningCostsJson = JSON.stringify(runningCostBySnapshot).replace(/</g, '\\
       </div>
     )}
 
-    {hasDecklists && (
+    {hasAltViews && (
       <div id="view-toggle" class="format-tabs">
         <button type="button" class="format-tab active" data-view="replay">Replay</button>
-        <button type="button" class="format-tab" data-view="decks">Decks</button>
+        {hasDecklists && <button type="button" class="format-tab" data-view="decks">Decks</button>}
+        {hasDraft && <button type="button" class="format-tab" data-view="draft">Draft</button>}
       </div>
     )}
 
@@ -141,6 +147,7 @@ const runningCostsJson = JSON.stringify(runningCostBySnapshot).replace(/</g, '\\
       </div>
     </div>
     {hasDecklists && <DeckExplorerView />}
+    {hasDraft && <DraftReplayView />}
     {auditMode && <div id="audit-container"></div>}
   </div>
 </div>

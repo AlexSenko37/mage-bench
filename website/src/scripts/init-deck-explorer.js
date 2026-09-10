@@ -41,26 +41,18 @@ function renderStatsSidebar(container, stats) {
 }
 
 /**
- * Wire up the replay <-> deck-explorer toggle, player switcher, and grouping controls.
+ * Deck explorer: the player switcher, grouping controls, and grid.
  *
- * `game` is the (possibly stripped) game payload already loaded by init-game-replay.js;
- * `viewer` is the GameViewer instance controlling the replay view, needed so returning to
- * it can force a re-render (its log panel measures its own height from a hidden ancestor,
- * which is 0 while the deck explorer is showing).
+ * Returns { render } and does not touch the Replay/Decks/Draft toggle — that belongs to
+ * init-replay-views.js, which owns showing and hiding every panel so the views cannot
+ * disagree about which tab is active.
+ *
+ * `game` is the (possibly stripped) game payload already loaded by init-game-replay.js.
  */
-export function initDeckExplorer(options) {
+export function createDeckExplorer(options) {
   var root = options.root;
   var game = options.game;
-  var viewer = options.viewer;
 
-  var toggle = root.querySelector("#view-toggle");
-  var deckExplorer = root.querySelector("#deck-explorer");
-  if (!toggle || !deckExplorer) {
-    return; // No decklists on this game -- GameReplayView didn't render these.
-  }
-
-  var transport = getRequiredElement(root, "#transport");
-  var gameContent = getRequiredElement(root, "#game-content");
   var playerTabsEl = getRequiredElement(root, "#deck-player-tabs");
   var groupTabsEl = getRequiredElement(root, "#deck-group-tabs");
   var gridEl = getRequiredElement(root, "#deck-grid");
@@ -74,7 +66,7 @@ export function initDeckExplorer(options) {
     return (p.decklist || []).length > 0;
   });
 
-  var state = { player: players[0] ? players[0].name : null, group: GROUP_MODES[0].key, rendered: false };
+  var state = { player: players[0] ? players[0].name : null, group: GROUP_MODES[0].key };
 
   function renderTabs(container, items, activeKey, keyOf, labelOf, onSelect) {
     container.innerHTML = "";
@@ -114,30 +106,5 @@ export function initDeckExplorer(options) {
     });
   }
 
-  toggle.addEventListener("click", function (event) {
-    var btn = event.target.closest("button[data-view]");
-    if (!btn) return;
-    var view = btn.getAttribute("data-view");
-
-    toggle.querySelectorAll(".format-tab").forEach(function (t) {
-      t.classList.toggle("active", t === btn);
-    });
-
-    if (view === "decks") {
-      transport.classList.add("hidden");
-      gameContent.classList.add("hidden");
-      deckExplorer.classList.remove("hidden");
-      if (!state.rendered) {
-        state.rendered = true;
-        renderDeck();
-      }
-    } else {
-      deckExplorer.classList.add("hidden");
-      transport.classList.remove("hidden");
-      gameContent.classList.remove("hidden");
-      // #action-list's height is measured from its now-unhidden ancestor; re-render so it
-      // picks up a real (non-zero) height instead of the one it measured while hidden.
-      viewer.goTo(viewer.getCurrentIndex());
-    }
-  });
+  return { render: renderDeck };
 }

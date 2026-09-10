@@ -14,9 +14,11 @@ Usage:
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -97,6 +99,21 @@ def _timestamp() -> str:
     return datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y%m%d_%H%M%S")
 
 
+@dataclass(frozen=True)
+class DraftResult:
+    """One completed draft: the two decks, and where to find its record."""
+
+    deck_a: Path
+    deck_b: Path
+    seat_a_name: str
+    seat_b_name: str
+    cost_usd: float
+    draft_dir: Path
+
+
+DRAFT_LOG_NAME = "draft_picks.jsonl"
+
+
 def _read_draft_calls(draft_dir: Path) -> list[dict]:
     """Parse the per-call records LlmDraftPlayer wrote during the draft.
 
@@ -104,7 +121,7 @@ def _read_draft_calls(draft_dir: Path) -> list[dict]:
     heuristic for every pick before any call was made — both are worth surfacing rather than
     reporting a confident $0.
     """
-    path = draft_dir / "draft_llm.jsonl"
+    path = draft_dir / DRAFT_LOG_NAME
     if not path.exists():
         return []
     calls = []
@@ -143,14 +160,17 @@ def summarize_draft_cost(draft_dir: Path) -> tuple[float, dict[str, dict]]:
         row["stages"][stage] = row["stages"].get(stage, 0) + 1
         if call.get("model"):
             row["models"].add(call["model"])
-        usage = call.get("usage") or {}
-        cost = float(usage.get("cost", 0.0) or 0.0)
-        row["cost"] += cost
-        total += cost
-        row["prompt"] += int(usage.get("prompt_tokens", 0) or 0)
-        row["completion"] += int(usage.get("completion_tokens", 0) or 0)
-        details = usage.get("completion_tokens_details") or {}
-        row["reasoning"] += int(details.get("reasoning_tokens", 0) or 0)
+        # A pick_fallback record carries no usage: the heuristic made that pick locally,
+        # so nothing was billed and there are no tokens to attribute.
+        if "usage" in call:
+            usage = call["usage"]
+            cost = float(usage.get("cost", 0.0))
+            row["cost"] += cost
+            total += cost
+            row["prompt"] += int(usage.get("prompt_tokens", 0))
+            row["completion"] += int(usage.get("completion_tokens", 0))
+            if "completion_tokens_details" in usage:
+                row["reasoning"] += int(usage["completion_tokens_details"].get("reasoning_tokens", 0))
     return total, per_seat
 
 
@@ -191,11 +211,8 @@ def run_draft(
     project_root: Path,
     filler_bots: int = 6,
     draft_timeout: int = 3600,
-) -> tuple[Path, Path, str, str, float]:
-    """Run one headless all-bot draft tournament.
-
-    Returns (deck_a, deck_b, seat_a_name, seat_b_name, draft_cost_usd).
-    """
+) -> DraftResult:
+    """Run one headless all-bot draft tournament."""
     draft_dir = _LOGS_DIR / f"draft_{_timestamp()}"
     draft_dir.mkdir(parents=True, exist_ok=True)
 
@@ -264,7 +281,14 @@ def run_draft(
         )
         logger.info("Draft complete: %s, %s", deck_a.name, deck_b.name)
         draft_cost = _report_draft_cost(draft_dir, seat_a_name, seat_b_name)
-        return deck_a, deck_b, seat_a_name, seat_b_name, draft_cost
+        return DraftResult(
+            deck_a=deck_a,
+            deck_b=deck_b,
+            seat_a_name=seat_a_name,
+            seat_b_name=seat_b_name,
+            cost_usd=draft_cost,
+            draft_dir=draft_dir,
+        )
     finally:
         pm.cleanup()
 
@@ -342,7 +366,7 @@ def main() -> int:
             # Draft seat names (3rd/4th values) only matter to the draft phase itself
             # (per-seat JVM properties, drafted-deck filenames) - the play phase logs
             # in under its own fixed _PILOT_A_NAME/_PILOT_B_NAME, so they're discarded here.
-            deck_a, deck_b, _, _, draft_cost = run_draft(
+            draft = run_draft(
                 args.preset_a,
                 args.preset_b,
                 args.set_code,
@@ -351,6 +375,7 @@ def main() -> int:
                 filler_bots=args.filler_bots,
                 draft_timeout=args.draft_timeout,
             )
+            deck_a, deck_b, draft_cost = draft.deck_a, draft.deck_b, draft.cost_usd
         except (RuntimeError, TimeoutError) as exc:
             logger.error("Game %d: draft failed: %s", i, exc)
             continue
@@ -366,6 +391,14 @@ def main() -> int:
             continue
 
         session = result.sessions[0]
+        # The draft ran in its own log directory before the game directory existed, so its
+        # record is copied in here. export_game.py only ever looks inside the game dir, and
+        # a draft replay is meaningless detached from the game its decks were built for.
+        draft_log = draft.draft_dir / DRAFT_LOG_NAME
+        if draft_log.exists():
+            shutil.copy2(draft_log, session.game_dir / DRAFT_LOG_NAME)
+        else:
+            logger.warning("No %s to attach to %s", DRAFT_LOG_NAME, session.game_dir)
         winner_name = read_game_winner(session.game_dir)
         play_cost = sum(result.pilot_costs.values())
         # The draft is a real LLM expense (roughly 40 picks plus the deckbuild round trips per

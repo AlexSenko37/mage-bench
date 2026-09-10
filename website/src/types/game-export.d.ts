@@ -97,6 +97,7 @@ export interface GameExportV9 {
    * Canonical decision records built at export time. Each references a snapshot and overlays pilot-specific context (choices, playable cards, etc.). See doc/unified-decisions-plan.md.
    */
   decisions?: Decision[];
+  draft?: Draft;
   /**
    * Errors from per-player error logs, surfacing critical issues (loop detection, uncaught exceptions, short ID collisions) for automated analysis. Absent when no errors occurred.
    */
@@ -565,6 +566,78 @@ export interface MultiAmountItem {
   min?: number;
   max?: number;
   [k: string]: unknown;
+}
+/**
+ * Pick-by-pick record of the draft that produced these decks. Absent for constructed games and for any game drafted before this record existed.
+ */
+export interface Draft {
+  seats: DraftSeat[];
+  picks: DraftPick[];
+  deckbuild: DraftDeckbuildStep[];
+}
+/**
+ * Per-seat draft totals.
+ */
+export interface DraftSeat {
+  seat: string;
+  /**
+   * The model that actually served this seat's picks, as reported per call.
+   */
+  model: string | null;
+  picks: number;
+  /**
+   * Picks made by the RateCard heuristic after an LLM error, not by the model.
+   */
+  fallbacks: number;
+  cost_usd: number;
+}
+/**
+ * One booster pick: the pack exactly as the model saw it, what it took, and why.
+ */
+export interface DraftPick {
+  seat: string;
+  /**
+   * 1-based, per seat, across the whole draft.
+   */
+  pick_number: number;
+  /**
+   * Which booster round (1-3).
+   */
+  round: number;
+  /**
+   * Label threading one physical booster across its trips round the pod, so a wheel can be read.
+   */
+  pack: string;
+  /**
+   * Card names in the order the model was shown them.
+   */
+  pack_cards: string[];
+  picked: string | null;
+  /**
+   * Index into pack_cards, or null when the reply could not be matched to a card.
+   */
+  picked_index: number | null;
+  /**
+   * Cards this seat saw in this pack on an earlier pass and passed.
+   */
+  wheeled: string[];
+  pool_size: number;
+  /**
+   * Provider reasoning trace. Empty when the model reports no reasoning tokens, which is normal at low effort.
+   */
+  reasoning: string;
+  elapsed_secs: number | null;
+  cost_usd: number;
+}
+/**
+ * One post-draft deckbuilding call: the spells proposal, its review, or the lands.
+ */
+export interface DraftDeckbuildStep {
+  seat: string;
+  stage: string;
+  content: string;
+  reasoning: string;
+  cost_usd: number;
 }
 export interface GameError {
   /**

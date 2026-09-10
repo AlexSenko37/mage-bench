@@ -6,6 +6,7 @@ from pathlib import Path
 
 from magebench.game.export_card_data import DECKLIST_RE, build_card_data
 from magebench.game.export_decisions import build_decisions
+from magebench.game.export_draft import build_draft
 from magebench.game.export_errors import link_errors_to_decisions, read_errors
 from magebench.game.export_llm_events import read_llm_events
 from magebench.game.game_export_migrations import CURRENT_GAME_EXPORT_VERSION
@@ -370,6 +371,12 @@ def build_export(game_dir: Path) -> BuiltGameExport:
     decisions = build_decisions(snapshots, actions, llm_events, harness_epoch)
     if decisions:
         output["decisions"] = decisions
+
+    # Pick-by-pick draft record, when draft_match.py attached one. Constructed games and
+    # anything drafted before the record existed simply have no draft section.
+    draft = build_draft(game_dir)
+    if draft is not None:
+        output["draft"] = draft
 
     # Read error logs and link to decisions
     errors = read_errors(game_dir)

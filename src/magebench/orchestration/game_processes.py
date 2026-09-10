@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
 
 from magebench.common.llm_cost import DEFAULT_LLM_PROVIDER, required_api_key_env
@@ -179,7 +180,7 @@ def start_server(
     config: Config,
     config_path: Path,
     log_path: Path,
-    extra_jvm_args: list[str] | None = None,
+    extra_jvm_args: Sequence[str] = (),
 ) -> subprocess.Popen:
     """Start the XMage server.
 
@@ -192,7 +193,7 @@ def start_server(
             config.jvm_bridge_opts,
             "-Xmx1024m",
             f"-Dxmage.config.path={config_path}",
-            *(extra_jvm_args or []),
+            *extra_jvm_args,
         ]
     )
 
@@ -293,7 +294,7 @@ def draft_seat_jvm_args(
         # preset's reasoning_effort would apply to gameplay but not to drafting.
         *([f"-Dxmage.llmDraft.effort.{seat_a_name}={seat_a_effort}"] if seat_a_effort else []),
         *([f"-Dxmage.llmDraft.effort.{seat_b_name}={seat_b_effort}"] if seat_b_effort else []),
-        # Turns on the structured per-call record (tokens, cost, reasoning) in draft_llm.jsonl.
+        # Turns on the structured per-call record (tokens, cost, reasoning) in draft_picks.jsonl.
         f"-Dxmage.llmDraft.logDir={log_dir}",
     ]
 
