@@ -21,11 +21,17 @@ import mage.util.TournamentUtil;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,9 +59,22 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
 
     private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
     private static final String DEFAULT_MODEL = "deepseek/deepseek-v3.2";
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(45);
+    // 45s was fine while every seat was silently running the cheap default model. A real
+    // reasoning model at high/max effort routinely spends longer than that on a single pick,
+    // and pickCard() swallows the timeout into a heuristic fallback -- so too low a value
+    // here does not fail loudly, it just quietly stops being an LLM draft. Override with
+    // -Dxmage.llmDraft.pickTimeoutSecs.
+    private static final Duration REQUEST_TIMEOUT =
+            Duration.ofSeconds(Long.getLong("xmage.llmDraft.pickTimeoutSecs", 180L));
     // Deckbuilding is one call over a 45-card pool, so it needs far more room than a pick.
     private static final Duration DECKBUILD_TIMEOUT = Duration.ofSeconds(300);
+    /**
+     * Directory for the structured per-call record, set by the harness with
+     * -Dxmage.llmDraft.logDir. Unset (a plain XMage run) disables recording entirely.
+     */
+    private static final String LOG_DIR = System.getProperty("xmage.llmDraft.logDir", "");
+    private static final Object LOG_LOCK = new Object();
+
     private static final List<String> BASIC_LAND_NAMES =
             List.of("Plains", "Island", "Swamp", "Mountain", "Forest");
     // A deckbuild answer that won't parse costs the whole deck (it falls back to the
@@ -106,7 +125,11 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                     + " from a pack of " + cards.size());
             draft.addPick(playerId, picked.getId(), null);
         } catch (Exception e) {
+            // A fallback here is invisible in the decklist: the pick still happens, it is just
+            // the RateCard heuristic making it rather than the model. Record it so a draft that
+            // quietly stopped being an LLM draft shows up in the numbers.
             logger.error("LlmDraftPlayer(" + getName() + "): LLM pick failed, falling back to heuristic", e);
+            recordEvent(getName(), "pick_fallback", e.getClass().getSimpleName() + ": " + e.getMessage());
             super.pickCard(cards, deck, draft);
         }
     }
@@ -140,14 +163,34 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         messages.add(chatMessage("user", buildPrompt(cards, deck)));
         payload.add("messages", messages);
         applyReasoningEffort(payload);
+        // Picks were the one call whose reasoning was never requested, and the system prompt
+        // asks for a bare number -- so there was no record at all of why any card was taken.
+        // The tokens are billed regardless of whether we ask for the trace back.
+        payload.addProperty("include_reasoning", true);
 
-        String content = sendChatCompletion(payload, apiKey, REQUEST_TIMEOUT);
+        String content = sendChatCompletion(payload, apiKey, REQUEST_TIMEOUT, getName(), "pick");
         return parsePick(content, cards);
     }
 
-    /** POST a chat-completion payload to OpenRouter and return the assistant's text. */
-    private static String sendChatCompletion(JsonObject payload, String apiKey, Duration timeout)
+    /**
+     * POST a chat-completion payload to OpenRouter and return the assistant's text, writing a
+     * structured record of the call to draft_llm.jsonl.
+     *
+     * <p>The draft used to be entirely unaccounted for: draft_match.py sums pilot_costs, which
+     * covers only the play phase, so a "$6.42 game" excluded every pick and deckbuild call.
+     * Asking for usage.include gives OpenRouter's own cost figure rather than one reconstructed
+     * from a rate table that can drift.
+     */
+    private static String sendChatCompletion(
+            JsonObject payload, String apiKey, Duration timeout, String seat, String stage)
             throws IOException, InterruptedException {
+        // usage.include makes OpenRouter return token counts and its authoritative cost for
+        // this call in the response body.
+        JsonObject usageOpt = new JsonObject();
+        usageOpt.addProperty("include", true);
+        payload.add("usage", usageOpt);
+
+        long startedNanos = System.nanoTime();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OPENROUTER_URL))
                 .timeout(timeout)
@@ -161,20 +204,71 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             throw new IOException("OpenRouter returned HTTP " + response.statusCode() + ": " + response.body());
         }
 
+        double elapsedSecs = (System.nanoTime() - startedNanos) / 1_000_000_000.0;
         JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
         JsonObject message = responseJson.getAsJsonArray("choices")
                 .get(0).getAsJsonObject()
                 .getAsJsonObject("message");
         // include_reasoning asks the provider to return the model's reasoning trace. Those
-        // tokens are billed either way, so log them rather than discard them -- they are the
-        // only view into why a deckbuild came out the way it did.
+        // tokens are billed either way, so recording them costs nothing extra and is the only
+        // view into why a pick or a deckbuild came out the way it did.
+        String reasoning = "";
         if (message.has("reasoning") && message.get("reasoning").isJsonPrimitive()) {
-            String reasoning = message.get("reasoning").getAsString();
-            if (!reasoning.isEmpty()) {
-                logger.info("LlmDraftPlayer reasoning: " + reasoning);
-            }
+            reasoning = message.get("reasoning").getAsString();
         }
-        return message.get("content").getAsString();
+        String content = message.has("content") && message.get("content").isJsonPrimitive()
+                ? message.get("content").getAsString()
+                : "";
+
+        JsonObject record = new JsonObject();
+        record.addProperty("ts", Instant.now().toString());
+        record.addProperty("seat", seat);
+        record.addProperty("stage", stage);
+        record.addProperty("model", payload.get("model").getAsString());
+        record.addProperty("elapsed_secs", Math.round(elapsedSecs * 1000.0) / 1000.0);
+        if (responseJson.has("usage") && responseJson.get("usage").isJsonObject()) {
+            record.add("usage", responseJson.getAsJsonObject("usage"));
+        }
+        record.addProperty("reasoning", reasoning);
+        record.addProperty("content", content);
+        appendRecord(record);
+
+        return content;
+    }
+
+    /**
+     * Append one JSON line to draft_llm.jsonl. Synchronized because the two LlmDraftPlayer
+     * seats pick on the same scheduler thread but deckbuild off their own, and a torn line
+     * would make the whole file unparseable. Recording must never break a draft, so an IO
+     * failure here is logged and swallowed.
+     */
+    private static void appendRecord(JsonObject record) {
+        if (LOG_DIR.isEmpty()) {
+            return;
+        }
+        try {
+            Path path = Paths.get(LOG_DIR).resolve("draft_llm.jsonl");
+            synchronized (LOG_LOCK) {
+                Files.createDirectories(path.getParent());
+                Files.writeString(
+                        path,
+                        record.toString() + System.lineSeparator(),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND);
+            }
+        } catch (IOException | UncheckedIOException e) {
+            logger.warn("LlmDraftPlayer: failed to write draft_llm.jsonl: " + e.getMessage());
+        }
+    }
+
+    /** Record a non-HTTP event (a heuristic fallback, say) on the same timeline as the calls. */
+    private static void recordEvent(String seat, String stage, String detail) {
+        JsonObject record = new JsonObject();
+        record.addProperty("ts", Instant.now().toString());
+        record.addProperty("seat", seat);
+        record.addProperty("stage", stage);
+        record.addProperty("detail", detail);
+        appendRecord(record);
     }
 
     private static String resolveModel(String playerName) {
@@ -689,7 +783,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
 
             String content;
             try {
-                content = sendChatCompletion(payload, apiKey, DECKBUILD_TIMEOUT);
+                content = sendChatCompletion(payload, apiKey, DECKBUILD_TIMEOUT, getName(), stage);
             } catch (IOException e) {
                 if (useSchema) {
                     logger.warn("LlmDraftPlayer(" + getName() + "): " + stage + " attempt " + attempt

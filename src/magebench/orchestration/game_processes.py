@@ -77,9 +77,16 @@ def wait_for_draft_completion(
     seat_b_name: str,
     since: float,
     proc: subprocess.Popen,
-    timeout: int = 300,
+    timeout: int = 3600,
 ) -> tuple[Path, Path]:
     """Block until both seats' drafted decks appear under Mage.Server/data/decks/drafted/.
+
+    The 300s this used to default to was calibrated against a draft that -- unnoticed -- ran
+    every seat on the cheap default model at default effort, finishing 72 picks in 152s. A
+    real pod is 3 packs x 14 picks per seat plus the deckbuild round trips, and a reasoning
+    model at high or max effort spends 10-30s on a single pick, so the honest budget is tens
+    of minutes. Too low a value here does not degrade gracefully: the draft is abandoned
+    mid-pod and the whole game is lost.
 
     Note the Mage.Server prefix: start_server() launches the XMage server with
     cwd=project_root/"Mage.Server", and TournamentImpl.saveSubmittedDeckToDisk() resolves
@@ -172,13 +179,20 @@ def start_server(
     config: Config,
     config_path: Path,
     log_path: Path,
+    extra_jvm_args: list[str] | None = None,
 ) -> subprocess.Popen:
-    """Start the XMage server."""
+    """Start the XMage server.
+
+    extra_jvm_args goes to the server JVM, which is where any Player object created by a
+    game or tournament actually lives -- LlmDraftPlayer included. Draft seat configuration
+    has to arrive through here, not through the draft client (see start_draft_client).
+    """
     jvm_args = " ".join(
         [
             config.jvm_bridge_opts,
             "-Xmx1024m",
             f"-Dxmage.config.path={config_path}",
+            *(extra_jvm_args or []),
         ]
     )
 
@@ -257,19 +271,42 @@ def start_gui_client(
     )
 
 
+def draft_seat_jvm_args(
+    seat_a_name: str,
+    seat_a_model: str,
+    seat_b_name: str,
+    seat_b_model: str,
+    log_dir: Path,
+    seat_a_effort: str | None = None,
+    seat_b_effort: str | None = None,
+) -> list[str]:
+    """Per-seat draft configuration for the *server* JVM.
+
+    LlmDraftPlayer resolves these with System.getProperty at pick time, in the process that
+    owns the Player object — the server. The per-seat suffix is the seat's XMage player name,
+    which is what LlmDraftPlayer.getName() returns.
+    """
+    return [
+        f"-Dxmage.llmDraft.model.{seat_a_name}={seat_a_model}",
+        f"-Dxmage.llmDraft.model.{seat_b_name}={seat_b_model}",
+        # Without these the draft/deckbuild calls run at the provider's default effort, so a
+        # preset's reasoning_effort would apply to gameplay but not to drafting.
+        *([f"-Dxmage.llmDraft.effort.{seat_a_name}={seat_a_effort}"] if seat_a_effort else []),
+        *([f"-Dxmage.llmDraft.effort.{seat_b_name}={seat_b_effort}"] if seat_b_effort else []),
+        # Turns on the structured per-call record (tokens, cost, reasoning) in draft_llm.jsonl.
+        f"-Dxmage.llmDraft.logDir={log_dir}",
+    ]
+
+
 def start_draft_client(
     pm: ProcessManager,
     project_root: Path,
     config: Config,
     seat_a_name: str,
-    seat_a_model: str,
     seat_b_name: str,
-    seat_b_model: str,
     set_code: str,
     log_path: Path,
     packs_per_player: int = 3,
-    seat_a_effort: str | None = None,
-    seat_b_effort: str | None = None,
     filler_bots: int = 6,
     tournament_type: str = "Booster Draft Elimination",
 ) -> subprocess.Popen:
@@ -277,10 +314,13 @@ def start_draft_client(
 
     Drives TablesPanel.createConfiguredAiPuppeteerTournament() (Mage.Client module — same
     process type as start_gui_client, since that's where the tournament auto-start code
-    lives). Both seats are LlmDraftPlayer bots; the per-seat -Dxmage.llmDraft.model.<name>
-    properties let them draft with different models even though they run in the same server
-    JVM. The post-draft match is expected to auto-concede immediately — only the two
-    decklists TournamentImpl saves to data/decks/drafted/ matter.
+    lives). This process only asks the server to create and start the table; the
+    LlmDraftPlayer seats themselves are instantiated server-side, so their per-seat
+    -Dxmage.llmDraft.* configuration must be set on the *server* JVM via start_server's
+    extra_jvm_args — see draft_seat_jvm_args(). Setting it here instead is a silent no-op:
+    every seat falls through to LlmDraftPlayer's DEFAULT_MODEL at the provider's default
+    effort, and nothing in any log says so. The post-draft match is expected to auto-concede
+    immediately — only the two decklists TournamentImpl saves to data/decks/drafted/ matter.
     """
     # A real booster draft needs a pod: packs are passed around the table, so the seats
     # between the two LLMs are what make signal-reading and wheeling exist at all. Eight is
@@ -317,12 +357,6 @@ def start_draft_client(
             f"-Dxmage.aiPuppeteer.port={config.port}",
             f"-Dxmage.aiPuppeteer.user={config.user}",
             f"-Dxmage.aiPuppeteer.password={config.password}",
-            f"-Dxmage.llmDraft.model.{seat_a_name}={seat_a_model}",
-            f"-Dxmage.llmDraft.model.{seat_b_name}={seat_b_model}",
-            # Without these the draft/deckbuild calls run at the provider's default effort,
-            # so a preset's reasoning_effort would apply to gameplay but not to drafting.
-            *([f"-Dxmage.llmDraft.effort.{seat_a_name}={seat_a_effort}"] if seat_a_effort else []),
-            *([f"-Dxmage.llmDraft.effort.{seat_b_name}={seat_b_effort}"] if seat_b_effort else []),
         ]
     )
 

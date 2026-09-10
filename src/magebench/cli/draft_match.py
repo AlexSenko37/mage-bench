@@ -27,6 +27,7 @@ from magebench.common.process_manager import ProcessManager, jvm_oom_preexec_fn
 from magebench.game.export_game import read_game_winner
 from magebench.orchestration.config import Config, load_presets
 from magebench.orchestration.game_processes import (
+    draft_seat_jvm_args,
     start_draft_client,
     start_server,
     wait_for_draft_completion,
@@ -96,6 +97,92 @@ def _timestamp() -> str:
     return datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%Y%m%d_%H%M%S")
 
 
+def _read_draft_calls(draft_dir: Path) -> list[dict]:
+    """Parse the per-call records LlmDraftPlayer wrote during the draft.
+
+    Missing file means the draft ran without -Dxmage.llmDraft.logDir, or fell back to the
+    heuristic for every pick before any call was made — both are worth surfacing rather than
+    reporting a confident $0.
+    """
+    path = draft_dir / "draft_llm.jsonl"
+    if not path.exists():
+        return []
+    calls = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            calls.append(json.loads(line))
+        except json.JSONDecodeError:
+            logger.warning("Unparseable line in %s, skipping", path)
+    return calls
+
+
+def summarize_draft_cost(draft_dir: Path) -> tuple[float, dict[str, dict]]:
+    """Total draft spend in USD, plus a per-seat breakdown.
+
+    Cost comes from OpenRouter's own usage.cost on each response (requested with
+    usage.include), not from a local rate table — the rate tables in puppeteer/models.json
+    are hand-maintained and have already drifted once.
+    """
+    per_seat: dict[str, dict] = {}
+    total = 0.0
+    for call in _read_draft_calls(draft_dir):
+        seat = call.get("seat", "?")
+        stage = call.get("stage", "?")
+        row = per_seat.setdefault(
+            seat,
+            {"calls": 0, "cost": 0.0, "prompt": 0, "completion": 0, "reasoning": 0,
+             "fallbacks": 0, "models": set(), "stages": {}},
+        )
+        if stage == "pick_fallback":
+            row["fallbacks"] += 1
+            continue
+        row["calls"] += 1
+        row["stages"][stage] = row["stages"].get(stage, 0) + 1
+        if call.get("model"):
+            row["models"].add(call["model"])
+        usage = call.get("usage") or {}
+        cost = float(usage.get("cost", 0.0) or 0.0)
+        row["cost"] += cost
+        total += cost
+        row["prompt"] += int(usage.get("prompt_tokens", 0) or 0)
+        row["completion"] += int(usage.get("completion_tokens", 0) or 0)
+        details = usage.get("completion_tokens_details") or {}
+        row["reasoning"] += int(details.get("reasoning_tokens", 0) or 0)
+    return total, per_seat
+
+
+def _report_draft_cost(draft_dir: Path, seat_a_name: str, seat_b_name: str) -> float:
+    """Log the draft's own spend and return it. Returns 0.0 with a warning if unrecorded."""
+    total, per_seat = summarize_draft_cost(draft_dir)
+    if not per_seat:
+        logger.warning(
+            "No draft LLM calls recorded in %s — the draft cost is unknown, not zero", draft_dir
+        )
+        return 0.0
+    for seat in (seat_a_name, seat_b_name):
+        row = per_seat.get(seat)
+        if row is None:
+            logger.warning("Draft seat %s made no LLM calls at all", seat)
+            continue
+        models = ", ".join(sorted(row["models"])) or "?"
+        logger.info(
+            "Draft %s: $%.4f over %d calls (%s) — %d prompt / %d completion tok "
+            "(%d reasoning), %d heuristic fallbacks",
+            seat, row["cost"], row["calls"], models,
+            row["prompt"], row["completion"], row["reasoning"], row["fallbacks"],
+        )
+        if row["fallbacks"]:
+            logger.warning(
+                "Draft %s fell back to the RateCard heuristic on %d pick(s) — those picks "
+                "were not made by the model", seat, row["fallbacks"],
+            )
+    logger.info("Draft total: $%.4f", total)
+    return total
+
+
 def run_draft(
     preset_a: str,
     preset_b: str,
@@ -103,8 +190,12 @@ def run_draft(
     packs_per_player: int,
     project_root: Path,
     filler_bots: int = 6,
-) -> tuple[Path, Path, str, str]:
-    """Run one headless all-bot draft tournament; return (deck_a, deck_b, seat_a_name, seat_b_name)."""
+    draft_timeout: int = 3600,
+) -> tuple[Path, Path, str, str, float]:
+    """Run one headless all-bot draft tournament.
+
+    Returns (deck_a, deck_b, seat_a_name, seat_b_name, draft_cost_usd).
+    """
     draft_dir = _LOGS_DIR / f"draft_{_timestamp()}"
     draft_dir.mkdir(parents=True, exist_ok=True)
 
@@ -119,17 +210,32 @@ def run_draft(
             destination=server_config_path,
             port=config.port,
         )
-        server_log = draft_dir / "server.log"
-        logger.info("Starting draft server on port %d...", config.port)
-        start_server(pm, project_root, config, server_config_path, server_log)
-        if not wait_for_port(config.server, config.port, config.server_wait):
-            raise RuntimeError(f"Draft server failed to start within {config.server_wait}s — check {server_log}")
-        port_reservation.release()
-
         seat_a_name = f"{preset_a}-A"
         seat_b_name = f"{preset_b}-B"
         model_a = _model_for_preset(preset_a)
         model_b = _model_for_preset(preset_b)
+
+        server_log = draft_dir / "server.log"
+        logger.info("Starting draft server on port %d...", config.port)
+        start_server(
+            pm,
+            project_root,
+            config,
+            server_config_path,
+            server_log,
+            extra_jvm_args=draft_seat_jvm_args(
+                seat_a_name=seat_a_name,
+                seat_a_model=model_a,
+                seat_b_name=seat_b_name,
+                seat_b_model=model_b,
+                log_dir=draft_dir,
+                seat_a_effort=_effort_for_preset(preset_a),
+                seat_b_effort=_effort_for_preset(preset_b),
+            ),
+        )
+        if not wait_for_port(config.server, config.port, config.server_wait):
+            raise RuntimeError(f"Draft server failed to start within {config.server_wait}s — check {server_log}")
+        port_reservation.release()
 
         client_log = draft_dir / "client.log"
         since = time.time()
@@ -147,19 +253,18 @@ def run_draft(
             project_root,
             config,
             seat_a_name=seat_a_name,
-            seat_a_model=model_a,
             seat_b_name=seat_b_name,
-            seat_b_model=model_b,
             set_code=set_code,
             log_path=client_log,
             packs_per_player=packs_per_player,
-            seat_a_effort=_effort_for_preset(preset_a),
-            seat_b_effort=_effort_for_preset(preset_b),
             filler_bots=filler_bots,
         )
-        deck_a, deck_b = wait_for_draft_completion(project_root, seat_a_name, seat_b_name, since, proc)
+        deck_a, deck_b = wait_for_draft_completion(
+            project_root, seat_a_name, seat_b_name, since, proc, timeout=draft_timeout
+        )
         logger.info("Draft complete: %s, %s", deck_a.name, deck_b.name)
-        return deck_a, deck_b, seat_a_name, seat_b_name
+        draft_cost = _report_draft_cost(draft_dir, seat_a_name, seat_b_name)
+        return deck_a, deck_b, seat_a_name, seat_b_name, draft_cost
     finally:
         pm.cleanup()
 
@@ -204,6 +309,13 @@ def main() -> int:
     parser.add_argument("--games", type=int, default=1)
     parser.add_argument("--packs-per-player", type=int, default=3)
     parser.add_argument(
+        "--draft-timeout",
+        type=int,
+        default=3600,
+        help="Seconds to wait for both drafted decks before abandoning the game (default 3600). "
+        "A reasoning model at max effort can spend 20+ minutes on a full pod draft.",
+    )
+    parser.add_argument(
         "--filler-bots",
         type=int,
         default=6,
@@ -221,6 +333,7 @@ def main() -> int:
 
     wins = {args.preset_a: 0, args.preset_b: 0}
     total_cost = 0.0
+    total_draft_cost = 0.0
     games_completed = 0
 
     for i in range(1, args.games + 1):
@@ -229,13 +342,14 @@ def main() -> int:
             # Draft seat names (3rd/4th values) only matter to the draft phase itself
             # (per-seat JVM properties, drafted-deck filenames) - the play phase logs
             # in under its own fixed _PILOT_A_NAME/_PILOT_B_NAME, so they're discarded here.
-            deck_a, deck_b, _, _ = run_draft(
+            deck_a, deck_b, _, _, draft_cost = run_draft(
                 args.preset_a,
                 args.preset_b,
                 args.set_code,
                 args.packs_per_player,
                 _ROOT,
                 filler_bots=args.filler_bots,
+                draft_timeout=args.draft_timeout,
             )
         except (RuntimeError, TimeoutError) as exc:
             logger.error("Game %d: draft failed: %s", i, exc)
@@ -253,8 +367,12 @@ def main() -> int:
 
         session = result.sessions[0]
         winner_name = read_game_winner(session.game_dir)
-        cost = sum(result.pilot_costs.values())
+        play_cost = sum(result.pilot_costs.values())
+        # The draft is a real LLM expense (roughly 40 picks plus the deckbuild round trips per
+        # seat) and used to be omitted from every figure this tool reported.
+        cost = play_cost + draft_cost
         total_cost += cost
+        total_draft_cost += draft_cost
         games_completed += 1
         if winner_name == _PILOT_A_NAME:
             wins[args.preset_a] += 1
@@ -262,12 +380,16 @@ def main() -> int:
             wins[args.preset_b] += 1
         else:
             logger.warning("Game %d: no clear winner recorded (%r)", i, winner_name)
-        print(f"Game {i} winner: {winner_name}  cost: ${cost:.4f}")
+        print(
+            f"Game {i} winner: {winner_name}  cost: ${cost:.4f} "
+            f"(draft ${draft_cost:.4f} + play ${play_cost:.4f})"
+        )
 
     print(f"\n{'=' * 60}\nFINAL RESULTS ({games_completed}/{args.games} games completed)\n{'=' * 60}")
     print(f"  {args.preset_a}: {wins[args.preset_a]} wins")
     print(f"  {args.preset_b}: {wins[args.preset_b]} wins")
-    print(f"  Total cost: ${total_cost:.4f}")
+    print(f"  Total cost: ${total_cost:.4f}"
+          f"  (draft ${total_draft_cost:.4f}, play ${total_cost - total_draft_cost:.4f})")
     print(f"{'=' * 60}")
     return 0
 
