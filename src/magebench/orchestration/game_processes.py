@@ -291,8 +291,10 @@ def start_draft_client(
         {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_a_name},
         {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_b_name},
     ]
-    for i in range(filler_bots):
-        players.append({"type": "bot", "ai": "COMPUTER_DRAFT_BOT", "name": f"DraftBot{i + 1}"})
+    players.extend(
+        {"type": "bot", "ai": "COMPUTER_DRAFT_BOT", "name": f"DraftBot{i + 1}"}
+        for i in range(filler_bots)
+    )
 
     players_config = json.dumps(
         {
