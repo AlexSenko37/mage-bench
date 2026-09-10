@@ -41,7 +41,8 @@ public class AiPuppeteerConfig {
     private List<PlayerConfig> players = new ArrayList<>();
     private String gameType;   // e.g. "Two Player Duel", "Commander Free For All"
     private String deckType;   // e.g. "Constructed - Legacy", "Variant Magic - Freeform Commander"
-    private String draftSetCode;      // e.g. "TLA" — only read by the draft-tournament auto-start path
+    private String draftSetCode;
+    public String draftTournamentType;      // e.g. "TLA" — only read by the draft-tournament auto-start path
     private int draftPacksPerPlayer = 3;
 
     public List<PlayerConfig> getPlayers() {
@@ -58,6 +59,22 @@ public class AiPuppeteerConfig {
 
     public String getDeckType() {
         return deckType;
+    }
+
+    /**
+     * XMage tournament type for a draft. Defaults to the real 8-seat booster draft.
+     *
+     * "Booster Draft Elimination (Rich Man)" was used before because it is the only
+     * booster-draft type accepting 2 players, but it is not really a draft: its
+     * passBoosterToLeft() hands every player a brand-new booster on every pick, so packs
+     * never shrink, nothing is ever passed, and the two drafters never compete for a card.
+     * Plain "Booster Draft Elimination" needs at least 4 seats, which is what
+     * draftFillerBots is for.
+     */
+    public String getDraftTournamentType() {
+        return draftTournamentType == null || draftTournamentType.isEmpty()
+                ? "Booster Draft Elimination"
+                : draftTournamentType;
     }
 
     public String getDraftSetCode() {
