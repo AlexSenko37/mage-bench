@@ -37,6 +37,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -131,7 +135,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             return;
         }
         try {
-            Card picked = pickCardWithLlm(cards, deck);
+            Card picked = pickCardWithLlm(cards, deck, draft);
             logger.info("LlmDraftPlayer(" + getName() + "): picked " + picked.getName()
                     + " from a pack of " + cards.size());
             draft.addPick(playerId, picked.getId(), null);
@@ -145,7 +149,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
     }
 
-    private Card pickCardWithLlm(List<Card> cards, Deck deck) throws IOException, InterruptedException {
+    private Card pickCardWithLlm(List<Card> cards, Deck deck, Draft draft)
+            throws IOException, InterruptedException {
         // DraftImpl's booster-sending scheduler runs every player's pickCard() inline on its
         // own single scheduled-executor thread, then self-cancels its own repeating task
         // (boosterSendingEnd() -> Future.cancel(true)) once a round finishes — which interrupts
@@ -165,13 +170,16 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         JsonObject payload = new JsonObject();
         payload.addProperty("model", model);
         JsonArray messages = new JsonArray();
+        // The system prompt says what the model is doing and how to answer, and stops
+        // there. It used to also prescribe a 2-colour deck and list what to weigh (power,
+        // curve, synergy) -- that is the definition of drafting, so a model that needs to
+        // be told is a model whose limited skill we are trying to measure. The 2-colour
+        // rule in particular was added to fight five-colour decks whose real cause was
+        // buildPrompt() showing an empty pool on every pick.
         messages.add(chatMessage("system",
-                "You are an expert Magic: The Gathering booster draft player. "
-                        + "You will be shown your picks so far and the current pack. "
-                        + "Pick the single best card for a cohesive, powerful 2-color deck, "
-                        + "weighing raw power, curve, and synergy with your existing picks. "
+                "You are drafting in a Magic: The Gathering booster draft. "
                         + "Respond with ONLY the pack number of your pick, nothing else."));
-        messages.add(chatMessage("user", buildPrompt(cards, deck)));
+        messages.add(chatMessage("user", buildPrompt(cards, deck, draft)));
         payload.add("messages", messages);
         payload.addProperty("max_tokens", PICK_MAX_TOKENS);
         applyReasoningEffort(payload);
@@ -250,7 +258,28 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .build();
 
-        HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        // HttpRequest.timeout() only bounds the wait for the response *headers*. Once a
+        // provider has sent those, a stalled body blocks HttpClient.send() indefinitely:
+        // a draft was found parked in send() for 340s against a 180s timeout, and would
+        // have sat there until wait_for_draft_completion gave up an hour later and threw
+        // the whole game away. sendAsync + get(timeout) puts a real wall-clock bound on
+        // the entire exchange, body included.
+        CompletableFuture<HttpResponse<String>> pending =
+                HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response;
+        try {
+            response = pending.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            pending.cancel(true);
+            throw new IOException("no complete response from OpenRouter within "
+                    + timeout.toSeconds() + "s", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException ioCause) {
+                throw ioCause;
+            }
+            throw new IOException(cause == null ? e : cause);
+        }
         if (response.statusCode() != 200) {
             throw new IOException("OpenRouter returned HTTP " + response.statusCode() + ": " + response.body());
         }
@@ -282,6 +311,18 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
         record.addProperty("reasoning", reasoning);
         record.addProperty("content", content);
+        // What the model was actually asked. Reading the prompt off the payload rather than
+        // rebuilding it means the record cannot drift from the request that was sent.
+        JsonArray sent = payload.getAsJsonArray("messages");
+        for (int i = 0; i < sent.size(); i++) {
+            JsonObject sentMessage = sent.get(i).getAsJsonObject();
+            String role = sentMessage.get("role").getAsString();
+            if ("system".equals(role)) {
+                record.addProperty("system", sentMessage.get("content").getAsString());
+            } else if ("user".equals(role)) {
+                record.addProperty("prompt", sentMessage.get("content").getAsString());
+            }
+        }
 
         return new CallResult(content, record);
     }
@@ -448,9 +489,14 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // -- anything not in the pool is rejected rather than silently resolving to
         // whatever card happened to sit at that number.
         List<Card> chosen = null;
+        // The best usable proposal seen so far. Without this, a model that answers the
+        // review round badly loses a deck it had already built correctly: gpt-oss proposed
+        // a clean 23 spells, then on review said "accept" and repeated 0 of them, and the
+        // whole deck fell through to the heuristic builder.
+        List<Card> bestSoFar = null;
         String feedback = null;
         for (int round = 1; round <= SPELL_ROUNDS; round++) {
-            JsonObject answer = requestJson("spells",
+            JsonObject answer = requestJson(feedback == null ? "spells" : "spells_review",
                     buildSpellPrompt(pool, deckMinSize, feedback), spellsResponseFormat());
             if (answer == null) {
                 logger.error("LlmDraftPlayer(" + getName() + "): no parseable spell JSON");
@@ -460,21 +506,33 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
 
             List<Card> candidate = resolveChosenSpells(answer, pool);
             boolean accepted = round > 1 && isAccept(answer);
+            boolean usable = !candidate.isEmpty() && isPlausibleSpellCount(candidate.size(), deckMinSize);
+            if (usable) {
+                bestSoFar = candidate;
+            }
 
+            // Accepting means the model is happy with the list it was just shown. Requiring
+            // it to retype all 23 names to say so turns a confirmation into a chance to
+            // drop the deck, so a degraded repeat falls back to what it is confirming.
+            if (accepted) {
+                chosen = usable ? candidate : bestSoFar;
+                if (chosen != null) {
+                    if (!usable) {
+                        logger.warn("LlmDraftPlayer(" + getName() + "): accepted but repeated "
+                                + candidate.size() + " of " + chosen.size()
+                                + " cards; keeping the list it accepted");
+                    }
+                    break;
+                }
+            }
             if (candidate.isEmpty()) {
                 feedback = "Your last answer named no cards from your pool. Choose from the "
                         + "list above, using each card's exact name.";
                 continue;
             }
-            if (accepted && isPlausibleSpellCount(candidate.size(), deckMinSize)) {
-                chosen = candidate;
-                break;
-            }
             if (round == SPELL_ROUNDS) {
-                // Out of review rounds: take the list if it is usable at all.
-                if (isPlausibleSpellCount(candidate.size(), deckMinSize)) {
-                    chosen = candidate;
-                }
+                // Out of review rounds: take the best usable list seen in any round.
+                chosen = bestSoFar;
                 break;
             }
             // Hand back what the proposal actually amounts to and let the model
@@ -637,6 +695,18 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         sb.append("- ").append(chosen.size()).append(" spells, so ").append(lands)
                 .append(" basic lands to reach ").append(deckMinSize).append(" cards")
                 .append(lands == 17 ? "" : " (17 is typical)").append('\n');
+        // Previously the feedback only reported the resulting land count and left the model
+        // to infer that 30 spells was unusable. It did not: qwen3-235b was shown "30 spells,
+        // so 10 basic lands" twice and proposed 30 again both times. Naming the bound is the
+        // difference between a hint and a rule.
+        if (!isPlausibleSpellCount(chosen.size(), deckMinSize)) {
+            sb.append("- that is outside the ").append(minSpells(deckMinSize)).append("-")
+                    .append(maxSpells(deckMinSize)).append(" spells a ").append(deckMinSize)
+                    .append("-card deck can be built from, so this list cannot be used as it ")
+                    .append("stands -- ")
+                    .append(chosen.size() > maxSpells(deckMinSize) ? "cut it down" : "add more")
+                    .append(" to land inside that range\n");
+        }
         sb.append("- ").append(creatures).append(" creatures, ")
                 .append(chosen.size() - creatures).append(" non-creature spells\n");
         sb.append("- coloured mana symbols: ");
@@ -668,11 +738,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             sb.append(e.getKey()).append("cmc x").append(e.getValue());
             firstCurve = false;
         }
-        sb.append("\n\nDoes this match the deck you described? If it does, set \"decision\" ")
-                .append("to \"accept\" and repeat the same card names. If something is off -- ")
-                .append("a colour you did not mean to be in, too few or too many spells, a curve ")
-                .append("too heavy at the top -- set \"decision\" to \"revise\" and give the ")
-                .append("corrected list.");
+        // Counts only, computed in Java -- no model is asked what it thinks of this deck.
+        // The examples of what might be wrong used to be listed here; deciding what counts
+        // as wrong is the model's job.
+        sb.append("\n\nIs this the deck you intended? If it is, set \"decision\" to ")
+                .append("\"accept\" and repeat the same card names. If not, set \"decision\" ")
+                .append("to \"revise\" and give the corrected list.");
         return sb.toString();
     }
 
@@ -752,29 +823,23 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         if (feedback != null) {
             return sb.toString();
         }
-        sb.append("\nChoose the spells for your deck. You will pick basic lands separately ")
-                .append("afterwards, so do not count lands here.\n");
-        sb.append("The finished deck will be exactly ").append(deckMinSize)
-                .append(" cards including lands. A typical limited deck is 17 lands and 23 spells, ")
-                .append("so aim for about 23 spells.\n");
-        // Stronger than the earlier wording, which did not move spell selection at all --
-        // every deck still came out five colours. Splashing is normal in this set, so the
-        // splash is still allowed; what is spelled out is the price, and that a third
-        // colour has to earn its place rather than being where the leftovers go.
-        sb.append("Build a two-colour deck. Pick the two colours where your best cards are ")
-                .append("and play essentially all of your playables in them.\n");
-        sb.append("A splash of a third colour is allowed, but only for a card that is worth ")
-                .append("bending the deck around -- a bomb or premium removal, not merely a good ")
-                .append("card. A splash costs you 2-3 lands that then do not cast your main ")
-                .append("colours, which makes every other card in the deck less reliable. ")
-                .append("Splashing a fourth colour is almost never right, and a five-colour ")
-                .append("deck loses more games to bad mana than it wins on card quality.\n");
-        sb.append("Cards outside your colours stay in the sideboard even when they are strong. ")
-                .append("A powerful card you cannot cast on time is worse than a modest one you can.\n");
-        sb.append("\nIn \"analysis\", name your two main colours and say why. If you are ")
-                .append("splashing, name the card and say what makes it worth the mana cost. ")
-                .append("Then give the exact card names in \"chosen_spells\" -- names only, ")
-                .append("copied from the list above. You can only play cards you drafted.");
+        // Mechanics and constraints only. The colour advice that used to live here (build
+        // two colours, what a splash costs, leave off-colour cards in the sideboard) is the
+        // deckbuilding judgement this is supposed to measure.
+        sb.append("\nBuild your deck from these cards. It must be exactly ").append(deckMinSize)
+                .append(" cards: the cards you pick here plus basic lands.\n");
+        sb.append("Basic lands are added in a separate step straight after this one and are ")
+                .append("unlimited, so choose only non-land cards here.\n");
+        // Its own sentence, not a clause. Buried mid-sentence as "about 23, leaving room for
+        // about 17 lands", qwen3-235b came back with 32/30/30 spells twice running and lost
+        // the deck to the heuristic builder both times.
+        sb.append("A typical limited deck is 17 lands and 23 spells, so aim for about 23 spells. ")
+                .append("A list outside ").append(minSpells(deckMinSize)).append("-")
+                .append(maxSpells(deckMinSize)).append(" spells cannot be used.\n");
+        sb.append("Anything you leave out stays in your sideboard.\n");
+        sb.append("\nIn \"analysis\", say what deck you are building. Then give the exact card ")
+                .append("names in \"chosen_spells\" -- names only, copied from the list above. ")
+                .append("You can only play cards you drafted.");
         return sb.toString();
     }
 
@@ -796,7 +861,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         sb.append("\nTo reach exactly ").append(deckMinSize).append(" cards you need ")
                 .append(landsNeeded).append(" basic lands.\n");
         if (!suggestion.isEmpty()) {
-            sb.append("Split proportionally to those symbols, that would be: ");
+            sb.append("Split proportionally to those symbols, that would be: ");  // offered, not prescribed
             boolean first = true;
             for (Map.Entry<String, Integer> e : suggestion.entrySet()) {
                 if (!first) {
@@ -806,12 +871,11 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 first = false;
             }
             sb.append(".\n");
-            sb.append("Use that split unless you have a reason to differ -- for example a ")
-                    .append("colour you only need late, or a card you must cast on curve.\n");
         }
-        sb.append("Every colour in your spells needs sources, or those cards are dead. ")
-                .append("Use 0 for a basic land type you are not playing, never a negative number.\n");
-        sb.append("The counts must add up to ").append(landsNeeded).append(".\n");
+        // "never a negative number" used to be here, after a model answered -1. That is a
+        // constraint, not advice, so it now lives in the response schema as minimum 0.
+        sb.append("The counts must add up to ").append(landsNeeded)
+                .append(". Use 0 for a basic land type you are not playing.\n");
         sb.append("\nIn \"analysis\", briefly justify your split. Then give the counts in ")
                 .append("\"land_counts\".");
         return sb.toString();
@@ -937,6 +1001,9 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         for (String name : BASIC_LAND_NAMES) {
             JsonObject intType = new JsonObject();
             intType.addProperty("type", "integer");
+            // A model once answered -1 here. A schema bound is a harder guarantee than an
+            // instruction not to, and it frees the prompt from having to say so.
+            intType.addProperty("minimum", 0);
             landProps.add(name, intType);
             landRequired.add(name);
         }
@@ -982,6 +1049,21 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
      * also what stops a hallucinated card from entering the deck. Duplicates are honoured
      * only up to the number of physical copies actually drafted.
      */
+    /**
+     * The leading card name in a pool line, dropping the mana cost, rarity and rules text
+     * that cardSummary() appends after it.
+     */
+    private static String cardNamePrefix(String entry) {
+        int cut = entry.length();
+        for (String marker : new String[]{" {", " ["}) {
+            int at = entry.indexOf(marker);
+            if (at >= 0 && at < cut) {
+                cut = at;
+            }
+        }
+        return entry.substring(0, cut).trim();
+    }
+
     private List<Card> resolveChosenSpells(JsonObject choice, List<Card> pool) {
         List<Card> chosen = new ArrayList<>();
         if (!choice.has("chosen_spells") || !choice.get("chosen_spells").isJsonArray()) {
@@ -1002,6 +1084,14 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 continue;
             }
             List<Card> copies = available.get(normaliseCardName(name));
+            if (copies == null) {
+                // The pool is shown as "Name {cost} [rarity] rules", and a model sometimes
+                // copies the whole line back rather than just the name. Every one of those
+                // is a card it really does own, so matching the name prefix recovers the
+                // answer instead of throwing the deck away: qwen3-235b lost all 23 of its
+                // final spells this way and fell back to the heuristic builder.
+                copies = available.get(normaliseCardName(cardNamePrefix(name)));
+            }
             if (copies == null || copies.isEmpty()) {
                 logger.warn("LlmDraftPlayer(" + getName() + "): ignoring \"" + name
                         + "\" -- not in the drafted pool"
@@ -1104,8 +1194,30 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         return message;
     }
 
-    private String buildPrompt(List<Card> cards, Deck deck) {
+    /**
+     * The per-pick prompt: how the draft works, what deck it is building towards, the pool
+     * and the pack. Mechanics only -- no advice on colours, power or curve, which is the
+     * judgement being measured.
+     *
+     * Pod size and booster count come off the live Draft rather than being hardcoded, so
+     * the description stays true if the tournament is configured differently.
+     */
+    private String buildPrompt(List<Card> cards, Deck deck, Draft draft) {
         StringBuilder sb = new StringBuilder();
+
+        int pod = draft.getPlayers().size();
+        sb.append("Booster draft with ").append(pod).append(" players. Everyone opens a ")
+                .append("booster at the same time, takes one card from it, and passes the rest ")
+                .append("on to the next player. You pick one card from each pack that reaches ")
+                .append("you, until the packs are empty and everyone opens the next booster. ")
+                .append("A pack you have already picked from comes back to you after ")
+                .append(pod).append(" picks, with the cards the other players took removed.\n");
+        sb.append("There are ").append(draft.getNumberBoosters())
+                .append(" boosters; this is booster ").append(draft.getBoosterNum()).append(".\n");
+        sb.append("When the draft ends you will build a deck from the cards you took. It must ")
+                .append("be exactly 40 cards: roughly 23 of your drafted cards plus roughly 17 ")
+                .append("basic lands. Basic lands are added in a separate step afterwards and ")
+                .append("are unlimited, so you do not need to draft them.\n\n");
 
         // DraftPlayer.addPick() files every pick into the sideboard, never into
         // deck.getCards() -- which is what construct() reads too (see the pool it builds

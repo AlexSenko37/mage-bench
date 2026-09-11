@@ -91,6 +91,38 @@ export function summarizeSeat(draft, seatName) {
   };
 }
 
+/**
+ * The distinct prompts used in this draft, in the order the stages occur.
+ *
+ * Deliberately not per pick: every pick shares one prompt that differs only in the pool
+ * and the pack, and the replay already draws both as cards. Repeating the instructions
+ * above all 39 picks would bury the model's actual answer.
+ */
+export const STAGE_ORDER = ["pick", "spells", "spells_review", "lands"];
+
+export function draftPrompts(draft) {
+  if (!draft || !draft.prompts) return [];
+  return draft.prompts.slice().sort(function (a, b) {
+    var ai = STAGE_ORDER.indexOf(a.stage);
+    var bi = STAGE_ORDER.indexOf(b.stage);
+    // An unrecognised stage sorts last rather than first, so a new one added later shows
+    // up at the end instead of silently displacing the pick prompt.
+    return (ai === -1 ? STAGE_ORDER.length : ai) - (bi === -1 ? STAGE_ORDER.length : bi);
+  });
+}
+
+/** Human label for a draft stage. */
+export function stageLabel(stage) {
+  var LABELS = {
+    pick: "Each pick",
+    spells: "Deckbuild: choosing spells",
+    spells_review: "Deckbuild: reviewing the proposal",
+    lands: "Deckbuild: choosing lands",
+    deckbuild_fallback: "Deckbuild fell back to the heuristic",
+  };
+  return LABELS[stage] || stage;
+}
+
 /** Marker stage written when the heuristic builder produced the deck instead of the model. */
 export const DECKBUILD_FALLBACK_STAGE = "deckbuild_fallback";
 

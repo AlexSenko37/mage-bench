@@ -4,9 +4,11 @@ import {
   deckbuildAnalysis,
   deckbuildFallbackReason,
   deckbuildForSeat,
+  draftPrompts,
   draftSeats,
   pickLabel,
   picksForSeat,
+  stageLabel,
   summarizeSeat,
   wheeledCount,
 } from "../src/scripts/draft-replay.js";
@@ -243,5 +245,63 @@ describe("deckbuildFallbackReason", () => {
 
   it("is null for a game with no deckbuild record at all", () => {
     expect(deckbuildFallbackReason({}, "modelA-A")).toBeNull();
+  });
+});
+
+describe("draftPrompts", () => {
+  const prompt = (stage, calls = 1) => ({
+    stage,
+    seat: "modelA-A",
+    system: "sys " + stage,
+    user: "user " + stage,
+    calls,
+  });
+
+  it("orders stages the way the draft runs them", () => {
+    const draft = {
+      prompts: [prompt("lands"), prompt("pick"), prompt("spells_review"), prompt("spells")],
+    };
+    expect(draftPrompts(draft).map((p) => p.stage)).toEqual([
+      "pick",
+      "spells",
+      "spells_review",
+      "lands",
+    ]);
+  });
+
+  it("puts an unrecognised stage last rather than first", () => {
+    // A stage added later must not silently displace the pick prompt at the top.
+    const draft = { prompts: [prompt("mystery"), prompt("pick")] };
+    expect(draftPrompts(draft).map((p) => p.stage)).toEqual(["pick", "mystery"]);
+  });
+
+  it("is empty for a draft recorded before prompts were captured", () => {
+    expect(draftPrompts({ picks: [], seats: [], deckbuild: [] })).toEqual([]);
+    expect(draftPrompts(null)).toEqual([]);
+  });
+
+  it("does not mutate the exported order", () => {
+    const prompts = [prompt("lands"), prompt("pick")];
+    const draft = { prompts };
+    draftPrompts(draft);
+    expect(prompts.map((p) => p.stage)).toEqual(["lands", "pick"]);
+  });
+
+  it("keeps the call count so one example can stand for many calls", () => {
+    const draft = { prompts: [prompt("pick", 39)] };
+    expect(draftPrompts(draft)[0].calls).toBe(39);
+  });
+});
+
+describe("stageLabel", () => {
+  it("names the stages in plain language", () => {
+    expect(stageLabel("pick")).toBe("Each pick");
+    expect(stageLabel("spells")).toBe("Deckbuild: choosing spells");
+    expect(stageLabel("spells_review")).toBe("Deckbuild: reviewing the proposal");
+    expect(stageLabel("lands")).toBe("Deckbuild: choosing lands");
+  });
+
+  it("falls back to the raw stage for anything unknown", () => {
+    expect(stageLabel("something_new")).toBe("something_new");
   });
 });

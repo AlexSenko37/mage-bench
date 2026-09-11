@@ -33,6 +33,7 @@ from magebench.game.game_export_types import (
     Draft,
     DraftDeckbuildStep,
     DraftPick,
+    DraftPrompt,
     DraftSeat,
     GameError,
     GameExport,
@@ -313,6 +314,7 @@ class TestExportSchema:
         _assert_dataclass_matches_schema(DraftSeat, schema=defs["DraftSeat"])
         _assert_dataclass_matches_schema(DraftPick, schema=defs["DraftPick"])
         _assert_dataclass_matches_schema(DraftDeckbuildStep, schema=defs["DraftDeckbuildStep"])
+        _assert_dataclass_matches_schema(DraftPrompt, schema=defs["DraftPrompt"])
         _assert_dataclass_matches_schema(Snapshot, schema=defs["Snapshot"])
         _assert_dataclass_matches_schema(SnapshotPlayer, schema=defs["SnapshotPlayer"])
         _assert_dataclass_matches_schema(CombatGroup, schema=defs["CombatGroup"])

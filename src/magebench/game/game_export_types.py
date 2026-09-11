@@ -653,12 +653,28 @@ class DraftDeckbuildStep:
 
 
 @dataclass(frozen=True, kw_only=True)
+class DraftPrompt:
+    """A representative prompt for one draft stage, as actually sent.
+
+    One per stage rather than one per call: every pick shares a prompt that differs only
+    in the pool and the pack, both of which the replay renders as cards.
+    """
+
+    stage: str
+    seat: str
+    system: str
+    user: str
+    calls: int
+
+
+@dataclass(frozen=True, kw_only=True)
 class Draft:
     """Pick-by-pick record of the draft that produced this game's decks."""
 
     seats: list[DraftSeat]
     picks: list[DraftPick]
     deckbuild: list[DraftDeckbuildStep]
+    prompts: list[DraftPrompt]
 
 
 @dataclass
@@ -1953,6 +1969,10 @@ def _coerce_draft(value: object, source: str) -> Draft:
         deckbuild=[
             DraftDeckbuildStep(**_require_object(step, f"{source}.deckbuild[{index}]"))
             for index, step in enumerate(_require_list(obj["deckbuild"], f"{source}.deckbuild"))
+        ],
+        prompts=[
+            DraftPrompt(**_require_object(prompt, f"{source}.prompts[{index}]"))
+            for index, prompt in enumerate(_require_list(obj["prompts"], f"{source}.prompts"))
         ],
     )
 

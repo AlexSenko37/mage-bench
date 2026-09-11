@@ -172,6 +172,7 @@
       "required": [
         "deckbuild",
         "picks",
+        "prompts",
         "seats"
       ],
       "additionalProperties": false,
@@ -194,6 +195,44 @@
           "items": {
             "$ref": "#/$defs/DraftDeckbuildStep"
           }
+        },
+        "prompts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DraftPrompt"
+          },
+          "description": "One example of each distinct prompt, not one per call: every pick shares a prompt differing only in the pool and pack, which the replay renders as cards anyway."
+        }
+      }
+    },
+    "DraftPrompt": {
+      "type": "object",
+      "required": [
+        "calls",
+        "seat",
+        "stage",
+        "system",
+        "user"
+      ],
+      "additionalProperties": false,
+      "description": "A representative prompt for one draft stage, captured from the request that was actually sent.",
+      "properties": {
+        "stage": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "string",
+          "description": "Which seat this example was taken from; the wording is the same for every seat."
+        },
+        "system": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        },
+        "calls": {
+          "type": "integer",
+          "description": "How many calls in this draft used a prompt of this shape."
         }
       }
     },

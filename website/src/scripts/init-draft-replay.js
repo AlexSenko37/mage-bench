@@ -3,9 +3,11 @@ import {
   deckbuildAnalysis,
   deckbuildFallbackReason,
   deckbuildForSeat,
+  draftPrompts,
   draftSeats,
   pickLabel,
   picksForSeat,
+  stageLabel,
   summarizeSeat,
   wheeledCount,
 } from "./draft-replay.js";
@@ -30,6 +32,7 @@ export function createDraftReplay(options) {
   var packEl = getRequiredElement(root, "#draft-pack");
   var reasoningEl = getRequiredElement(root, "#draft-reasoning");
   var deckbuildEl = getRequiredElement(root, "#draft-deckbuild");
+  var promptsEl = getRequiredElement(root, "#draft-prompts-body");
 
   var renderer = getGameRenderer();
   var previewEls = getPreviewElements(root);
@@ -38,7 +41,7 @@ export function createDraftReplay(options) {
   renderer.preloadCardData(cardData);
 
   var seats = draftSeats(draft);
-  var state = { seat: seats.length ? seats[0].seat : null, pickIndex: 0 };
+  var state = { seat: seats.length ? seats[0].seat : null, pickIndex: 0, promptsRendered: false };
 
   function seatLabel(seatName) {
     var seat = seats.find(function (s) {
@@ -217,12 +220,53 @@ export function createDraftReplay(options) {
     deckbuildEl.innerHTML = html;
   }
 
+  // Rendered once: the prompts are a property of the draft, not of the selected seat or
+  // the selected pick, so re-rendering them on every click would be wasted work and would
+  // collapse whichever one the reader had open.
+  function renderPrompts() {
+    var prompts = draftPrompts(draft);
+    if (!prompts.length) {
+      promptsEl.innerHTML =
+        '<p class="draft-empty">This draft predates prompt capture.</p>';
+      return;
+    }
+    promptsEl.innerHTML =
+      '<p class="draft-deckbuild-note">Shown once each. The pool and pack inside the pick prompt change every pick; everything else is identical across the draft.</p>' +
+      prompts
+        .map(function (p) {
+          return (
+            '<details class="draft-prompt"><summary>' +
+            escapeHtml(stageLabel(p.stage)) +
+            ' <span class="draft-prompt-count">' +
+            p.calls +
+            (p.calls === 1 ? " call" : " calls") +
+            "</span></summary>" +
+            '<div class="draft-prompt-role">system</div>' +
+            '<pre class="draft-prompt-text">' +
+            escapeHtml(p.system) +
+            "</pre>" +
+            '<div class="draft-prompt-role">user <span class="draft-prompt-note">(example, from ' +
+            escapeHtml(p.seat) +
+            ")</span></div>" +
+            '<pre class="draft-prompt-text">' +
+            escapeHtml(p.user) +
+            "</pre>" +
+            "</details>"
+          );
+        })
+        .join("");
+  }
+
   function render() {
     if (!state.seat) return;
     var picks = picksForSeat(draft, state.seat);
     if (state.pickIndex >= picks.length) state.pickIndex = 0;
     var pick = picks[state.pickIndex];
 
+    if (!state.promptsRendered) {
+      state.promptsRendered = true;
+      renderPrompts();
+    }
     renderSeatTabs();
     renderSummary();
     renderTimeline(picks);

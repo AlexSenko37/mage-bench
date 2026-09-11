@@ -574,6 +574,10 @@ export interface Draft {
   seats: DraftSeat[];
   picks: DraftPick[];
   deckbuild: DraftDeckbuildStep[];
+  /**
+   * One example of each distinct prompt, not one per call: every pick shares a prompt differing only in the pool and pack, which the replay renders as cards anyway.
+   */
+  prompts: DraftPrompt[];
 }
 /**
  * Per-seat draft totals.
@@ -638,6 +642,22 @@ export interface DraftDeckbuildStep {
   content: string;
   reasoning: string;
   cost_usd: number;
+}
+/**
+ * A representative prompt for one draft stage, captured from the request that was actually sent.
+ */
+export interface DraftPrompt {
+  stage: string;
+  /**
+   * Which seat this example was taken from; the wording is the same for every seat.
+   */
+  seat: string;
+  system: string;
+  user: string;
+  /**
+   * How many calls in this draft used a prompt of this shape.
+   */
+  calls: number;
 }
 export interface GameError {
   /**
