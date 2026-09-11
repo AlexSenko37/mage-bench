@@ -93,18 +93,26 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     /**
      * How colours work in limited, stated once for both prompts.
      *
-     * This is format convention plus the mechanism behind it, in the same register as
-     * "40 cards" and "lands are unlimited" -- not advice on what to pick. Leaving it out
-     * measures how much Magic a model absorbed in pretraining rather than how well it
-     * drafts: removing it took the three model-built decks that followed to four and five
-     * colours, while the mana bases stayed arithmetically correct. It is the convention
-     * that was missing, not the arithmetic.
+     * Format convention plus the mechanism behind it, in the same register as "40 cards"
+     * and "lands are unlimited". Leaving it out measures how much Magic a model absorbed
+     * in pretraining rather than how well it drafts.
+     *
+     * An earlier attempt stated only the cost and closed with "whether a card is worth
+     * that is your call", on the theory that naming the trade-off was enough and the rest
+     * was the model's judgement to make. It was not: those decks came out four and five
+     * colours, indistinguishable from saying nothing at all, while the prescriptive
+     * version reliably produced two and three. Describing a cost is not the same as
+     * telling a model what drafters actually do, and the closing sentence read as
+     * permission to splash. What follows states the norm as well as the reason.
      */
     private static final String COLOUR_CONVENTION =
-            "Limited decks are usually two colours. Every colour you add takes land slots "
-            + "from the others: a splash costs 2-3 lands that cannot cast your main colours, "
-            + "which makes every other card in the deck less reliable to cast on time. "
-            + "Whether a card is worth that is your call.";
+            "Limited decks are usually two colours: pick the two colours your best cards "
+            + "are in and play essentially all of your playables in them. Every extra "
+            + "colour takes land slots from the others -- a splash costs 2-3 lands that "
+            + "cannot cast your main colours, which makes every other card in the deck "
+            + "less reliable to cast on time -- so a splash has to earn that. Four- and "
+            + "five-colour decks lose more games to their mana than they win on card "
+            + "quality.";
 
     private static final List<String> BASIC_LAND_NAMES =
             List.of("Plains", "Island", "Swamp", "Mountain", "Forest");
