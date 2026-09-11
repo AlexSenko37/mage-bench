@@ -1,4 +1,5 @@
 import type { GameExportV9 } from '../types/game-export';
+import { buildPlayerLabelMap } from '../scripts/player-label.js';
 
 export interface ReplayBlunderCounts {
   questionable: number;
@@ -13,12 +14,16 @@ export interface ReplayBlunderSummary {
 }
 
 export function buildReplayTitle(players: GameExportV9['players']): string {
-  return players
-    .map((player) => {
-      const deck_name = player.deck_name || player.commander || '';
-      return deck_name ? `${player.name} (${deck_name})` : player.name;
-    })
-    .join(' vs ');
+  // Seat names (PilotA/PilotB) are opaque by design during play so a model cannot tell
+  // which opponent it faces. The replay is under no such constraint, and a title
+  // reading PilotA vs PilotB makes the reader look the mapping up every time.
+  //
+  // The deck name is deliberately left out. For a drafted game it is the generated
+  // deck filename ("fable51 low A Gruul 31b002ee") -- seat, archetype and draft hash,
+  // nearly all of which the label already says -- and it crowded the title badly. The
+  // archetype is the one useful part and it is still on the Decks tab.
+  const labelByName = buildPlayerLabelMap(players);
+  return players.map((player) => labelByName[player.name] || player.name).join(' vs ');
 }
 
 export function summarizeReplayBlunders(

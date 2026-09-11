@@ -45,6 +45,60 @@
   font-variant-numeric: tabular-nums;
 }
 
+#draft-prompts > summary {
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  padding: 0.25rem 0;
+}
+
+.draft-prompt {
+  border-top: 1px solid var(--border-subtle, rgba(128, 128, 128, 0.25));
+  padding: 0.35rem 0;
+}
+
+.draft-prompt > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.draft-prompt-count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-prompt-role {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0.15rem;
+}
+
+.draft-prompt-note {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.draft-prompt-text {
+  margin: 0;
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 3px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
 #draft-content {
   display: grid;
   grid-template-columns: 12rem minmax(0, 1fr);
@@ -214,6 +268,18 @@
   white-space: pre-wrap;
   max-height: 40vh;
   overflow-y: auto;
+}
+
+/* A deck the model did not build is the single most misleading thing this panel can
+   show, so it gets the only warning colour in the view. */
+.draft-warning {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  margin: 0 0 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid var(--accent-warning, #c2853a);
+  background: color-mix(in srgb, var(--accent-warning, #c2853a) 12%, transparent);
+  color: var(--text-primary);
 }
 
 .draft-empty,

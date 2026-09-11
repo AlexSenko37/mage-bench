@@ -74,8 +74,7 @@ def _replayable_picks(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
             incomplete += 1
     if incomplete:
         logger.warning(
-            "%d pick record(s) predate pack capture and cannot be replayed; "
-            "the draft replay will be incomplete",
+            "%d pick record(s) predate pack capture and cannot be replayed; the draft replay will be incomplete",
             incomplete,
         )
     return picks
@@ -161,6 +160,49 @@ def _seat_totals(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(seats.values(), key=lambda s: s["seat"])
 
 
+def _representative_prompts(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """One example of each distinct prompt, rather than one per call.
+
+    Every pick shares a prompt that differs only in the pool and the pack, both of which
+    the replay already renders as cards. Attaching the full text to all 84 picks would
+    bury the model's answer under a wall of identical instructions and add megabytes to
+    the export, so each stage contributes a single example.
+
+    For picks the example is the median pool size: the first pick shows an empty pool
+    section, which is the one case that does not illustrate what the model usually sees.
+    """
+    by_stage: dict[str, list[dict[str, Any]]] = {}
+    for record in records:
+        if "prompt" not in record:
+            continue
+        by_stage.setdefault(record["stage"], []).append(record)
+
+    prompts = []
+    for stage, calls in by_stage.items():
+        if stage == _PICK_STAGE:
+            # A pick record from before pack capture has no pool to rank on; ranking only
+            # the ones that do keeps the median meaningful instead of treating a missing
+            # pool as an empty one.
+            rankable = [call for call in calls if "pool" in call]
+            ranked = sorted(rankable, key=lambda r: len(r["pool"])) if rankable else calls
+            example = ranked[len(ranked) // 2]
+        else:
+            example = calls[0]
+        prompts.append(
+            {
+                "stage": stage,
+                "seat": example["seat"],
+                # Written by the same code path that sends the request, so a record with a
+                # prompt always has the system message alongside it.
+                "system": example["system"],
+                "user": example["prompt"],
+                "calls": len(calls),
+            }
+        )
+    prompts.sort(key=lambda p: p["stage"])
+    return prompts
+
+
 def build_draft(game_dir: Path) -> dict[str, Any] | None:
     """Build the draft section, or None when the game has no replayable draft record.
 
@@ -200,9 +242,7 @@ def build_draft(game_dir: Path) -> dict[str, Any] | None:
         wheeled: list[str] = []
         if key in seen_before:
             previous = seen_before[key]
-            wheeled = [
-                name for name, cid in zip(pack, pack_ids, strict=True) if cid in previous
-            ]
+            wheeled = [name for name, cid in zip(pack, pack_ids, strict=True) if cid in previous]
         seen_before[key] = set(pack_ids)
 
         out_picks.append(
@@ -240,4 +280,5 @@ def build_draft(game_dir: Path) -> dict[str, Any] | None:
         "seats": _seat_totals(records),
         "picks": out_picks,
         "deckbuild": deckbuild,
+        "prompts": _representative_prompts(records),
     }

@@ -653,12 +653,28 @@ class DraftDeckbuildStep:
 
 
 @dataclass(frozen=True, kw_only=True)
+class DraftPrompt:
+    """A representative prompt for one draft stage, as actually sent.
+
+    One per stage rather than one per call: every pick shares a prompt that differs only
+    in the pool and the pack, both of which the replay renders as cards.
+    """
+
+    stage: str
+    seat: str
+    system: str
+    user: str
+    calls: int
+
+
+@dataclass(frozen=True, kw_only=True)
 class Draft:
     """Pick-by-pick record of the draft that produced this game's decks."""
 
     seats: list[DraftSeat]
     picks: list[DraftPick]
     deckbuild: list[DraftDeckbuildStep]
+    prompts: list[DraftPrompt]
 
 
 @dataclass
@@ -1943,17 +1959,84 @@ def _coerce_draft(value: object, source: str) -> Draft:
     obj = _require_object(value, source)
     return Draft(
         seats=[
-            DraftSeat(**_require_object(seat, f"{source}.seats[{index}]"))
+            _coerce_draft_seat(seat, f"{source}.seats[{index}]")
             for index, seat in enumerate(_require_list(obj["seats"], f"{source}.seats"))
         ],
         picks=[
-            DraftPick(**_require_object(pick, f"{source}.picks[{index}]"))
+            _coerce_draft_pick(pick, f"{source}.picks[{index}]")
             for index, pick in enumerate(_require_list(obj["picks"], f"{source}.picks"))
         ],
         deckbuild=[
-            DraftDeckbuildStep(**_require_object(step, f"{source}.deckbuild[{index}]"))
+            _coerce_draft_deckbuild_step(step, f"{source}.deckbuild[{index}]")
             for index, step in enumerate(_require_list(obj["deckbuild"], f"{source}.deckbuild"))
         ],
+        prompts=[
+            _coerce_draft_prompt(prompt, f"{source}.prompts[{index}]")
+            for index, prompt in enumerate(_require_list(obj["prompts"], f"{source}.prompts"))
+        ],
+    )
+
+
+def _optional_str(value: object, source: str) -> str | None:
+    return None if value is None else _require_str(value, source)
+
+
+def _optional_int(value: object, source: str) -> int | None:
+    return None if value is None else _require_int(value, source)
+
+
+def _optional_number(value: object, source: str) -> float | None:
+    return None if value is None else float(_require_number(value, source))
+
+
+def _coerce_draft_seat(value: object, source: str) -> DraftSeat:
+    obj = _require_object(value, source)
+    return DraftSeat(
+        seat=_require_str(obj["seat"], f"{source}.seat"),
+        model=_optional_str(obj["model"], f"{source}.model"),
+        picks=_require_int(obj["picks"], f"{source}.picks"),
+        fallbacks=_require_int(obj["fallbacks"], f"{source}.fallbacks"),
+        cost_usd=float(_require_number(obj["cost_usd"], f"{source}.cost_usd")),
+    )
+
+
+def _coerce_draft_pick(value: object, source: str) -> DraftPick:
+    obj = _require_object(value, source)
+    return DraftPick(
+        seat=_require_str(obj["seat"], f"{source}.seat"),
+        pick_number=_require_int(obj["pick_number"], f"{source}.pick_number"),
+        round=_require_int(obj["round"], f"{source}.round"),
+        pack=_require_str(obj["pack"], f"{source}.pack"),
+        pack_cards=_require_str_list(obj["pack_cards"], f"{source}.pack_cards"),
+        picked=_optional_str(obj["picked"], f"{source}.picked"),
+        picked_index=_optional_int(obj["picked_index"], f"{source}.picked_index"),
+        wheeled=_require_str_list(obj["wheeled"], f"{source}.wheeled"),
+        pool_size=_require_int(obj["pool_size"], f"{source}.pool_size"),
+        reasoning=_require_str(obj["reasoning"], f"{source}.reasoning"),
+        elapsed_secs=_optional_number(obj["elapsed_secs"], f"{source}.elapsed_secs"),
+        cost_usd=float(_require_number(obj["cost_usd"], f"{source}.cost_usd")),
+    )
+
+
+def _coerce_draft_deckbuild_step(value: object, source: str) -> DraftDeckbuildStep:
+    obj = _require_object(value, source)
+    return DraftDeckbuildStep(
+        seat=_require_str(obj["seat"], f"{source}.seat"),
+        stage=_require_str(obj["stage"], f"{source}.stage"),
+        content=_require_str(obj["content"], f"{source}.content"),
+        reasoning=_require_str(obj["reasoning"], f"{source}.reasoning"),
+        cost_usd=float(_require_number(obj["cost_usd"], f"{source}.cost_usd")),
+    )
+
+
+def _coerce_draft_prompt(value: object, source: str) -> DraftPrompt:
+    obj = _require_object(value, source)
+    return DraftPrompt(
+        stage=_require_str(obj["stage"], f"{source}.stage"),
+        seat=_require_str(obj["seat"], f"{source}.seat"),
+        system=_require_str(obj["system"], f"{source}.system"),
+        user=_require_str(obj["user"], f"{source}.user"),
+        calls=_require_int(obj["calls"], f"{source}.calls"),
     )
 
 

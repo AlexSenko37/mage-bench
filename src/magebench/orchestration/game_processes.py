@@ -162,8 +162,7 @@ def wait_with_pilot_monitoring(
                 pilots_clean_since = now
             elif now - pilots_clean_since >= POST_PILOT_GRACE_SECS:
                 logger.warning(
-                    "All pilots exited cleanly but spectator did not self-terminate "
-                    "within %.0fs — forcing shutdown.",
+                    "All pilots exited cleanly but spectator did not self-terminate within %.0fs — forcing shutdown.",
                     POST_PILOT_GRACE_SECS,
                 )
                 spectator_proc.terminate()
@@ -332,10 +331,7 @@ def start_draft_client(
         {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_a_name},
         {"type": "bot", "ai": "COMPUTER_LLM_DRAFT_BOT", "name": seat_b_name},
     ]
-    players.extend(
-        {"type": "bot", "ai": "COMPUTER_DRAFT_BOT", "name": f"DraftBot{i + 1}"}
-        for i in range(filler_bots)
-    )
+    players.extend({"type": "bot", "ai": "COMPUTER_DRAFT_BOT", "name": f"DraftBot{i + 1}"} for i in range(filler_bots))
 
     players_config = json.dumps(
         {

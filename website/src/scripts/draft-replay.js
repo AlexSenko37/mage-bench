@@ -1,3 +1,5 @@
+import { modelShortName } from "./player-label.js";
+
 /**
  * Pure logic for the draft replay: shaping the exported draft record into what the view
  * renders, with no DOM access so it can be tested directly.
@@ -7,6 +9,40 @@
  * that by seat, orders it, and answers the per-card questions the view asks while drawing
  * a pack.
  */
+
+/**
+ * Draft seat name -> the same label the rest of the page uses for that player.
+ *
+ * A draft seat records the model it used but not the effort, so on its own it renders as
+ * "GptOSS" while the replay's own panels say "GptOSS-medium" -- the same player under two
+ * names on one page. The game's player list has both, so seats are matched to players by
+ * model to borrow the fuller label. Seats sharing a model (self-play) are matched in
+ * order, which is also the order the two lists are built in.
+ *
+ * Falls back to the model's short name when a seat has no counterpart in the game, which
+ * is the case for a draft attached to a game it did not produce.
+ */
+export function draftSeatLabels(draft, players, labelByName) {
+  var labels = {};
+  var unclaimed = (players || []).slice();
+  draftSeats(draft).forEach(function (seat) {
+    var at = -1;
+    for (var i = 0; i < unclaimed.length; i++) {
+      if (unclaimed[i].model && unclaimed[i].model === seat.model) {
+        at = i;
+        break;
+      }
+    }
+    if (at === -1) {
+      labels[seat.seat] = seat.model ? modelShortName(seat.model) : seat.seat;
+      return;
+    }
+    var player = unclaimed.splice(at, 1)[0];
+    labels[seat.seat] =
+      (labelByName && labelByName[player.name]) || modelShortName(seat.model);
+  });
+  return labels;
+}
 
 /** Seats that actually made picks, in export order. */
 export function draftSeats(draft) {
@@ -89,6 +125,54 @@ export function summarizeSeat(draft, seatName) {
     wheelPicks: wheels.length,
     medianElapsed: median(elapsed),
   };
+}
+
+/**
+ * The distinct prompts used in this draft, in the order the stages occur.
+ *
+ * Deliberately not per pick: every pick shares one prompt that differs only in the pool
+ * and the pack, and the replay already draws both as cards. Repeating the instructions
+ * above all 39 picks would bury the model's actual answer.
+ */
+export const STAGE_ORDER = ["pick", "spells", "spells_review", "lands"];
+
+export function draftPrompts(draft) {
+  if (!draft || !draft.prompts) return [];
+  return draft.prompts.slice().sort(function (a, b) {
+    var ai = STAGE_ORDER.indexOf(a.stage);
+    var bi = STAGE_ORDER.indexOf(b.stage);
+    // An unrecognised stage sorts last rather than first, so a new one added later shows
+    // up at the end instead of silently displacing the pick prompt.
+    return (ai === -1 ? STAGE_ORDER.length : ai) - (bi === -1 ? STAGE_ORDER.length : bi);
+  });
+}
+
+/** Human label for a draft stage. */
+export function stageLabel(stage) {
+  var LABELS = {
+    pick: "Each pick",
+    spells: "Deckbuild: choosing spells",
+    spells_review: "Deckbuild: reviewing the proposal",
+    lands: "Deckbuild: choosing lands",
+    deckbuild_fallback: "Deckbuild fell back to the heuristic",
+  };
+  return LABELS[stage] || stage;
+}
+
+/** Marker stage written when the heuristic builder produced the deck instead of the model. */
+export const DECKBUILD_FALLBACK_STAGE = "deckbuild_fallback";
+
+/**
+ * Why the heuristic built this seat's deck, or null if the model's answer was used.
+ *
+ * Worth surfacing prominently: the picks can be entirely the model's while the 40 cards
+ * that reach the table are RateCard's, and nothing about the decklist gives that away.
+ */
+export function deckbuildFallbackReason(draft, seatName) {
+  const step = deckbuildForSeat(draft, seatName).find(function (s) {
+    return s.stage === DECKBUILD_FALLBACK_STAGE;
+  });
+  return step ? step.content : null;
 }
 
 /** Deckbuild steps for one seat, in the order they were made. */

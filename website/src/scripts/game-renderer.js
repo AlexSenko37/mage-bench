@@ -1271,7 +1271,7 @@
 
   // ── Decision rendering ──
 
-  function renderDecisions(stackSection, decisions, playerColorMap) {
+  function renderDecisions(stackSection, decisions, playerColorMap, labelByName) {
     var existing = stackSection.querySelector(".decisions-container");
     if (existing) existing.remove();
     if (!decisions || decisions.length === 0) return;
@@ -1287,7 +1287,7 @@
 
       var playerSpan = document.createElement("span");
       playerSpan.className = "decision-player" + (colorClass ? " " + colorClass : "");
-      playerSpan.textContent = d.player;
+      playerSpan.textContent = (labelByName && labelByName[d.player]) || d.player;
 
       var msgSpan = document.createElement("span");
       msgSpan.className = "decision-message";
@@ -1356,21 +1356,29 @@
 
   // ── Status line ──
 
-  function formatTurnLabel(playerTurn, activePlayer) {
+  // labelByName is optional so a caller without a game loaded still gets the raw seat
+  // name rather than nothing.
+  function formatTurnLabel(playerTurn, activePlayer, labelByName) {
     if (!activePlayer && playerTurn == null) return "Pregame";
     var turnNum = playerTurn != null ? "Turn " + playerTurn : "Turn ?";
-    if (activePlayer) return activePlayer + "'s " + turnNum;
+    if (activePlayer) {
+      var shown = labelByName && labelByName[activePlayer] ? labelByName[activePlayer] : activePlayer;
+      return shown + "'s " + turnNum;
+    }
     return turnNum;
   }
 
-  function renderStatusLine(el, snap, playerTurn) {
+  function renderStatusLine(el, snap, playerTurn, labelByName) {
     if (!el || !snap) return;
     var effectiveTurn = playerTurn != null ? playerTurn : (snap.active_player ? snap.turn : null);
-    var turn = formatTurnLabel(effectiveTurn, snap.active_player);
+    var turn = formatTurnLabel(effectiveTurn, snap.active_player, labelByName);
     var phase = snap.phase || "?";
     var step = snap.step || "?";
     var phaseDisplay = step && step !== phase ? phase + " / " + step : phase;
-    var priority = snap.priority_player || "?";
+    var rawPriority = snap.priority_player;
+    var priority = rawPriority
+      ? (labelByName && labelByName[rawPriority] ? labelByName[rawPriority] : rawPriority)
+      : "?";
     el.textContent = turn + " | " + phaseDisplay + " | Priority: " + priority;
   }
 
