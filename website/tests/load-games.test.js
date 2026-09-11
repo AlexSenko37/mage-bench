@@ -165,9 +165,10 @@ describe("loadAllGames", () => {
     expect(games[0].season).toBe(1);
     expect(games[0].players[0].tool_calls_ok).toBe(3);
     expect(games[0].players[0].thinking_time_secs).toBe(12.5);
-    expect(games[0].replayTitle).toBe(
-      "Alice (Azorius Control) vs Bob (Omnath, Locus of Creation)",
-    );
+    // Deck name and commander are deliberately not in the title any more: for a drafted
+    // game deck_name is the generated filename, which crowded it out. These two seats
+    // have no model, so the label falls back to the raw seat name.
+    expect(games[0].replayTitle).toBe("Alice vs Bob");
     expect(games[0].replayBlunderSummary).toEqual({
       total: 2,
       counts: {
