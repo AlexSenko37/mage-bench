@@ -460,6 +460,7 @@ class LlmResponseEvent(_LlmEventBase):
     tool_calls: object | None = field(default=None, metadata={_JSON_KEY_METADATA: "tool_calls"})
     usage: LlmUsage | None = None
     cost_usd: float | None = field(default=None, metadata={_JSON_KEY_METADATA: "cost_usd"})
+    provider: str | None = None
 
 
 @dataclass(kw_only=True)

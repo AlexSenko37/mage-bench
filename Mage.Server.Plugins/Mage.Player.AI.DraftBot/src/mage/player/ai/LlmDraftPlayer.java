@@ -329,6 +329,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         record.addProperty("seat", seat);
         record.addProperty("stage", stage);
         record.addProperty("model", payload.get("model").getAsString());
+        // The host OpenRouter routed to. Same reasoning as the play path: providers
+        // serving one model differ in quantisation and in whether reasoning.effort does
+        // anything, and a draft cannot be attributed after the fact without it.
+        if (responseJson.has("provider") && responseJson.get("provider").isJsonPrimitive()) {
+            record.addProperty("provider", responseJson.get("provider").getAsString());
+        }
         record.addProperty("elapsed_secs", Math.round(elapsedSecs * 1000.0) / 1000.0);
         if (responseJson.has("usage") && responseJson.get("usage").isJsonObject()) {
             record.add("usage", responseJson.getAsJsonObject("usage"));

@@ -1209,3 +1209,35 @@ def test_start_observer_fails_without_xvfb(_mock_which):
         config = Config()
         with pytest.raises(AssertionError, match="xvfb-run is not installed"):
             start_observer_client(pm, Path("/fake/root"), config, Path("/tmp/test.log"))
+
+
+def test_no_draft_seat_arg_contains_whitespace(tmp_path: Path):
+    """Every arg has to survive being word-split out of MAVEN_OPTS.
+
+    A value with a space in it becomes two arguments, and the failure surfaces as a
+    server that never starts and a draft that times out 240s later saying nothing about
+    why.
+    """
+    args = draft_seat_jvm_args(
+        seat_a_name="ModelA-A",
+        seat_a_model="deepseek/deepseek-v4-pro-0813",
+        seat_b_name="ModelB-B",
+        seat_b_model="openai/gpt-5.6-terra",
+        log_dir=tmp_path,
+        seat_a_effort="high",
+        seat_b_effort="max",
+    )
+    offenders = [a for a in args if any(c.isspace() for c in a)]
+    assert not offenders, f"MAVEN_OPTS is whitespace-split; these args would tear: {offenders}"
+
+
+def test_draft_seat_args_reject_a_log_dir_containing_a_space(tmp_path: Path):
+    """The log dir reaches the JVM the same way and was unchecked."""
+    with pytest.raises(AssertionError, match="must not contain whitespace"):
+        draft_seat_jvm_args(
+            seat_a_name="A",
+            seat_a_model="m/a",
+            seat_b_name="B",
+            seat_b_model="m/b",
+            log_dir=tmp_path / "a dir",
+        )
