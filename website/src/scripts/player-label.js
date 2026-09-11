@@ -64,7 +64,12 @@ export var MODEL_SHORT_NAMES = {
   "z-ai/glm-5.3": "GLM53",
 };
 
-/** Short name for a model id, e.g. "anthropic/claude-fable-5" -> "Fable5". */
+/**
+ * Short name for a model id, e.g. "anthropic/claude-fable-5" -> "Fable5".
+ *
+ * @param {string|null|undefined} modelId
+ * @returns {string}
+ */
 export function modelShortName(modelId) {
   if (!modelId) return "";
   var known = MODEL_SHORT_NAMES[modelId];
@@ -78,6 +83,9 @@ export function modelShortName(modelId) {
 /**
  * Label for a seat: "Fable5-low", "KimiK3-max", or the raw seat name when the seat has
  * no model behind it (a human or CPU player).
+ *
+ * @param {{name?: string, model?: string|null, reasoning_effort?: string|null}|null|undefined} player
+ * @returns {string}
  */
 export function playerDisplayLabel(player) {
   if (!player) return "";
@@ -85,4 +93,60 @@ export function playerDisplayLabel(player) {
   var base = modelShortName(player.model);
   var effort = player.reasoning_effort;
   return effort ? base + "-" + effort : base;
+}
+
+/**
+ * Seat name -> the label to show for it, for every seat in a game.
+ *
+ * Seat names are deliberately opaque during play (PilotA/PilotB) so a model cannot tell
+ * which opponent it faces. The replay is under no such constraint and showing the raw
+ * seat name there just makes the reader hold a mapping in their head.
+ *
+ * Two seats can legitimately resolve to the same label -- a self-play game runs the same
+ * model at the same effort on both sides -- so duplicates get an -A/-B suffix in seat
+ * order. Only duplicated labels are suffixed; a unique label is left clean.
+ *
+ * @param {Array<{name?: string, model?: string|null, reasoning_effort?: string|null}>|null|undefined} players
+ * @returns {Record<string, string>} seat name -> label
+ */
+export function buildPlayerLabelMap(players) {
+  var list = players || [];
+  /** @type {Record<string, number>} */
+  var counts = {};
+  list.forEach(function (player) {
+    var label = playerDisplayLabel(player);
+    counts[label] = (counts[label] || 0) + 1;
+  });
+
+  var used = {};
+  /** @type {Record<string, string>} */
+  var byName = {};
+  list.forEach(function (player) {
+    if (!player || typeof player.name !== "string") return;
+    var label = playerDisplayLabel(player);
+    if (!label) {
+      byName[player.name] = player.name;
+      return;
+    }
+    if (counts[label] > 1) {
+      used[label] = (used[label] || 0) + 1;
+      byName[player.name] = label + "-" + String.fromCharCode(64 + used[label]);
+    } else {
+      byName[player.name] = label;
+    }
+  });
+  return byName;
+}
+
+/**
+ * Look up a seat's label, falling back to the raw name for anything unmapped.
+ *
+ * @param {Record<string, string>|null|undefined} labelByName
+ * @param {string|null|undefined} name
+ * @returns {string|null|undefined}
+ */
+export function labelFor(labelByName, name) {
+  if (!name) return name;
+  if (labelByName && labelByName[name]) return labelByName[name];
+  return name;
 }

@@ -91,6 +91,22 @@ export function summarizeSeat(draft, seatName) {
   };
 }
 
+/** Marker stage written when the heuristic builder produced the deck instead of the model. */
+export const DECKBUILD_FALLBACK_STAGE = "deckbuild_fallback";
+
+/**
+ * Why the heuristic built this seat's deck, or null if the model's answer was used.
+ *
+ * Worth surfacing prominently: the picks can be entirely the model's while the 40 cards
+ * that reach the table are RateCard's, and nothing about the decklist gives that away.
+ */
+export function deckbuildFallbackReason(draft, seatName) {
+  const step = deckbuildForSeat(draft, seatName).find(function (s) {
+    return s.stage === DECKBUILD_FALLBACK_STAGE;
+  });
+  return step ? step.content : null;
+}
+
 /** Deckbuild steps for one seat, in the order they were made. */
 export function deckbuildForSeat(draft, seatName) {
   if (!draft || !draft.deckbuild) return [];

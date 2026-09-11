@@ -311,6 +311,25 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
     }
 
+    /**
+     * Record that the heuristic builder, not the model, produced this seat's deck.
+     *
+     * Written in the shape of a deckbuild step so it appears in the draft replay next to
+     * the real ones. Without this the record showed only the model's failed attempts and
+     * the per-seat summary still read "0 fallbacks", because pick_fallback counts picks
+     * only -- a deck built entirely by RateCard looked indistinguishable from one the
+     * model chose.
+     */
+    private static void recordDeckbuildFallback(String seat, String reason) {
+        JsonObject record = new JsonObject();
+        record.addProperty("ts", Instant.now().toString());
+        record.addProperty("seat", seat);
+        record.addProperty("stage", "deckbuild_fallback");
+        record.addProperty("content", reason);
+        record.addProperty("reasoning", "");
+        appendRecord(record);
+    }
+
     /** Record a non-HTTP event (a heuristic fallback, say) on the same timeline as the calls. */
     private static void recordEvent(String seat, String stage, String detail) {
         JsonObject record = new JsonObject();
@@ -387,6 +406,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         } catch (Exception e) {
             logger.error("LlmDraftPlayer(" + getName() + "): LLM deckbuild failed, "
                     + "falling back to the heuristic builder", e);
+            recordDeckbuildFallback(getName(), "deckbuild threw " + e.getClass().getSimpleName()
+                    + ": " + e.getMessage());
         }
         super.construct(tournament, deck);
     }
@@ -463,6 +484,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         if (chosen == null || chosen.isEmpty()) {
             logger.error("LlmDraftPlayer(" + getName() + "): no usable spell list after "
                     + SPELL_ROUNDS + " rounds; falling back to the heuristic builder");
+            recordDeckbuildFallback(getName(),
+                    "no usable spell list after " + SPELL_ROUNDS + " rounds");
             return false;
         }
 
@@ -523,6 +546,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             logger.error("LlmDraftPlayer(" + getName() + "): deck was " + shortfall
                     + " cards under the legal minimum (more than the " + MAX_TOPUP_CARDS
                     + " this will patch); discarding it and falling back to the heuristic builder");
+            recordDeckbuildFallback(getName(), "deck was " + shortfall
+                    + " cards under the legal minimum; answer discarded");
             deck.getCards().clear();
             deck.getSideboard().addAll(chosen);
             return false;

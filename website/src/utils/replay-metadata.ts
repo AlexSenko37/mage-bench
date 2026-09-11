@@ -1,4 +1,5 @@
 import type { GameExportV9 } from '../types/game-export';
+import { buildPlayerLabelMap } from '../scripts/player-label.js';
 
 export interface ReplayBlunderCounts {
   questionable: number;
@@ -13,10 +14,15 @@ export interface ReplayBlunderSummary {
 }
 
 export function buildReplayTitle(players: GameExportV9['players']): string {
+  // Seat names (PilotA/PilotB) are opaque by design during play so a model cannot tell
+  // which opponent it faces. The replay is under no such constraint, and a title
+  // reading PilotA vs PilotB makes the reader look the mapping up every time.
+  const labelByName = buildPlayerLabelMap(players);
   return players
     .map((player) => {
+      const label = labelByName[player.name] || player.name;
       const deck_name = player.deck_name || player.commander || '';
-      return deck_name ? `${player.name} (${deck_name})` : player.name;
+      return deck_name ? `${label} (${deck_name})` : label;
     })
     .join(' vs ');
 }

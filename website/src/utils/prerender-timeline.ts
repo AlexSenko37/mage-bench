@@ -8,6 +8,7 @@
 // At runtime, the viewer just toggles visibility instead of rebuilding DOM.
 
 import type { GameExportV9, LlmEvent, Decision, Annotation } from '../types/game-export';
+import { buildPlayerLabelMap } from '../scripts/player-label.js';
 import {
   chosenDisplayText,
   decodeHtmlEntitiesOnce,
@@ -48,10 +49,14 @@ function formatPhaseStep(phase: string | null | undefined, step: string | null |
   return key.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatTurnLabel(playerTurn: number | null, activePlayer: string | null | undefined): string {
+function formatTurnLabel(
+  playerTurn: number | null,
+  activePlayer: string | null | undefined,
+  labelByName: Record<string, string>,
+): string {
   if (!activePlayer && playerTurn == null) return 'Pregame';
   const turnNum = playerTurn != null ? 'Turn ' + playerTurn : 'Turn ?';
-  if (activePlayer) return activePlayer + "'s " + turnNum;
+  if (activePlayer) return (labelByName[activePlayer] || activePlayer) + "'s " + turnNum;
   return turnNum;
 }
 
@@ -168,22 +173,34 @@ function mergeLlmEvents(events: LlmEvent[]): MergedLlmEvent[] {
 
 // ── HTML rendering ──
 
-function colorizePlayerNames(message: string, playerColorMap: Record<string, number>): string {
+// Mirrors the runtime copy in game-viewer.js -- both must substitute the label, or the
+// prerendered log and anything the viewer re-renders would disagree about a player's name.
+function colorizePlayerNames(
+  message: string,
+  playerColorMap: Record<string, number>,
+  labelByName: Record<string, string>,
+): string {
   let escaped = escapeHtml(message);
   const names = Object.keys(playerColorMap);
   names.sort((a, b) => b.length - a.length);
   for (const name of names) {
     const cls = 'action-' + PLAYER_COLORS[playerColorMap[name]];
     const escapedName = escapeHtml(name);
-    escaped = escaped.split(escapedName).join('<span class="' + cls + '">' + escapedName + '</span>');
+    const shown = escapeHtml(labelByName[name] || name);
+    escaped = escaped.split(escapedName).join('<span class="' + cls + '">' + shown + '</span>');
   }
   return escaped;
 }
 
-function playerSpan(playerName: string, playerColorMap: Record<string, number>): string {
+function playerSpan(
+  playerName: string,
+  playerColorMap: Record<string, number>,
+  labelByName: Record<string, string>,
+): string {
   const idx = playerColorMap[playerName];
   const cls = idx != null ? 'action-' + PLAYER_COLORS[idx] : '';
-  return '<span class="llm-player ' + cls + '">' + escapeHtml(playerName) + '</span>';
+  const shown = labelByName[playerName] || playerName;
+  return '<span class="llm-player ' + cls + '">' + escapeHtml(shown) + '</span>';
 }
 
 function playerColorClass(playerName: string, playerColorMap: Record<string, number>): string {
@@ -252,6 +269,7 @@ function renderLlmEventHtml(
   event: MergedLlmEvent,
   llmEventIndexToDecision: Record<number, Decision>,
   playerColorMap: Record<string, number>,
+  labelByName: Record<string, string>,
 ): string | null {
   const type = event.type;
 
@@ -263,7 +281,7 @@ function renderLlmEventHtml(
     if (hasReasoning || hasThinking) {
       let html = '<div>';
       html += '<span class="thinking-badge">thinking</span>';
-      html += playerSpan(event.player, playerColorMap);
+      html += playerSpan(event.player, playerColorMap, labelByName);
       html += '</div>';
 
       if (hasThinking) {
@@ -288,7 +306,7 @@ function renderLlmEventHtml(
       const cls = 'llm-event llm-thought ' + playerColorClass(event.player, playerColorMap);
       return '<div class="' + cls + '">' + html + '</div>';
     } else if (hasToolResults) {
-      let innerHtml = playerSpan(event.player, playerColorMap);
+      let innerHtml = playerSpan(event.player, playerColorMap, labelByName);
       let hasVisible = false;
       for (const tc of event.toolResults!) {
         const tcHtml = renderToolResultHtml(tc, llmEventIndexToDecision, playerColorMap);
@@ -305,7 +323,7 @@ function renderLlmEventHtml(
 
   if (type === 'action_summary') {
     let html = '<span class="summary-badge">📝 action summary</span>';
-    html += playerSpan(event.player, playerColorMap);
+    html += playerSpan(event.player, playerColorMap, labelByName);
     if (event.turn != null) {
       html += ' <span class="summary-turn">turn ' + escapeHtml(String(event.turn)) + '</span>';
     }
@@ -323,23 +341,24 @@ function renderLlmEventHtml(
   if (type === 'system_message') {
     return '<div class="llm-event llm-system-message">'
       + '<span class="log-badge badge-llm">llm</span>'
-      + playerSpan(event.player, playerColorMap)
+      + playerSpan(event.player, playerColorMap, labelByName)
       + ' <span class="system-message-text">' + escapeHtml(event.message || '') + '</span>'
       + '</div>';
   }
 
   // Metadata events
+  const who = labelByName[event.player] || event.player;
   let metaText: string;
   if (type === 'stall') {
-    metaText = event.player + ' stalled (' + (event.turns_without_progress || 0) + ' turns without progress)';
+    metaText = who + ' stalled (' + (event.turns_without_progress || 0) + ' turns without progress)';
   } else if (type === 'llm_error') {
-    metaText = event.player + ' error: ' + (event.error_type || '') + ' ' + (event.error_message || '');
+    metaText = who + ' error: ' + (event.error_type || '') + ' ' + (event.error_message || '');
   } else if (type === 'context_reset') {
-    metaText = event.player + ' context reset: ' + (event.reason || '');
+    metaText = who + ' context reset: ' + (event.reason || '');
   } else if (type === 'auto_pilot_mode') {
-    metaText = event.player + ' switched to auto-pilot: ' + (event.reason || '');
+    metaText = who + ' switched to auto-pilot: ' + (event.reason || '');
   } else {
-    metaText = event.player + ' ' + type;
+    metaText = who + ' ' + type;
   }
 
   return '<div class="llm-event llm-meta">'
@@ -452,6 +471,9 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
   for (let i = 0; i < (game.players || []).length; i++) {
     playerColorMap[game.players[i].name] = i % 4;
   }
+  // Seat name -> the label the reader sees. Seat names stay opaque during play so a model
+  // cannot tell which opponent it faces; the replay has no such constraint.
+  const labelByName: Record<string, string> = buildPlayerLabelMap(game.players);
 
   // Fill in missing game_seq on llm_events
   const llm_events = game.llm_events || [];
@@ -599,7 +621,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
       const fromCls = fromIdx != null ? 'action-' + PLAYER_COLORS[fromIdx] : '';
       const html = '<div class="chat-line">'
         + '<span class="chat-badge">chat</span>'
-        + '<span class="chat-from ' + fromCls + '">' + escapeHtml(a.from || '') + ':</span> '
+        + '<span class="chat-from ' + fromCls + '">' + escapeHtml(labelByName[a.from || ''] || a.from || '') + ':</span> '
         + escapeHtml(a.message || '')
         + '</div>';
       timeline.push({ html, firstSnap, kind: 'chat', sortSeq: a.seq, sortPriority: 0 });
@@ -610,7 +632,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
     const firstSnap = findFirstSnapForAction(a.seq, snapshotSeqs);
     const html = '<div class="action-line">'
       + '<span class="log-badge badge-game">game</span>'
-      + colorizePlayerNames(a.message, playerColorMap)
+      + colorizePlayerNames(a.message, playerColorMap, labelByName)
       + '</div>';
     timeline.push({ html, firstSnap, kind: 'game', sortSeq: a.seq, sortPriority: 0 });
   }
@@ -623,7 +645,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
     const fromCls = fromIdx != null ? 'action-' + PLAYER_COLORS[fromIdx] : '';
     const html = '<div class="chat-line">'
       + '<span class="chat-badge">chat</span>'
-      + '<span class="chat-from ' + fromCls + '">' + escapeHtml(c.from || '') + ':</span> '
+      + '<span class="chat-from ' + fromCls + '">' + escapeHtml(labelByName[c.from || ''] || c.from || '') + ':</span> '
       + escapeHtml(c.message || '')
       + '</div>';
     timeline.push({ html, firstSnap, kind: 'chat', sortSeq: c.game_seq, sortPriority: 0 });
@@ -632,7 +654,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
   // Merged LLM events — use maxGameSeq for firstSnap so tool results
   // don't appear before the snapshot where they'd individually be visible.
   for (const m of mergedLlm) {
-    const eventHtml = renderLlmEventHtml(m, llmEventIndexToDecision, playerColorMap);
+    const eventHtml = renderLlmEventHtml(m, llmEventIndexToDecision, playerColorMap, labelByName);
     if (!eventHtml) continue;
     const firstSnap = findFirstSnapForLlm(m.maxGameSeq, snapshotSeqs);
     timeline.push({ html: eventHtml, firstSnap, kind: 'llm', sortSeq: m.game_seq, sortPriority: 0 });
@@ -652,7 +674,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
   // Phase/turn separators
   for (const pt of phaseTransitions) {
     if (pt.turnChanged) {
-      const label = formatTurnLabel(pt.playerTurn, pt.active_player);
+      const label = formatTurnLabel(pt.playerTurn, pt.active_player, labelByName);
       const html = '<div class="turn-separator">\u2014 ' + escapeHtml(label) + ' \u2014</div>';
       timeline.push({ html, firstSnap: pt.index, kind: 'turn-sep', sortSeq: pt.seq, sortPriority: -2 });
     } else {
@@ -667,7 +689,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
     const winIdx = playerColorMap[game.winner];
     const winCls = winIdx != null ? 'action-' + PLAYER_COLORS[winIdx] : '';
     const html = '<div class="game-result-line">'
-      + '<span class="' + winCls + '">' + escapeHtml(game.winner) + '</span> wins the game!'
+      + '<span class="' + winCls + '">' + escapeHtml(labelByName[game.winner] || game.winner) + '</span> wins the game!'
       + '</div>';
     timeline.push({ html, firstSnap: lastSnapIdx, kind: 'game', sortSeq: Infinity, sortPriority: 0 });
   }
@@ -676,7 +698,7 @@ export function prerenderTimeline(game: GameExportV9): PrerenderResult {
     const pIdx = playerColorMap[p.name];
     const pCls = pIdx != null ? 'action-' + PLAYER_COLORS[pIdx] : '';
     const html = '<div class="game-result-line game-result-timeout">'
-      + '<span class="' + pCls + '">' + escapeHtml(p.name) + '</span> ran out of time'
+      + '<span class="' + pCls + '">' + escapeHtml(labelByName[p.name] || p.name) + '</span> ran out of time'
       + '</div>';
     timeline.push({ html, firstSnap: lastSnapIdx, kind: 'game', sortSeq: Infinity, sortPriority: 0 });
   }

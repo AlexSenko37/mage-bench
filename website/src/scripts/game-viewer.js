@@ -7,7 +7,7 @@
  * In the browser this attaches to window.GameViewer.
  * In Node/Vitest it is importable as a module.
  */
-import { playerDisplayLabel } from "./player-label.js";
+import { buildPlayerLabelMap, playerDisplayLabel } from "./player-label.js";
 
 (function (root) {
   "use strict";
@@ -398,6 +398,9 @@ import { playerDisplayLabel } from "./player-label.js";
     var currentIndex = 0;
     var autoPlayInterval = null;
     var playerColorMap = {};
+    // Seat name -> label shown to the reader. Built once per game; every place a player
+    // name reaches the screen goes through it.
+    var playerLabelMap = {};
     var playerMeta = {};
     var turnStartIndices = [];
     var phaseTransitions = [];
@@ -411,6 +414,9 @@ import { playerDisplayLabel } from "./player-label.js";
 
     // ── Rendering helpers ──
 
+    // Substitutes the display label for the seat name as well as colouring it: the log is
+    // the densest place raw seat names appear, so leaving them there undoes the rename.
+    // Longest-first so one seat name that is a prefix of another cannot be half-replaced.
     function colorizePlayerNames(message) {
       var escaped = escapeHtml(message);
       var names = Object.keys(playerColorMap);
@@ -418,7 +424,8 @@ import { playerDisplayLabel } from "./player-label.js";
       names.forEach(function (name) {
         var cls = "action-" + R.PLAYER_COLORS[playerColorMap[name]];
         var escapedName = escapeHtml(name);
-        escaped = escaped.split(escapedName).join('<span class="' + cls + '">' + escapedName + '</span>');
+        var shown = escapeHtml(playerLabelMap[name] || name);
+        escaped = escaped.split(escapedName).join('<span class="' + cls + '">' + shown + '</span>');
       });
       return escaped;
     }
@@ -431,7 +438,8 @@ import { playerDisplayLabel } from "./player-label.js";
     function playerSpan(playerName) {
       var idx = playerColorMap[playerName];
       var cls = idx != null ? "action-" + R.PLAYER_COLORS[idx] : "";
-      return '<span class="llm-player ' + cls + '">' + escapeHtml(playerName) + '</span>';
+      var shown = playerLabelMap[playerName] || playerName;
+      return '<span class="llm-player ' + cls + '">' + escapeHtml(shown) + '</span>';
     }
 
     function renderToolResult(tc) {
@@ -637,16 +645,17 @@ import { playerDisplayLabel } from "./player-label.js";
       metaDiv.className = "llm-event llm-meta";
       var metaText;
 
+      var who = playerLabelMap[event.player] || event.player;
       if (type === "stall") {
-        metaText = event.player + " stalled (" + (event.turns_without_progress || 0) + " turns without progress)";
+        metaText = who + " stalled (" + (event.turns_without_progress || 0) + " turns without progress)";
       } else if (type === "llm_error") {
-        metaText = event.player + " error: " + (event.error_type || "") + " " + (event.error_message || "");
+        metaText = who + " error: " + (event.error_type || "") + " " + (event.error_message || "");
       } else if (type === "context_reset") {
-        metaText = event.player + " context reset: " + (event.reason || "");
+        metaText = who + " context reset: " + (event.reason || "");
       } else if (type === "auto_pilot_mode") {
-        metaText = event.player + " switched to auto-pilot: " + (event.reason || "");
+        metaText = who + " switched to auto-pilot: " + (event.reason || "");
       } else {
-        metaText = event.player + " " + type;
+        metaText = who + " " + type;
       }
 
       metaDiv.innerHTML = '<span class="log-badge badge-llm">llm</span>' + escapeHtml(metaText);
@@ -843,7 +852,7 @@ import { playerDisplayLabel } from "./player-label.js";
         var phase = snap.phase || "";
         var step = snap.step || "";
         var phaseDisplay = step && step !== phase ? phase + " / " + step : phase;
-        phaseBar.textContent = R.formatTurnLabel(playerTurnNumbers[index], snap.active_player) + " \u2014 " + phaseDisplay;
+        phaseBar.textContent = R.formatTurnLabel(playerTurnNumbers[index], snap.active_player, playerLabelMap) + " \u2014 " + phaseDisplay;
         dom.playersGrid.insertBefore(phaseBar, dom.playersGrid.children[insertIdx]);
       }
 
@@ -851,7 +860,7 @@ import { playerDisplayLabel } from "./player-label.js";
       R.renderStack(dom.stackSection, dom.stackCards, snap.stack, game.card_images, dom.previewEls);
 
       // Pending decisions for this snapshot
-      R.renderDecisions(dom.stackSection, snapshotDecisionMap[index] || [], playerColorMap);
+      R.renderDecisions(dom.stackSection, snapshotDecisionMap[index] || [], playerColorMap, playerLabelMap);
 
       // Target arrows from stack items to their targets
       R.drawTargetArrows(dom.gameLeft);
@@ -1066,7 +1075,7 @@ import { playerDisplayLabel } from "./player-label.js";
         } else if (item.kind === "turn-sep") {
           el = document.createElement("div");
           el.className = "turn-separator";
-          el.textContent = "\u2014 " + R.formatTurnLabel(item.data.playerTurn, item.data.active_player) + " \u2014";
+          el.textContent = "\u2014 " + R.formatTurnLabel(item.data.playerTurn, item.data.active_player, playerLabelMap) + " \u2014";
         } else if (item.kind === "phase-sep") {
           el = document.createElement("div");
           el.className = "phase-separator";
@@ -1095,7 +1104,7 @@ import { playerDisplayLabel } from "./player-label.js";
           toLine.className = "game-result-line game-result-timeout";
           var pIdx = playerColorMap[p.name];
           var pCls = pIdx != null ? "action-" + R.PLAYER_COLORS[pIdx] : "";
-          toLine.innerHTML = '<span class="' + pCls + '">' + escapeHtml(p.name) + '</span> ran out of time';
+          toLine.innerHTML = '<span class="' + pCls + '">' + escapeHtml(playerLabelMap[p.name] || p.name) + '</span> ran out of time';
           dom.actionList.appendChild(toLine);
         });
       }
@@ -1166,6 +1175,7 @@ import { playerDisplayLabel } from "./player-label.js";
     }
 
     // Build player color map and meta
+    playerLabelMap = buildPlayerLabelMap(game.players);
     (game.players || []).forEach(function (p, i) {
       playerColorMap[p.name] = i % 4;
       if (p.model || p.total_cost_usd != null) {

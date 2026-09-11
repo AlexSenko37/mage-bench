@@ -1,6 +1,7 @@
 import {
   classifyPackCard,
   deckbuildAnalysis,
+  deckbuildFallbackReason,
   deckbuildForSeat,
   draftSeats,
   pickLabel,
@@ -80,8 +81,14 @@ export function createDraftReplay(options) {
       bits.push(["Reasoning", s.reasoningPicks + " of " + s.picks + " picks"]);
     }
     if (s.fallbacks > 0) {
-      bits.push(["Heuristic fallbacks", String(s.fallbacks)]);
+      bits.push(["Pick fallbacks", String(s.fallbacks)]);
     }
+    // The picks can be entirely the model's while the deck that reaches the table is
+    // RateCard's. Nothing in the decklist shows that, so say it here.
+    bits.push([
+      "Deck built by",
+      deckbuildFallbackReason(draft, state.seat) ? "heuristic (model answer rejected)" : "the model",
+    ]);
     summaryEl.innerHTML = bits
       .map(function (pair) {
         return (
@@ -184,8 +191,19 @@ export function createDraftReplay(options) {
       return;
     }
     var html = '<div class="draft-panel-heading">Deckbuilding</div>';
-    html += '<p class="draft-deckbuild-note">After the 45 picks, the model chose which 23 spells made the deck and how the lands were split. Everything it left behind became the sideboard.</p>';
+    var fallbackReason = deckbuildFallbackReason(draft, state.seat);
+    if (fallbackReason) {
+      html +=
+        '<p class="draft-warning"><strong>This deck was built by the heuristic, not the model.</strong> ' +
+        escapeHtml(fallbackReason) +
+        ". The picks below are still the model's; the 40 cards it played are not.</p>";
+    } else {
+      html += '<p class="draft-deckbuild-note">After the 45 picks, the model chose which 23 spells made the deck and how the lands were split. Everything it left behind became the sideboard.</p>';
+    }
     steps.forEach(function (step) {
+      if (step.stage === "deckbuild_fallback") {
+        return; // already stated in the banner above
+      }
       html +=
         '<details class="draft-deckbuild-step"><summary>' +
         escapeHtml(step.stage) +

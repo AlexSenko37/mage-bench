@@ -216,6 +216,18 @@
   overflow-y: auto;
 }
 
+/* A deck the model did not build is the single most misleading thing this panel can
+   show, so it gets the only warning colour in the view. */
+.draft-warning {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  margin: 0 0 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-left: 3px solid var(--accent-warning, #c2853a);
+  background: color-mix(in srgb, var(--accent-warning, #c2853a) 12%, transparent);
+  color: var(--text-primary);
+}
+
 .draft-empty,
 .draft-deckbuild-note {
   font-size: 0.75rem;
