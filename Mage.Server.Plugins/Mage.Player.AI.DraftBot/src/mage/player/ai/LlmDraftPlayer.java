@@ -90,6 +90,22 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     private static final String LOG_DIR = System.getProperty("xmage.llmDraft.logDir", "");
     private static final Object LOG_LOCK = new Object();
 
+    /**
+     * How colours work in limited, stated once for both prompts.
+     *
+     * This is format convention plus the mechanism behind it, in the same register as
+     * "40 cards" and "lands are unlimited" -- not advice on what to pick. Leaving it out
+     * measures how much Magic a model absorbed in pretraining rather than how well it
+     * drafts: removing it took the three model-built decks that followed to four and five
+     * colours, while the mana bases stayed arithmetically correct. It is the convention
+     * that was missing, not the arithmetic.
+     */
+    private static final String COLOUR_CONVENTION =
+            "Limited decks are usually two colours. Every colour you add takes land slots "
+            + "from the others: a splash costs 2-3 lands that cannot cast your main colours, "
+            + "which makes every other card in the deck less reliable to cast on time. "
+            + "Whether a card is worth that is your call.";
+
     private static final List<String> BASIC_LAND_NAMES =
             List.of("Plains", "Island", "Swamp", "Mountain", "Forest");
     // A deckbuild answer that won't parse costs the whole deck (it falls back to the
@@ -837,9 +853,10 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 .append("A list outside ").append(minSpells(deckMinSize)).append("-")
                 .append(maxSpells(deckMinSize)).append(" spells cannot be used.\n");
         sb.append("Anything you leave out stays in your sideboard.\n");
-        sb.append("\nIn \"analysis\", say what deck you are building. Then give the exact card ")
-                .append("names in \"chosen_spells\" -- names only, copied from the list above. ")
-                .append("You can only play cards you drafted.");
+        sb.append(COLOUR_CONVENTION).append("\n");
+        sb.append("\nIn \"analysis\", say what deck you are building and what you left out of ")
+                .append("it. Then give the exact card names in \"chosen_spells\" -- names only, ")
+                .append("copied from the list above. You can only play cards you drafted.");
         return sb.toString();
     }
 
@@ -1217,7 +1234,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         sb.append("When the draft ends you will build a deck from the cards you took. It must ")
                 .append("be exactly 40 cards: roughly 23 of your drafted cards plus roughly 17 ")
                 .append("basic lands. Basic lands are added in a separate step afterwards and ")
-                .append("are unlimited, so you do not need to draft them.\n\n");
+                .append("are unlimited, so you do not need to draft them.\n");
+        sb.append(COLOUR_CONVENTION).append("\n\n");
 
         // DraftPlayer.addPick() files every pick into the sideboard, never into
         // deck.getCards() -- which is what construct() reads too (see the pool it builds
