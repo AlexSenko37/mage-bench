@@ -2,7 +2,11 @@
 
 import json
 
-from tests.weird.repo_convention_helpers import DECKS_DIR, EXPECTED_DECK_FORMATS
+from tests.weird.repo_convention_helpers import (
+    DECKS_DIR,
+    EXPECTED_DECK_FORMATS,
+    GENERATED_DECK_FORMATS,
+)
 
 
 class TestNoOrphanedDecks:
@@ -33,14 +37,19 @@ class TestDeckFormatDirectories:
     def test_no_unexpected_format_dirs(self) -> None:
         """Subdirectories under data/decks/ must be in the expected set — catches typos like 'standrard'."""
         actual = {path.name for path in DECKS_DIR.iterdir() if path.is_dir()}
-        unexpected = actual - EXPECTED_DECK_FORMATS
+        unexpected = actual - EXPECTED_DECK_FORMATS - GENERATED_DECK_FORMATS
         assert not unexpected, (
             f"Unexpected deck format directories (typo?): {sorted(unexpected)}. "
-            f"If intentional, add to EXPECTED_DECK_FORMATS."
+            f"If intentional, add to EXPECTED_DECK_FORMATS, or to "
+            f"GENERATED_DECK_FORMATS if the harness writes it at run time."
         )
 
     def test_all_expected_formats_exist(self) -> None:
-        """Every expected format directory should exist and contain decks."""
+        """Every expected format directory should exist and contain decks.
+
+        Generated directories are excluded: they exist only in a checkout where the
+        harness has run, so requiring them fails everywhere else, CI included.
+        """
         for deck_format in sorted(EXPECTED_DECK_FORMATS):
             format_dir = DECKS_DIR / deck_format
             assert format_dir.is_dir(), f"Expected deck format directory missing: {deck_format}/"
