@@ -25,7 +25,14 @@ RETIRED_MODELS: set[str] = {
 }
 
 # The canonical set of deck format directories under data/decks/.
-EXPECTED_DECK_FORMATS = {"standard", "modern", "legacy", "commander", "jumpstart", "drafted"}
+EXPECTED_DECK_FORMATS = {"standard", "modern", "legacy", "commander", "jumpstart"}
+
+# Written by the draft harness at run time (TournamentImpl.saveSubmittedDeckToDisk) and
+# never checked in, so whether data/decks/drafted/ exists depends on whether a draft has
+# ever run in this checkout. Listing it as expected made the convention test demand a
+# directory that CI, which has run no drafts, cannot have -- the whole python job has
+# been failing on it since the draft harness landed. It is allowed, not required.
+GENERATED_DECK_FORMATS = {"drafted"}
 
 
 def load_json(path: Path) -> object:

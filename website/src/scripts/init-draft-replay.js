@@ -207,15 +207,38 @@ export function createDraftReplay(options) {
       if (step.stage === "deckbuild_fallback") {
         return; // already stated in the banner above
       }
+      // The analysis field is the model's own one-line summary and is often thin --
+      // gpt-oss wrote 284 characters here while its reasoning trace ran to 8,761, and on
+      // review rounds the summary was 6 and 0 characters while the trace held the entire
+      // count-and-reconcile. Showing only the summary threw away the work.
+      var analysis = deckbuildAnalysis(step);
+      var trace = step.reasoning && step.reasoning.trim() ? step.reasoning : null;
+      var body = "";
+      if (analysis) {
+        body +=
+          '<div class="draft-prompt-role">summary</div>' +
+          '<div class="draft-reasoning-body">' +
+          escapeHtml(analysis) +
+          "</div>";
+      }
+      if (trace) {
+        body +=
+          '<div class="draft-prompt-role">reasoning</div>' +
+          '<div class="draft-reasoning-body">' +
+          escapeHtml(trace) +
+          "</div>";
+      }
+      if (!body) {
+        body = '<p class="draft-empty">This step recorded no summary or reasoning.</p>';
+      }
       html +=
         '<details class="draft-deckbuild-step"><summary>' +
-        escapeHtml(step.stage) +
+        escapeHtml(stageLabel(step.stage)) +
         ' <span class="draft-deckbuild-cost">$' +
         step.cost_usd.toFixed(4) +
         "</span></summary>" +
-        '<div class="draft-reasoning-body">' +
-        escapeHtml(deckbuildAnalysis(step)) +
-        "</div></details>";
+        body +
+        "</details>";
     });
     deckbuildEl.innerHTML = html;
   }
