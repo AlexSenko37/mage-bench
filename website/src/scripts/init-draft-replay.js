@@ -4,6 +4,7 @@ import {
   deckbuildFallbackReason,
   deckbuildForSeat,
   draftPrompts,
+  draftSeatLabels,
   draftSeats,
   pickLabel,
   picksForSeat,
@@ -12,7 +13,7 @@ import {
   wheeledCount,
 } from "./draft-replay.js";
 import { escapeHtml, getGameRenderer, getPreviewElements, getRequiredElement } from "./spectator-runtime.js";
-import { modelShortName } from "./player-label.js";
+import { buildPlayerLabelMap } from "./player-label.js";
 
 /**
  * Draft replay: step through a seat's picks, seeing the pack exactly as the model saw it
@@ -41,14 +42,13 @@ export function createDraftReplay(options) {
   renderer.preloadCardData(cardData);
 
   var seats = draftSeats(draft);
+  // Borrow the replay's own labels so a player is not called two different things on one
+  // page: the draft record has the model but not the effort, the game's player list has both.
+  var seatLabels = draftSeatLabels(draft, game.players, buildPlayerLabelMap(game.players));
   var state = { seat: seats.length ? seats[0].seat : null, pickIndex: 0, promptsRendered: false };
 
   function seatLabel(seatName) {
-    var seat = seats.find(function (s) {
-      return s.seat === seatName;
-    });
-    if (seat && seat.model) return modelShortName(seat.model);
-    return seatName;
+    return seatLabels[seatName] || seatName;
   }
 
   function renderSeatTabs() {

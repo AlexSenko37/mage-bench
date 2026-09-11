@@ -1,3 +1,5 @@
+import { modelShortName } from "./player-label.js";
+
 /**
  * Pure logic for the draft replay: shaping the exported draft record into what the view
  * renders, with no DOM access so it can be tested directly.
@@ -7,6 +9,40 @@
  * that by seat, orders it, and answers the per-card questions the view asks while drawing
  * a pack.
  */
+
+/**
+ * Draft seat name -> the same label the rest of the page uses for that player.
+ *
+ * A draft seat records the model it used but not the effort, so on its own it renders as
+ * "GptOSS" while the replay's own panels say "GptOSS-medium" -- the same player under two
+ * names on one page. The game's player list has both, so seats are matched to players by
+ * model to borrow the fuller label. Seats sharing a model (self-play) are matched in
+ * order, which is also the order the two lists are built in.
+ *
+ * Falls back to the model's short name when a seat has no counterpart in the game, which
+ * is the case for a draft attached to a game it did not produce.
+ */
+export function draftSeatLabels(draft, players, labelByName) {
+  var labels = {};
+  var unclaimed = (players || []).slice();
+  draftSeats(draft).forEach(function (seat) {
+    var at = -1;
+    for (var i = 0; i < unclaimed.length; i++) {
+      if (unclaimed[i].model && unclaimed[i].model === seat.model) {
+        at = i;
+        break;
+      }
+    }
+    if (at === -1) {
+      labels[seat.seat] = seat.model ? modelShortName(seat.model) : seat.seat;
+      return;
+    }
+    var player = unclaimed.splice(at, 1)[0];
+    labels[seat.seat] =
+      (labelByName && labelByName[player.name]) || modelShortName(seat.model);
+  });
+  return labels;
+}
 
 /** Seats that actually made picks, in export order. */
 export function draftSeats(draft) {

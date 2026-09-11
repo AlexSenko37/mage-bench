@@ -5,6 +5,7 @@ import {
   deckbuildFallbackReason,
   deckbuildForSeat,
   draftPrompts,
+  draftSeatLabels,
   draftSeats,
   pickLabel,
   picksForSeat,
@@ -303,5 +304,64 @@ describe("stageLabel", () => {
 
   it("falls back to the raw stage for anything unknown", () => {
     expect(stageLabel("something_new")).toBe("something_new");
+  });
+});
+
+describe("draftSeatLabels", () => {
+  const seat = (name, model) => ({ seat: name, model, picks: 39, fallbacks: 0, cost_usd: 0.01 });
+
+  it("borrows the fuller label from the matching game player", () => {
+    // A draft seat records the model but not the effort. Without this the same player is
+    // "GptOSS" on the draft tab and "GptOSS-medium" everywhere else on the same page.
+    const draft = { seats: [seat("gptoss-medium-A", "openai/gpt-oss-120b")], picks: [] };
+    const players = [{ name: "PilotA", model: "openai/gpt-oss-120b", reasoning_effort: "medium" }];
+    const labels = draftSeatLabels(draft, players, { PilotA: "GptOSS-medium" });
+    expect(labels["gptoss-medium-A"]).toBe("GptOSS-medium");
+  });
+
+  it("matches self-play seats in order rather than collapsing them", () => {
+    const draft = {
+      seats: [seat("dsv4-A", "deepseek/deepseek-v4-pro-0813"), seat("dsv4-B", "deepseek/deepseek-v4-pro-0813")],
+      picks: [],
+    };
+    const players = [
+      { name: "PilotA", model: "deepseek/deepseek-v4-pro-0813", reasoning_effort: "high" },
+      { name: "PilotB", model: "deepseek/deepseek-v4-pro-0813", reasoning_effort: "high" },
+    ];
+    const labels = draftSeatLabels(draft, players, {
+      PilotA: "DSV4P-high-A",
+      PilotB: "DSV4P-high-B",
+    });
+    expect(labels["dsv4-A"]).toBe("DSV4P-high-A");
+    expect(labels["dsv4-B"]).toBe("DSV4P-high-B");
+  });
+
+  it("falls back to the model short name when no player matches", () => {
+    // A draft attached to a game it did not produce has no counterpart to borrow from.
+    const draft = { seats: [seat("qwen3l-B", "qwen/qwen3-235b-a22b-2507")], picks: [] };
+    const labels = draftSeatLabels(draft, [{ name: "PilotA", model: "other/model" }], {});
+    expect(labels["qwen3l-B"]).toBe("Qwen3L");
+  });
+
+  it("handles a game with no players at all", () => {
+    const draft = { seats: [seat("qwen3l-B", "qwen/qwen3-235b-a22b-2507")], picks: [] };
+    expect(draftSeatLabels(draft, [], {})["qwen3l-B"]).toBe("Qwen3L");
+    expect(draftSeatLabels(draft, null, null)["qwen3l-B"]).toBe("Qwen3L");
+  });
+
+  it("does not give two seats the same player", () => {
+    const draft = {
+      seats: [seat("a-A", "m/one"), seat("b-B", "m/one")],
+      picks: [],
+    };
+    const players = [{ name: "PilotA", model: "m/one" }];
+    const labels = draftSeatLabels(draft, players, { PilotA: "One" });
+    expect(labels["a-A"]).toBe("One");
+    // The second seat has no player left to claim, so it falls back.
+    expect(labels["b-B"]).not.toBe("One");
+  });
+
+  it("is empty for a game with no draft", () => {
+    expect(draftSeatLabels(null, [], {})).toEqual({});
   });
 });
