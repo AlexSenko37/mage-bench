@@ -26,13 +26,7 @@ def _simulate_pod(tmp_path: Path, rounds: int = ROUNDS) -> Path:
     lines = []
     for rnd in range(rounds):
         # packs[p] is the physical booster opened by seat p this round
-        packs = [
-            [
-                {"name": f"r{rnd}p{p}c{c}", "id": f"{rnd}-{p}-{c}"}
-                for c in range(PACK_SIZE)
-            ]
-            for p in range(POD)
-        ]
+        packs = [[{"name": f"r{rnd}p{p}c{c}", "id": f"{rnd}-{p}-{c}"} for c in range(PACK_SIZE)] for p in range(POD)]
         for pick in range(PACK_SIZE):
             for seat in range(POD):
                 # Passing left: on pick k, seat s holds the pack opened by (s - k) mod POD
@@ -145,10 +139,7 @@ def test_fallbacks_are_counted_but_not_picks(tmp_path: Path):
     path = _simulate_pod(tmp_path) / "draft_picks.jsonl"
     with path.open("a", encoding="utf-8") as handle:
         handle.write(
-            json.dumps(
-                {"ts": "z", "seat": LLM_SEATS[0], "stage": "pick_fallback", "detail": "timeout"}
-            )
-            + "\n"
+            json.dumps({"ts": "z", "seat": LLM_SEATS[0], "stage": "pick_fallback", "detail": "timeout"}) + "\n"
         )
     draft = build_draft(tmp_path)
     seat = next(s for s in draft["seats"] if s["seat"] == LLM_SEATS[0])

@@ -74,8 +74,7 @@ def _replayable_picks(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
             incomplete += 1
     if incomplete:
         logger.warning(
-            "%d pick record(s) predate pack capture and cannot be replayed; "
-            "the draft replay will be incomplete",
+            "%d pick record(s) predate pack capture and cannot be replayed; the draft replay will be incomplete",
             incomplete,
         )
     return picks
@@ -243,9 +242,7 @@ def build_draft(game_dir: Path) -> dict[str, Any] | None:
         wheeled: list[str] = []
         if key in seen_before:
             previous = seen_before[key]
-            wheeled = [
-                name for name, cid in zip(pack, pack_ids, strict=True) if cid in previous
-            ]
+            wheeled = [name for name, cid in zip(pack, pack_ids, strict=True) if cid in previous]
         seen_before[key] = set(pack_ids)
 
         out_picks.append(

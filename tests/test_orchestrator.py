@@ -176,9 +176,7 @@ def test_start_draft_client_filler_bot_count_is_configurable(tmp_path):
         packs_per_player=3,
         filler_bots=2,
     )
-    players = json.loads(
-        pm.start_jvm_process.call_args.kwargs["env"]["XMAGE_AI_PUPPETEER_PLAYERS_CONFIG"]
-    )["players"]
+    players = json.loads(pm.start_jvm_process.call_args.kwargs["env"]["XMAGE_AI_PUPPETEER_PLAYERS_CONFIG"])["players"]
     assert len(players) == 4
     assert len([p for p in players if p["ai"] == "COMPUTER_DRAFT_BOT"]) == 2
 
@@ -923,9 +921,7 @@ def test_wait_for_all_games_pilot_fails(_mock_sleep):
 
 @patch("magebench.orchestration.batch_coordination.time.sleep")
 @patch("magebench.orchestration.batch_coordination.time.monotonic")
-def test_wait_for_all_games_completes_when_pilots_clean_but_spectator_hangs(
-    mock_monotonic, _mock_sleep
-):
+def test_wait_for_all_games_completes_when_pilots_clean_but_spectator_hangs(mock_monotonic, _mock_sleep):
     """A spectator that never self-terminates (the headless pilot-vs-pilot case) should not
     hang the wait forever — once all pilots have exited cleanly for POST_PILOT_GRACE_SECS,
     the session is force-completed."""

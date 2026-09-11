@@ -150,8 +150,16 @@ def summarize_draft_cost(draft_dir: Path) -> tuple[float, dict[str, dict]]:
         stage = call.get("stage", "?")
         row = per_seat.setdefault(
             seat,
-            {"calls": 0, "cost": 0.0, "prompt": 0, "completion": 0, "reasoning": 0,
-             "fallbacks": 0, "models": set(), "stages": {}},
+            {
+                "calls": 0,
+                "cost": 0.0,
+                "prompt": 0,
+                "completion": 0,
+                "reasoning": 0,
+                "fallbacks": 0,
+                "models": set(),
+                "stages": {},
+            },
         )
         if stage == "pick_fallback":
             row["fallbacks"] += 1
@@ -178,9 +186,7 @@ def _report_draft_cost(draft_dir: Path, seat_a_name: str, seat_b_name: str) -> f
     """Log the draft's own spend and return it. Returns 0.0 with a warning if unrecorded."""
     total, per_seat = summarize_draft_cost(draft_dir)
     if not per_seat:
-        logger.warning(
-            "No draft LLM calls recorded in %s — the draft cost is unknown, not zero", draft_dir
-        )
+        logger.warning("No draft LLM calls recorded in %s — the draft cost is unknown, not zero", draft_dir)
         return 0.0
     for seat in (seat_a_name, seat_b_name):
         row = per_seat.get(seat)
@@ -189,15 +195,21 @@ def _report_draft_cost(draft_dir: Path, seat_a_name: str, seat_b_name: str) -> f
             continue
         models = ", ".join(sorted(row["models"])) or "?"
         logger.info(
-            "Draft %s: $%.4f over %d calls (%s) — %d prompt / %d completion tok "
-            "(%d reasoning), %d heuristic fallbacks",
-            seat, row["cost"], row["calls"], models,
-            row["prompt"], row["completion"], row["reasoning"], row["fallbacks"],
+            "Draft %s: $%.4f over %d calls (%s) — %d prompt / %d completion tok (%d reasoning), %d heuristic fallbacks",
+            seat,
+            row["cost"],
+            row["calls"],
+            models,
+            row["prompt"],
+            row["completion"],
+            row["reasoning"],
+            row["fallbacks"],
         )
         if row["fallbacks"]:
             logger.warning(
-                "Draft %s fell back to the RateCard heuristic on %d pick(s) — those picks "
-                "were not made by the model", seat, row["fallbacks"],
+                "Draft %s fell back to the RateCard heuristic on %d pick(s) — those picks were not made by the model",
+                seat,
+                row["fallbacks"],
             )
     logger.info("Draft total: $%.4f", total)
     return total
@@ -423,16 +435,14 @@ def main() -> int:
             wins[args.preset_b] += 1
         else:
             logger.warning("Game %d: no clear winner recorded (%r)", i, winner_name)
-        print(
-            f"Game {i} winner: {winner_name}  cost: ${cost:.4f} "
-            f"(draft ${draft_cost:.4f} + play ${play_cost:.4f})"
-        )
+        print(f"Game {i} winner: {winner_name}  cost: ${cost:.4f} (draft ${draft_cost:.4f} + play ${play_cost:.4f})")
 
     print(f"\n{'=' * 60}\nFINAL RESULTS ({games_completed}/{args.games} games completed)\n{'=' * 60}")
     print(f"  {args.preset_a}: {wins[args.preset_a]} wins")
     print(f"  {args.preset_b}: {wins[args.preset_b]} wins")
-    print(f"  Total cost: ${total_cost:.4f}"
-          f"  (draft ${total_draft_cost:.4f}, play ${total_cost - total_draft_cost:.4f})")
+    print(
+        f"  Total cost: ${total_cost:.4f}  (draft ${total_draft_cost:.4f}, play ${total_cost - total_draft_cost:.4f})"
+    )
     print(f"{'=' * 60}")
     return 0
 

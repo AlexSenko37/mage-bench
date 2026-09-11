@@ -502,8 +502,7 @@ class Config:
     # doesn't handle GPU-accelerated XRender/OpenGL rendering correctly, causing
     # blank/frozen windows.
     jvm_rendering: str = (
-        "-Dsun.java2d.xrender=false -Dsun.java2d.opengl=false "
-        "-Dsun.java2d.pmoffscreen=false -Dprism.order=sw"
+        "-Dsun.java2d.xrender=false -Dsun.java2d.opengl=false -Dsun.java2d.pmoffscreen=false -Dprism.order=sw"
     )
 
     @property
