@@ -155,6 +155,7 @@ export function createDraftReplay(options) {
       pick.pool_size +
       (wheeled > 0 ? " · " + wheeled + " wheeled back" : "") +
       (typeof pick.elapsed_secs === "number" ? " · " + pick.elapsed_secs.toFixed(1) + "s" : "") +
+      (pick.provider ? " · via " + escapeHtml(pick.provider) : "") +
       "</div>";
     packEl.appendChild(header);
 

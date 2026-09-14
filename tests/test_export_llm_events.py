@@ -72,3 +72,43 @@ def test_read_llm_events_action_summary_omits_missing_optional_fields():
         assert event["summary"] == "Kept my hand."
         assert "turn" not in event
         assert "action_taken" not in event
+
+
+def test_read_llm_events_keeps_the_serving_provider():
+    """The host OpenRouter routed a call to must survive export.
+
+    The pilot records it on every llm_response, and LlmEvent declares it, but the copy
+    step never carried it across, so every exported game had provider silently dropped.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        game_dir = Path(tmpdir)
+        _write_llm_jsonl(
+            game_dir,
+            "LLM",
+            [
+                {
+                    "type": "llm_response",
+                    "ts": "2026-09-14T10:00:00",
+                    "seq": 1,
+                    "player": "LLM",
+                    "reasoning": "pass",
+                    "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+                    "cost_usd": 0.001,
+                    "provider": "StreamLake",
+                },
+                {
+                    "type": "llm_response",
+                    "ts": "2026-09-14T10:00:01",
+                    "seq": 2,
+                    "player": "LLM",
+                    "reasoning": "pass",
+                    "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+                    "cost_usd": 0.001,
+                },
+            ],
+        )
+
+        events, _costs, _tools, _tool_calls, _thinking = read_llm_events(game_dir)
+
+        assert [e.get("provider") for e in events] == ["StreamLake", None]
+        assert "provider" not in events[1], "a call with no recorded provider exports no key"

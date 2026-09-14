@@ -259,6 +259,8 @@ def build_draft(game_dir: Path) -> dict[str, Any] | None:
                 "reasoning": pick["reasoning"],
                 "elapsed_secs": pick.get("elapsed_secs"),
                 "cost_usd": _call_cost(pick),
+                # Absent on records from before per-call provider recording.
+                "provider": pick.get("provider"),
             }
         )
 

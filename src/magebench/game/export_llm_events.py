@@ -152,6 +152,11 @@ def read_llm_events(
                         exported["usage"]["reasoning_tokens"] = usage["reasoning_tokens"]
                 if "cost_usd" in raw:
                     exported["cost_usd"] = raw["cost_usd"]
+                # The host OpenRouter routed the call to. The pilot has recorded it since
+                # the provider field was added to LlmEvent, but this copy step was never
+                # taught about it, so every exported game had it silently dropped.
+                if "provider" in raw:
+                    exported["provider"] = raw["provider"]
             elif event_type == "tool_call":
                 exported["tool"] = raw["tool"]
                 assert "arguments" in raw, f"tool_call event missing arguments: {raw!r}"

@@ -48,6 +48,7 @@ def _simulate_pod(tmp_path: Path, rounds: int = ROUNDS) -> Path:
                             "pool": [],
                             "picked": taken["name"],
                             "picked_id": taken["id"],
+                            "provider": f"host-{seat}",
                         }
                     )
                 pack.remove(taken)
@@ -179,3 +180,30 @@ def test_malformed_lines_are_skipped(tmp_path: Path):
         handle.write("{not json\n\n")
     draft = build_draft(tmp_path)
     assert len(draft["picks"]) == len(LLM_SEATS) * PACK_SIZE * ROUNDS
+
+
+def test_pick_provider_is_carried_into_the_export(tmp_path: Path):
+    """Each pick keeps the host that served it, so a draft can be attributed afterwards."""
+    draft = build_draft(_simulate_pod(tmp_path))
+    for index, seat in enumerate(LLM_SEATS):
+        providers = {p["provider"] for p in draft["picks"] if p["seat"] == seat}
+        assert providers == {f"host-{index}"}
+
+
+def test_pick_provider_is_none_for_records_without_one(tmp_path: Path):
+    """Records made before per-call provider recording export as None, not a guess."""
+    record = {
+        "seat": "a",
+        "stage": "pick",
+        "model": "m/x",
+        "usage": {"cost": 0.01},
+        "reasoning": "",
+        "content": "1",
+        "pack": ["Alpha", "Beta"],
+        "pack_ids": ["i1", "i2"],
+        "pool": [],
+        "picked": "Alpha",
+    }
+    (tmp_path / "draft_picks.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
+    draft = build_draft(tmp_path)
+    assert draft["picks"][0]["provider"] is None
