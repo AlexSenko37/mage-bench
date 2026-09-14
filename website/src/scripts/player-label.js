@@ -49,6 +49,7 @@ export var MODEL_SHORT_NAMES = {
   "openai/gpt-5.6-luna": "G56L",
   "openai/gpt-5.6-sol": "G56S",
   "openai/gpt-5.6-terra": "G56T",
+  "openai/gpt-6-astra": "G6A",
   "openai/gpt-oss-120b": "GptOSS",
   "openai/o3": "o3",
   "openai/o3-mini": "o3m",

@@ -565,6 +565,18 @@
       "_notes": "GPT-5.6 family fast/cheap model (July 2026 launch). 1.05M context, 128K max output. Mandatory reasoning with configurable effort. Untested for Magic tool calling. Pricing verified live via OpenRouter API 2026-08-10."
     },
     {
+      "id": "openai/gpt-6-astra",
+      "name": "GPT-6 Astra",
+      "name_part": "G6A",
+      "_input_per_m": 10.0,
+      "_output_per_m": 50.0,
+      "_cache_read_per_m": 1.0,
+      "_context_k": 1050,
+      "_thinking": true,
+      "_tier": "expensive",
+      "_notes": "OpenAI's GPT-6 flagship. Same headline price as Claude Fable 5.1 ($10/$50 per M), but cache reads are $1.00/M against Fable 5.1's $0.25, which matters at the 74-80% cache hit rates games run at. OpenAI caches automatically, so no cache_control annotation. 1.05M context, 128K max output. Served by OpenAI and Azure only; both support tools, structured outputs, reasoning and reasoning.effort. Pinned id -- not ~openai/gpt-astra-latest, which floats to newer models, and not the -pro or :batch variants. reasoning.effort low verified live 2026-09-14: accepted, returned a reasoning summary with the answer. Other effort levels not yet verified, so only a low preset exists. Pricing verified against the live OpenRouter API 2026-09-14."
+    },
+    {
       "id": "anthropic/claude-fable-5.1",
       "name": "Claude Fable 5.1",
       "name_part": "Fabl51",
