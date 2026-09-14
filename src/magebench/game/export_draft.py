@@ -257,6 +257,9 @@ def build_draft(game_dir: Path) -> dict[str, Any] | None:
                 "wheeled": wheeled,
                 "pool_size": len(pick["pool"]),
                 "reasoning": pick["reasoning"],
+                # The reason the model gave in its answer. Absent on drafts recorded before
+                # picks were answered as JSON.
+                "explanation": pick.get("explanation"),
                 "elapsed_secs": pick.get("elapsed_secs"),
                 "cost_usd": _call_cost(pick),
                 # Absent on records from before per-call provider recording.

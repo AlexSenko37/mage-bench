@@ -105,6 +105,9 @@ export function summarizeSeat(draft, seatName) {
   var withReasoning = picks.filter(function (p) {
     return p.reasoning && p.reasoning.trim().length > 0;
   });
+  var withExplanation = picks.filter(function (p) {
+    return p.explanation && p.explanation.trim().length > 0;
+  });
   var elapsed = picks
     .map(function (p) {
       return typeof p.elapsed_secs === "number" ? p.elapsed_secs : null;
@@ -122,6 +125,7 @@ export function summarizeSeat(draft, seatName) {
     fallbacks: seat ? seat.fallbacks : 0,
     costUsd: seat ? seat.cost_usd : 0,
     reasoningPicks: withReasoning.length,
+    explanationPicks: withExplanation.length,
     wheelPicks: wheels.length,
     medianElapsed: median(elapsed),
   };

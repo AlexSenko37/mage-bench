@@ -155,6 +155,17 @@ describe("summarizeSeat", () => {
     expect(summarizeSeat(draft, "modelA-A").reasoningPicks).toBe(1);
   });
 
+  it("counts picks with a stated explanation separately from reasoning traces", () => {
+    const draft = draftWith([
+      pick({ reasoning: "", explanation: "best card in my colours" }),
+      pick({ pick_number: 2, reasoning: "", explanation: "   " }),
+      pick({ pick_number: 3, reasoning: "trace" }),
+    ]);
+    const s = summarizeSeat(draft, "modelA-A");
+    expect(s.explanationPicks).toBe(1);
+    expect(s.reasoningPicks).toBe(1);
+  });
+
   it("has a null median when no pick recorded a duration", () => {
     const draft = draftWith([pick({ elapsed_secs: null })]);
     expect(summarizeSeat(draft, "modelA-A").medianElapsed).toBeNull();

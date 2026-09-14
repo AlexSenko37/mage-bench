@@ -207,3 +207,21 @@ def test_pick_provider_is_none_for_records_without_one(tmp_path: Path):
     (tmp_path / "draft_picks.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
     draft = build_draft(tmp_path)
     assert draft["picks"][0]["provider"] is None
+
+
+def test_pick_explanation_is_carried_into_the_export(tmp_path: Path):
+    """The model's stated reason for each pick reaches the replay next to its reasoning trace."""
+    root = _simulate_pod(tmp_path)
+    path = root / "draft_picks.jsonl"
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    for row in rows:
+        row["explanation"] = f"taking {row['picked']}"
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    draft = build_draft(root)
+    assert all(p["explanation"] == f"taking {p['picked']}" for p in draft["picks"])
+
+
+def test_pick_explanation_is_none_for_records_without_one(tmp_path: Path):
+    """Drafts recorded before picks were answered as JSON export None, not an empty string."""
+    draft = build_draft(_simulate_pod(tmp_path))
+    assert {p["explanation"] for p in draft["picks"]} == {None}

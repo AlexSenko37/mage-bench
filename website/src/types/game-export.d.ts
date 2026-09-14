@@ -640,6 +640,10 @@ export interface DraftPick {
    * The host OpenRouter routed this pick to. Absent on exports made before per-call provider recording, null when the record carried none.
    */
   provider?: string | null;
+  /**
+   * The reason the model gave in its answer, which asks for one before the pick. Absent on drafts recorded before picks were answered as JSON; empty when the reply could not be parsed.
+   */
+  explanation?: string | null;
 }
 /**
  * One post-draft deckbuilding call: the spells proposal, its review, or the lands.
