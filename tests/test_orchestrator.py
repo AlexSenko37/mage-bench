@@ -1241,3 +1241,55 @@ def test_draft_seat_args_reject_a_log_dir_containing_a_space(tmp_path: Path):
             seat_b_model="m/b",
             log_dir=tmp_path / "a dir",
         )
+
+
+def test_draft_provider_routing_reaches_the_server_jvm(tmp_path: Path):
+    """provider_order / ignore_providers must reach the draft bot, per seat.
+
+    The play path always sent them; the draft path never did. On draft_20260914_100446
+    DSV4-pro picks went to nine hosts, none of them DeepInfra (first in its
+    provider_order), while that model's game calls went 52 of 52 to StreamLake.
+    """
+    args = draft_seat_jvm_args(
+        seat_a_name="ModelA-A",
+        seat_a_model="deepseek/deepseek-v4-pro-0813",
+        seat_b_name="ModelB-B",
+        seat_b_model="meta-llama/llama-4-maverick",
+        log_dir=tmp_path,
+        seat_a_provider_order=["deepinfra/fp8", "streamlake"],
+        seat_b_provider_order=["SambaNova", "Groq"],
+        seat_b_ignore_providers=["google"],
+    )
+    routing = [a for a in args if "providerOrder" in a or "ignoreProviders" in a]
+    assert routing == [
+        "-Dxmage.llmDraft.providerOrder.ModelA-A=deepinfra/fp8,streamlake",
+        "-Dxmage.llmDraft.providerOrder.ModelB-B=SambaNova,Groq",
+        "-Dxmage.llmDraft.ignoreProviders.ModelB-B=google",
+    ]
+    assert not [a for a in args if any(c.isspace() for c in a)]
+
+
+def test_draft_provider_routing_omitted_when_unset(tmp_path: Path):
+    """A model with no routing in models.json keeps OpenRouter default routing."""
+    args = draft_seat_jvm_args(
+        seat_a_name="A",
+        seat_a_model="m/a",
+        seat_b_name="B",
+        seat_b_model="m/b",
+        log_dir=tmp_path,
+    )
+    assert not [a for a in args if "providerOrder" in a or "ignoreProviders" in a]
+
+
+@pytest.mark.parametrize("bad", ["Sail Research", "a,b", ""])
+def test_draft_provider_routing_rejects_slugs_that_cannot_travel(tmp_path: Path, bad: str):
+    """A space would tear MAVEN_OPTS and a comma would split into two providers in Java."""
+    with pytest.raises(AssertionError, match="provider_order"):
+        draft_seat_jvm_args(
+            seat_a_name="A",
+            seat_a_model="m/a",
+            seat_b_name="B",
+            seat_b_model="m/b",
+            log_dir=tmp_path,
+            seat_a_provider_order=[bad],
+        )
