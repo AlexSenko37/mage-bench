@@ -1,4 +1,5 @@
 import { buildDeckCards, computeDeckStats, groupDeck, GROUP_MODES, renderDeckGrid } from "./deck-explorer.js";
+import { buildPlayerLabelMap, labelFor } from "./player-label.js";
 import { getGameRenderer, getPreviewElements, getRequiredElement } from "./spectator-runtime.js";
 
 function renderStatsSidebar(container, stats) {
@@ -66,6 +67,10 @@ export function createDeckExplorer(options) {
     return (p.decklist || []).length > 0;
   });
 
+  // Seats are PilotA/PilotB in-game so a model can't tell who it faces; show the model
+  // name instead, as the replay does.
+  var labelByName = buildPlayerLabelMap(game.players || []);
+
   var state = { player: players[0] ? players[0].name : null, group: GROUP_MODES[0].key };
 
   function renderTabs(container, items, activeKey, keyOf, labelOf, onSelect) {
@@ -96,7 +101,7 @@ export function createDeckExplorer(options) {
     });
     renderStatsSidebar(statsEl, computeDeckStats(cards));
 
-    renderTabs(playerTabsEl, players, state.player, function (p) { return p.name; }, function (p) { return p.name; }, function (name) {
+    renderTabs(playerTabsEl, players, state.player, function (p) { return p.name; }, function (p) { return labelFor(labelByName, p.name); }, function (name) {
       state.player = name;
       renderDeck();
     });
