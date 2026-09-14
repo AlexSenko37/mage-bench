@@ -114,6 +114,28 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             + "five-colour decks lose more games to their mana than they win on card "
             + "quality.";
 
+    /**
+     * When to settle on colours, for the pick prompt only.
+     *
+     * COLOUR_CONVENTION says what the finished deck should look like, but read on its own
+     * during the draft it leaves room to take the best card every pick and sort out
+     * colours at deckbuilding. By then it is too late: a card outside the final two
+     * colours was a wasted pick, and a pool spread across five colours has nothing to
+     * build from. Like the convention itself this is format knowledge a model with less
+     * Magic in its pretraining will not have. It is left out of the deckbuild prompt,
+     * where the picks are already over.
+     */
+    private static final String DRAFT_COMMITMENT =
+            "Colours are chosen during the draft, not after it. You can only build from "
+            + "the cards you took, so a pick outside your eventual two colours is a wasted "
+            + "pick. Stay open for the first few picks, but soft-commit to two colours "
+            + "early -- usually somewhere in the first booster -- based on the strongest "
+            + "cards in your pool and the colours that keep coming to you in later picks, "
+            + "which tells you what the players passing to you are not taking. From then "
+            + "on let those colours guide your picks, favouring on-colour cards over "
+            + "slightly stronger off-colour ones. Switch only if one of your colours has "
+            + "clearly dried up and another is clearly open.";
+
     private static final List<String> BASIC_LAND_NAMES =
             List.of("Plains", "Island", "Swamp", "Mountain", "Forest");
     // A deckbuild answer that won't parse costs the whole deck (it falls back to the
@@ -1249,7 +1271,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 .append("be exactly 40 cards: roughly 23 of your drafted cards plus roughly 17 ")
                 .append("basic lands. Basic lands are added in a separate step afterwards and ")
                 .append("are unlimited, so you do not need to draft them.\n");
-        sb.append(COLOUR_CONVENTION).append("\n\n");
+        sb.append(COLOUR_CONVENTION).append("\n");
+        sb.append(DRAFT_COMMITMENT).append("\n\n");
 
         // DraftPlayer.addPick() files every pick into the sideboard, never into
         // deck.getCards() -- which is what construct() reads too (see the pool it builds
