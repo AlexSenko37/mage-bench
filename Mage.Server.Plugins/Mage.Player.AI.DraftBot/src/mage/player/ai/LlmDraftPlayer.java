@@ -229,6 +229,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         payload.add("messages", messages);
         payload.addProperty("max_tokens", PICK_MAX_TOKENS);
         applyReasoningEffort(payload);
+        applyProviderRouting(payload);
         // Picks were the one call whose reasoning was never requested, and the system prompt
         // asks for a bare number -- so there was no record at all of why any card was taken.
         // The tokens are billed regardless of whether we ask for the trace back.
@@ -449,6 +450,60 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 "xmage.llmDraft.effort." + playerName,
                 System.getProperty("xmage.llmDraft.effort", ""));
         return effort.isEmpty() ? null : effort;
+    }
+
+    /**
+     * A comma-separated provider list for this seat, empty when none is configured.
+     *
+     * Comma-separated rather than JSON because it arrives through MAVEN_OPTS, which the
+     * launcher splits on whitespace; the harness rejects any provider slug containing a
+     * space or comma before it gets here.
+     */
+    private static List<String> resolveProviderList(String property, String playerName) {
+        String raw = System.getProperty(property + "." + playerName, System.getProperty(property, ""));
+        List<String> providers = new ArrayList<>();
+        for (String part : raw.split(",")) {
+            String provider = part.trim();
+            if (!provider.isEmpty()) {
+                providers.add(provider);
+            }
+        }
+        return providers;
+    }
+
+    /**
+     * Add OpenRouter provider routing (provider.order / provider.ignore) from models.json.
+     *
+     * The play path has always sent this; the draft path never did, so a model's
+     * provider_order applied to its games and not its drafts. Measured on
+     * draft_20260914_100446: DSV4-pro's picks went to nine different hosts, none of them
+     * DeepInfra (first in its order), while the same model's game calls went 52 of 52 to
+     * StreamLake. Hosts are not interchangeable -- some do not honour reasoning.effort --
+     * so a draft routed by OpenRouter's default is not the model configuration the preset
+     * names. Fallbacks stay OpenRouter's default (allowed), matching the play path.
+     */
+    private void applyProviderRouting(JsonObject payload) {
+        List<String> order = resolveProviderList("xmage.llmDraft.providerOrder", getName());
+        List<String> ignore = resolveProviderList("xmage.llmDraft.ignoreProviders", getName());
+        if (order.isEmpty() && ignore.isEmpty()) {
+            return;
+        }
+        JsonObject provider = new JsonObject();
+        if (!order.isEmpty()) {
+            JsonArray orderJson = new JsonArray();
+            for (String name : order) {
+                orderJson.add(name);
+            }
+            provider.add("order", orderJson);
+        }
+        if (!ignore.isEmpty()) {
+            JsonArray ignoreJson = new JsonArray();
+            for (String name : ignore) {
+                ignoreJson.add(name);
+            }
+            provider.add("ignore", ignoreJson);
+        }
+        payload.add("provider", provider);
     }
 
     /** Add reasoning.effort to a payload when one is configured for this seat. */
@@ -967,6 +1022,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             payload.add("messages", messages);
             payload.addProperty("max_tokens", DECKBUILD_MAX_TOKENS);
             applyReasoningEffort(payload);
+            applyProviderRouting(payload);
             // We are already paying for this model's reasoning tokens; capturing the trace
             // costs nothing extra and shows what it actually weighed.
             payload.addProperty("include_reasoning", true);

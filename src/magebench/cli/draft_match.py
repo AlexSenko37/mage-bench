@@ -27,7 +27,7 @@ from magebench.common.log import get_logger, setup_logging
 from magebench.common.port import find_available_port, wait_for_port
 from magebench.common.process_manager import ProcessManager, jvm_oom_preexec_fn
 from magebench.game.export_game import read_game_winner
-from magebench.orchestration.config import Config, load_presets
+from magebench.orchestration.config import Config, load_models, load_presets
 from magebench.orchestration.game_processes import (
     draft_seat_jvm_args,
     start_draft_client,
@@ -83,6 +83,29 @@ def _effort_for_preset(preset_name: str) -> str | None:
         raise ValueError(f"Unknown preset: {preset_name!r}")
     effort = pdata.get("reasoning_effort")
     return str(effort) if effort else None
+
+
+def _provider_routing_for_preset(preset_name: str) -> tuple[list[str] | None, list[str] | None]:
+    """(provider_order, ignore_providers) from the model's models.json entry.
+
+    The same fields config.py applies to a game seat. Either is None when the entry does
+    not set it, in which case the draft calls get OpenRouter's default routing -- exactly
+    what every draft got before, for every model.
+    """
+    model = _model_for_preset(preset_name)
+    entry = next((m for m in load_models(None)["models"] if m["id"] == model), None)
+    assert entry is not None, f"Unknown model: {model!r}"
+
+    def provider_list(key: str) -> list[str] | None:
+        if key not in entry:
+            return None
+        value = entry[key]
+        assert isinstance(value, list) and all(isinstance(v, str) for v in value), (
+            f"{model}: {key} must be a list of provider slugs, got {value!r}"
+        )
+        return [str(v) for v in value]
+
+    return provider_list("provider_order"), provider_list("ignore_providers")
 
 
 def _model_for_preset(preset_name: str) -> str:
@@ -260,6 +283,8 @@ def run_draft(
         seat_b_name = f"{preset_b}-B"
         model_a = _model_for_preset(preset_a)
         model_b = _model_for_preset(preset_b)
+        routing_a = _provider_routing_for_preset(preset_a)
+        routing_b = _provider_routing_for_preset(preset_b)
 
         server_log = draft_dir / "server.log"
         logger.info("Starting draft server on port %d...", config.port)
@@ -277,6 +302,10 @@ def run_draft(
                 log_dir=draft_dir,
                 seat_a_effort=_effort_for_preset(preset_a),
                 seat_b_effort=_effort_for_preset(preset_b),
+                seat_a_provider_order=routing_a[0],
+                seat_b_provider_order=routing_b[0],
+                seat_a_ignore_providers=routing_a[1],
+                seat_b_ignore_providers=routing_b[1],
             ),
         )
         if not wait_for_port(config.server, config.port, config.server_wait):

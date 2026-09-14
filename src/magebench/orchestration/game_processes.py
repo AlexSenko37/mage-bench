@@ -271,6 +271,20 @@ def start_gui_client(
     )
 
 
+def _provider_list_arg(providers: list[str], what: str) -> str:
+    """Comma-join a provider list for a -D property, refusing anything that cannot travel.
+
+    The value goes through MAVEN_OPTS (word-split on whitespace) and is split on commas on
+    the Java side, so a slug containing either would arrive as the wrong list.
+    """
+    assert providers, f"{what} must not be empty when given"
+    for provider in providers:
+        assert provider and not any(c.isspace() for c in provider) and "," not in provider, (
+            f"{what} entry {provider!r} must be a non-empty slug with no whitespace or commas"
+        )
+    return ",".join(providers)
+
+
 def draft_seat_jvm_args(
     seat_a_name: str,
     seat_a_model: str,
@@ -279,6 +293,10 @@ def draft_seat_jvm_args(
     log_dir: Path,
     seat_a_effort: str | None = None,
     seat_b_effort: str | None = None,
+    seat_a_provider_order: list[str] | None = None,
+    seat_b_provider_order: list[str] | None = None,
+    seat_a_ignore_providers: list[str] | None = None,
+    seat_b_ignore_providers: list[str] | None = None,
 ) -> list[str]:
     """Per-seat draft configuration for the *server* JVM.
 
@@ -296,6 +314,18 @@ def draft_seat_jvm_args(
         f"draft log dir must not contain whitespace, it is passed through MAVEN_OPTS: {log_dir}"
     )
 
+    routing_args: list[str] = []
+    for seat, order, ignore in (
+        (seat_a_name, seat_a_provider_order, seat_a_ignore_providers),
+        (seat_b_name, seat_b_provider_order, seat_b_ignore_providers),
+    ):
+        if order is not None:
+            routing_args.append(f"-Dxmage.llmDraft.providerOrder.{seat}={_provider_list_arg(order, 'provider_order')}")
+        if ignore is not None:
+            routing_args.append(
+                f"-Dxmage.llmDraft.ignoreProviders.{seat}={_provider_list_arg(ignore, 'ignore_providers')}"
+            )
+
     return [
         f"-Dxmage.llmDraft.model.{seat_a_name}={seat_a_model}",
         f"-Dxmage.llmDraft.model.{seat_b_name}={seat_b_model}",
@@ -305,6 +335,10 @@ def draft_seat_jvm_args(
         *([f"-Dxmage.llmDraft.effort.{seat_b_name}={seat_b_effort}"] if seat_b_effort else []),
         # Turns on the structured per-call record (tokens, cost, reasoning) in draft_picks.jsonl.
         f"-Dxmage.llmDraft.logDir={log_dir}",
+        # OpenRouter provider routing from models.json. The play path has always sent it;
+        # without these the draft path never did, so drafts went wherever OpenRouter's
+        # default routing sent them regardless of the model's provider_order.
+        *routing_args,
     ]
 
 

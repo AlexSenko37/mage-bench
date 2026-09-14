@@ -8,7 +8,11 @@ file copy.
 import json
 from pathlib import Path
 
-from magebench.cli.draft_match import DRAFT_LOG_NAME, attach_draft_record
+from magebench.cli.draft_match import (
+    DRAFT_LOG_NAME,
+    _provider_routing_for_preset,
+    attach_draft_record,
+)
 from magebench.game.export_draft import build_draft
 
 
@@ -71,3 +75,13 @@ def test_record_name_does_not_collide_with_pilot_event_logs():
     and die on the missing "type" key, which is how this constant got its current value.
     """
     assert not DRAFT_LOG_NAME.endswith("_llm.jsonl")
+
+
+def test_provider_routing_comes_from_the_models_json_entry():
+    """Read from the real models.json, so a routing change there reaches drafts too."""
+    assert _provider_routing_for_preset("dsv4pro-high") == (["deepinfra/fp8", "streamlake"], None)
+    assert _provider_routing_for_preset("gptoss-medium") == (["Fireworks"], None)
+
+
+def test_provider_routing_is_none_for_a_model_without_it():
+    assert _provider_routing_for_preset("qwen3l") == (None, None)
