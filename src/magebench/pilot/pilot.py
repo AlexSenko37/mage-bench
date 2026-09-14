@@ -660,6 +660,15 @@ async def run_pilot_loop(
                         }
                         for tool_call in choice.message.tool_calls
                     ]
+                # Which host actually served this call. OpenRouter picks from among several
+                # for most models and they are not interchangeable: they differ in
+                # quantisation, in output quality on identical weights, and in whether they
+                # honour reasoning.effort at all. Without this the run cannot be attributed
+                # afterwards -- an effort setting that was quietly ignored looks exactly
+                # like a model that ignored it.
+                served_by = getattr(response, "provider", None)
+                if served_by:
+                    llm_event["provider"] = served_by
                 if response.usage:
                     usage_dict: dict = {
                         "prompt_tokens": response.usage.prompt_tokens or 0,

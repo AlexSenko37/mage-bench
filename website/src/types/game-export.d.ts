@@ -381,6 +381,10 @@ export interface LlmEvent {
   tool_calls?: unknown;
   usage?: LlmUsage;
   cost_usd?: number;
+  /**
+   * The upstream host OpenRouter routed this call to. Providers serving the same model differ in quantisation, output quality and whether they honour reasoning.effort, so a run cannot be interpreted without it.
+   */
+  provider?: string;
   tool?: string;
   args?: {
     [k: string]: unknown;

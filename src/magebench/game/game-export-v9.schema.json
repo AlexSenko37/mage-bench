@@ -787,6 +787,10 @@
         "cost_usd": {
           "type": "number"
         },
+        "provider": {
+          "type": "string",
+          "description": "The upstream host OpenRouter routed this call to. Providers serving the same model differ in quantisation, output quality and whether they honour reasoning.effort, so a run cannot be interpreted without it."
+        },
         "tool": {
           "type": "string"
         },

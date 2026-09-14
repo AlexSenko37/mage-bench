@@ -286,6 +286,16 @@ def draft_seat_jvm_args(
     owns the Player object — the server. The per-seat suffix is the seat's XMage player name,
     which is what LlmDraftPlayer.getName() returns.
     """
+    # These are joined into MAVEN_OPTS and word-split by the launcher, so any value
+    # containing whitespace silently becomes two arguments. Found while passing a JSON
+    # cache_control block through here: the space in {"type": "ephemeral"} split it in
+    # two and the JVM tried to load a main class called "ephemeral"}, so the server never
+    # started and the draft failed 240s later on a timeout naming none of it. The log dir
+    # has the same exposure and was never checked.
+    assert not any(c.isspace() for c in str(log_dir)), (
+        f"draft log dir must not contain whitespace, it is passed through MAVEN_OPTS: {log_dir}"
+    )
+
     return [
         f"-Dxmage.llmDraft.model.{seat_a_name}={seat_a_model}",
         f"-Dxmage.llmDraft.model.{seat_b_name}={seat_b_model}",
