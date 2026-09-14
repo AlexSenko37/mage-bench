@@ -636,6 +636,10 @@ export interface DraftPick {
   reasoning: string;
   elapsed_secs: number | null;
   cost_usd: number;
+  /**
+   * The host OpenRouter routed this pick to. Absent on exports made before per-call provider recording, null when the record carried none.
+   */
+  provider?: string | null;
 }
 /**
  * One post-draft deckbuilding call: the spells proposal, its review, or the lands.

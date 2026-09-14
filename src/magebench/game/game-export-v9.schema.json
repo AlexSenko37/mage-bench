@@ -346,6 +346,13 @@
         },
         "cost_usd": {
           "type": "number"
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The host OpenRouter routed this pick to. Absent on exports made before per-call provider recording, null when the record carried none."
         }
       }
     },

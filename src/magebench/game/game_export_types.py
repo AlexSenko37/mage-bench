@@ -640,6 +640,7 @@ class DraftPick:
     reasoning: str
     elapsed_secs: float | None = field(metadata={_JSON_KEY_METADATA: "elapsed_secs"})
     cost_usd: float = field(metadata={_JSON_KEY_METADATA: "cost_usd"})
+    provider: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -2016,6 +2017,7 @@ def _coerce_draft_pick(value: object, source: str) -> DraftPick:
         reasoning=_require_str(obj["reasoning"], f"{source}.reasoning"),
         elapsed_secs=_optional_number(obj["elapsed_secs"], f"{source}.elapsed_secs"),
         cost_usd=float(_require_number(obj["cost_usd"], f"{source}.cost_usd")),
+        provider=_optional_str(obj["provider"], f"{source}.provider") if "provider" in obj else None,
     )
 
 
