@@ -301,7 +301,7 @@ def card_display(c: object) -> str:
 _PT_COUNTERS = ("+1/+1", "-1/-1")
 
 
-def _counter_notes(counters: object, pt: str | None) -> list[str]:
+def _counter_notes(counters: object, pt: object) -> list[str]:
     """Describe a permanent's counters.
 
     The P/T shown is the current one, counters included, but "3/3 (+1/+1=2)" reads as a
