@@ -275,6 +275,7 @@ public final class BridgeDecisionFlowService {
         Integer pile = input.pile();
         String text = input.text();
         Boolean autoTap = input.autoTap();
+        processorState.interactionState().clearAutoColorChoice();
 
         if (processorState.interactionState().interactionsThisTurn() > processorState.interactionState().maxInteractionsPerTurn()) {
             logger.warn("[" + username + "] Loop detected (" + processorState.interactionState().interactionsThisTurn()
@@ -1052,6 +1053,9 @@ public final class BridgeDecisionFlowService {
                 || action.method() == ClientCallbackMethod.GAME_PLAY_XMANA) {
             return maybeAutoHandlePendingManaAction(action, source);
         }
+        if (action.method() == ClientCallbackMethod.GAME_CHOOSE_CHOICE) {
+            return maybeAutoHandleManaColorChoice(action, source);
+        }
         if (action.method() != ClientCallbackMethod.GAME_TARGET
                 && action.method() != ClientCallbackMethod.GAME_CHOOSE_ABILITY) {
             return NonDecisionActionStatus.NOT_HANDLED;
@@ -1122,6 +1126,74 @@ public final class BridgeDecisionFlowService {
         return processorState.decisionState().pendingAction() != action
             ? NonDecisionActionStatus.CHANGED
             : NonDecisionActionStatus.NOT_HANDLED;
+    }
+
+    /**
+     * Answer "Select a color of mana" for a source the automatic payment activated. Any
+     * other colour choice, or one arriving when no automatic payment set a colour, is the
+     * model's decision and is left alone.
+     */
+    private NonDecisionActionStatus maybeAutoHandleManaColorChoice(PendingAction action, String source) {
+        ManaType wanted = processorState.interactionState().autoColorChoice();
+        String message = action.message() == null ? "" : action.message().toLowerCase();
+        if (wanted == null || !(message.contains("color") && message.contains("mana"))) {
+            return NonDecisionActionStatus.NOT_HANDLED;
+        }
+        GameClientMessage choiceMsg = (GameClientMessage) action.data();
+        String answer = choiceAnswerNamed(choiceMsg, manaColorName(wanted));
+        if (answer == null) {
+            return NonDecisionActionStatus.NOT_HANDLED;
+        }
+        if (!clearPendingActionIfCurrent(action)) {
+            return processorState.decisionState().pendingAction() != action
+                ? NonDecisionActionStatus.CHANGED
+                : NonDecisionActionStatus.NOT_HANDLED;
+        }
+        processorState.interactionState().clearAutoColorChoice();
+        logger.info("[" + username + "] " + source + ": answering \"" + action.message() + "\" with "
+            + answer + " for the automatic payment");
+        sendStringOrDie(action.gameId(), answer, "auto GAME_CHOOSE_CHOICE mana_color");
+        return NonDecisionActionStatus.AUTO_HANDLED;
+    }
+
+    /** What to send for the option named `name`: the key of a key choice, else the option text. Null if absent. */
+    private static String choiceAnswerNamed(GameClientMessage msg, String name) {
+        Choice choiceObj = msg == null ? null : msg.getChoice();
+        if (choiceObj == null) {
+            return null;
+        }
+        if (choiceObj.isKeyChoice()) {
+            Map<String, String> keyChoices = choiceObj.getKeyChoices();
+            if (keyChoices != null) {
+                for (Map.Entry<String, String> entry : keyChoices.entrySet()) {
+                    if (entry.getValue().equalsIgnoreCase(name) || entry.getKey().equalsIgnoreCase(name)) {
+                        return entry.getKey();
+                    }
+                }
+            }
+            return null;
+        }
+        Set<String> choices = choiceObj.getChoices();
+        if (choices != null) {
+            for (String choice : choices) {
+                if (choice.equalsIgnoreCase(name)) {
+                    return choice;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String manaColorName(ManaType type) {
+        return switch (type) {
+            case WHITE -> "White";
+            case BLUE -> "Blue";
+            case BLACK -> "Black";
+            case RED -> "Red";
+            case GREEN -> "Green";
+            case COLORLESS -> "Colorless";
+            case GENERIC -> "Generic";
+        };
     }
 
     private NonDecisionActionStatus maybeAutoHandleGameChooseAbility(PendingAction action, String source) {
@@ -1518,6 +1590,10 @@ public final class BridgeDecisionFlowService {
                 if (requiredColorPatterns == null) {
                     return objectId;
                 }
+                // "{T}: Add one mana of any color." names no colour symbol but pays any pip.
+                if (name.toLowerCase().contains("any color")) {
+                    return objectId;
+                }
                 for (Pattern pattern : requiredColorPatterns) {
                     if (pattern.matcher(name).find()) {
                         return objectId;
@@ -1839,23 +1915,42 @@ public final class BridgeDecisionFlowService {
                 ? List.of()
                 : requiredManaColorPatterns(messageText);
 
-            UUID colorMatchedObjectId = requiredColors.isEmpty()
-                ? null
-                : findTappableManaSource(sortedPlayable, payingForId, requiredColors);
-            if (colorMatchedObjectId != null) {
-                logger.info("[" + username + "] Mana: \"" + messageText + "\" -> tapping "
-                    + colorMatchedObjectId.toString().substring(0, 8) + " (color match)");
-                processorState.interactionState().resetPoolManaTracking();
-                sendUuidOrDie(gameId, colorMatchedObjectId, "manaAuto:tap_color_match");
-                return true;
-            }
-
-            UUID objectId = findTappableManaSource(sortedPlayable, payingForId, null);
-            if (objectId != null) {
-                logger.info("[" + username + "] Mana: \"" + messageText + "\" -> tapping " + objectId.toString().substring(0, 8));
-                processorState.interactionState().resetPoolManaTracking();
-                sendUuidOrDie(gameId, objectId, "manaAuto:tap");
-                return true;
+            if (requiredColors.isEmpty()) {
+                // A generic part is still owed, so any tappable source pays something.
+                UUID objectId = findTappableManaSource(sortedPlayable, payingForId, null);
+                if (objectId != null) {
+                    logger.info("[" + username + "] Mana: \"" + messageText + "\" -> tapping " + objectId.toString().substring(0, 8));
+                    processorState.interactionState().resetPoolManaTracking();
+                    sendUuidOrDie(gameId, objectId, "manaAuto:tap");
+                    return true;
+                }
+            } else {
+                UUID colorMatchedObjectId = findTappableManaSource(sortedPlayable, payingForId, requiredColors);
+                if (colorMatchedObjectId != null) {
+                    logger.info("[" + username + "] Mana: \"" + messageText + "\" -> tapping "
+                        + colorMatchedObjectId.toString().substring(0, 8) + " (color match)");
+                    processorState.interactionState().resetPoolManaTracking();
+                    sendUuidOrDie(gameId, colorMatchedObjectId, "manaAuto:tap_color_match");
+                    return true;
+                }
+                // No untapped source makes the colour. A source that makes any colour for a
+                // mana cost ("{1}: Add one mana of any color") still can, if something else
+                // can pay that cost: XMage will ask for the cost next, then for the colour.
+                // Tapping an off-colour land here instead, as this used to do, only wasted it:
+                // with Mountain, Plains, Forest and Barrels of Blasting Jelly, both
+                // Fire Lord Zuko {R}{W}{B} and Zhao {2}{B/R}{B/R} were cancelled as
+                // unpayable (game_20260915_105053).
+                UUID costedSourceId = findCostedAnyColorSource(sortedPlayable, payingForId, requiredColors);
+                if (costedSourceId != null
+                        && canPayAnActivationCost(sortedPlayable, payingForId, costedSourceId, gameView)) {
+                    ManaType wanted = firstRequiredManaType(messageText);
+                    processorState.interactionState().setAutoColorChoice(wanted);
+                    logger.info("[" + username + "] Mana: \"" + messageText + "\" -> activating costed source "
+                        + costedSourceId.toString().substring(0, 8) + " for " + wanted);
+                    processorState.interactionState().resetPoolManaTracking();
+                    sendUuidOrDie(gameId, costedSourceId, "manaAuto:costed_source");
+                    return true;
+                }
             }
         }
 
@@ -1889,13 +1984,111 @@ public final class BridgeDecisionFlowService {
             logger.warn("[" + username + "] Mana: couldn't resolve player ID for mana pool payment");
         }
 
-        logger.info("[" + username + "] Mana: \"" + messageText + "\" -> no mana source available, cancelling spell");
+        logger.info("[" + username + "] Mana: \"" + messageText + "\" -> no mana source available, cancelling spell; candidates: "
+            + describeManaCandidates(playable, gameView));
+        processorState.interactionState().clearAutoColorChoice();
         processorState.interactionState().markFailedManaCast(payingForId);
         processorState.interactionState().clearManaPlan();
         processorState.gameLogState().addSystemMessage(notEnoughManaMessage(messageText));
         eventLogger.log("SPELL_CANCELLED", processorState.gameState().currentGameId(), "not enough mana to complete payment");
         sendBooleanOrDie(gameId, false, "manaAuto:no_source_cancel");
         return true;
+    }
+
+    private static final Pattern MANA_IN_COST = Pattern.compile("\\{[0-9WUBRGC]\\}");
+
+    /**
+     * A source whose mana ability has a mana cost and produces a required colour or any
+     * colour, e.g. "{1}: Add one mana of any color" or "{1}, {T}: Add one mana of any color".
+     */
+    private UUID findCostedAnyColorSource(
+        List<Map.Entry<UUID, PlayableObjectStats>> sortedPlayable,
+        UUID payingForId,
+        List<Pattern> requiredColorPatterns
+    ) {
+        for (Map.Entry<UUID, PlayableObjectStats> entry : sortedPlayable) {
+            UUID objectId = entry.getKey();
+            if (objectId.equals(payingForId) || processorState.interactionState().failedManaCast(objectId)) {
+                continue;
+            }
+            for (String name : entry.getValue().getAllManaAbilityNames()) {
+                int colonPos = name.indexOf(':');
+                if (colonPos <= 0 || !MANA_IN_COST.matcher(name.substring(0, colonPos)).find()) {
+                    continue;
+                }
+                String produces = name.substring(colonPos + 1);
+                if (produces.toLowerCase().contains("any color")) {
+                    return objectId;
+                }
+                for (Pattern pattern : requiredColorPatterns) {
+                    if (pattern.matcher(produces).find()) {
+                        return objectId;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Whether something other than the source itself can pay a mana cost: another tappable source, or pool mana. */
+    private boolean canPayAnActivationCost(
+        List<Map.Entry<UUID, PlayableObjectStats>> sortedPlayable,
+        UUID payingForId,
+        UUID sourceId,
+        GameView gameView
+    ) {
+        for (Map.Entry<UUID, PlayableObjectStats> entry : sortedPlayable) {
+            if (entry.getKey().equals(sourceId)) {
+                continue;
+            }
+            if (findTappableManaSource(List.of(entry), payingForId, null) != null) {
+                return true;
+            }
+        }
+        ManaPoolView pool = getMyManaPoolView(gameView);
+        if (pool == null) {
+            return false;
+        }
+        for (ManaType type : List.of(ManaType.WHITE, ManaType.BLUE, ManaType.BLACK, ManaType.RED, ManaType.GREEN, ManaType.COLORLESS)) {
+            if (getManaPoolCount(pool, type) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The first colour a payment prompt names, in WUBRG order; a hybrid pip yields its first colour. */
+    private static ManaType firstRequiredManaType(String promptText) {
+        if (REGEX_WHITE.matcher(promptText).find()) {
+            return ManaType.WHITE;
+        }
+        if (REGEX_BLUE.matcher(promptText).find()) {
+            return ManaType.BLUE;
+        }
+        if (REGEX_BLACK.matcher(promptText).find()) {
+            return ManaType.BLACK;
+        }
+        if (REGEX_RED.matcher(promptText).find()) {
+            return ManaType.RED;
+        }
+        if (REGEX_GREEN.matcher(promptText).find()) {
+            return ManaType.GREEN;
+        }
+        return ManaType.COLORLESS;
+    }
+
+    /** The mana abilities of every playable object, for the log when a payment fails. */
+    private String describeManaCandidates(PlayableObjectsList playable, GameView gameView) {
+        if (playable == null) {
+            return "none";
+        }
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<UUID, PlayableObjectStats> entry : playable.getObjects().entrySet()) {
+            CardView cardView = processorServices.viewLocator().findCardViewById(entry.getKey(), gameView);
+            String label = cardView != null ? processorServices.cardFormatter().safeDisplayName(cardView) : entry.getKey().toString().substring(0, 8);
+            parts.add(label + " " + entry.getValue().getAllManaAbilityNames());
+        }
+        return parts.isEmpty() ? "none" : String.join("; ", parts);
     }
 
     private static final Pattern UNPAID_COST = Pattern.compile("^\\s*Pay ((?:\\{[^}]+\\})+)");
