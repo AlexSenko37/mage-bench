@@ -108,6 +108,7 @@ public final class BridgeInteractionState {
         poolManaAttempts = 0;
     }
 
+    private boolean poolFirstTracking = false;
     private UUID poolFirstPayingForId = null;
     private String poolFirstLastPrompt = null;
     private boolean poolFirstUnusable = false;
@@ -118,9 +119,14 @@ public final class BridgeInteractionState {
      * A payment that the server accepts changes the prompt (the remaining cost shrinks), so
      * seeing the same prompt again for the same cost means the pool mana could not be
      * applied. From then on this cost is paid by tapping.
+     *
+     * A prompt without an object_id has a null payingForId. That is still a key: resetting on
+     * null used to clear the tracking on every call, so a repeated prompt was never noticed
+     * and an unusable pool payment could be retried forever.
      */
     public boolean tryPoolFirst(UUID payingForId, String prompt) {
-        if (payingForId == null || !payingForId.equals(poolFirstPayingForId)) {
+        if (!poolFirstTracking || !java.util.Objects.equals(payingForId, poolFirstPayingForId)) {
+            poolFirstTracking = true;
             poolFirstPayingForId = payingForId;
             poolFirstLastPrompt = null;
             poolFirstUnusable = false;
