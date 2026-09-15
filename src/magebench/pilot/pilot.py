@@ -3,8 +3,8 @@
 import argparse
 import asyncio
 import json
-import re
 import os
+import re
 import sys
 import time
 from contextlib import ExitStack
@@ -301,7 +301,7 @@ def _no_tool_call_nudge(content: str | None) -> str:
     (game_20260914_221942). Every one of its 30 text-only replies on record is a tool call
     written out as text.
     """
-    match = _TOOL_CALL_AS_TEXT.search(content or "")
+    match = _TOOL_CALL_AS_TEXT.search(content) if content is not None else None
     lead = (
         f"You wrote {match.group(1)}(...) as text. The game only sees real tool calls, so nothing happened. "
         if match

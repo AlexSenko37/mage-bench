@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from mcp.types import CallToolResult, TextContent
 from openai import OpenAIError
+from openai.types.chat import ChatCompletion
 
 from magebench.game.game_export_types import Decision, PilotContext
 from magebench.pilot.pilot import (
@@ -19,9 +20,9 @@ from magebench.pilot.pilot import (
     PermanentLLMError,
     _no_tool_call_nudge,
     _parse_tool_arguments,
-    _reasoning_text,
     _prefetch_first_action,
     _process_tool_calls,
+    _reasoning_text,
     main,
     run_pilot_loop,
 )
@@ -1534,8 +1535,6 @@ async def test_run_pilot_loop_sends_configured_max_tokens():
 
 
 def _chat_message(**fields):
-    from openai.types.chat import ChatCompletion
-
     completion = ChatCompletion.model_validate(
         {
             "id": "gen-1",

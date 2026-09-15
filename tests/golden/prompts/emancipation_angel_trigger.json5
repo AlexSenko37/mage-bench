@@ -107,7 +107,8 @@ Continue playing. Call pass_priority.",
   Land drops remaining: 0\n\
   Message: Select a permanent you control\n\
   Choices (2): Emancipation Angel [id=p11], Plains [id=p12]\n\
-  Respond: choice=pN — must pick a target",
+  Respond: choice=pN — must pick a target\n\
+  Note: pass_priority cannot skip this decision. Answer it with choose_action.",
     "role": "tool",
     "tool_call_id": "call_10",
   }
