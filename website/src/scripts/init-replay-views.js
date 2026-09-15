@@ -1,3 +1,4 @@
+import { createCommentary } from "./init-commentary.js";
 import { createDeckExplorer } from "./init-deck-explorer.js";
 import { createDraftReplay } from "./init-draft-replay.js";
 
@@ -44,6 +45,30 @@ export function initReplayViews(options) {
       view: createDraftReplay({ root: root, game: game }),
       rendered: false,
     };
+  }
+  var commentaryEl = root.querySelector("#commentary");
+  if (commentaryEl) {
+    panels.commentary = {
+      el: commentaryEl,
+      view: createCommentary({
+        root: root,
+        game: game,
+        // A player's name in the commentary opens that turn, which means leaving this
+        // panel: the replay has to be the visible tab for the jump to be seen.
+        onJump: function (index) {
+          activate("replay");
+          viewer.goTo(index);
+        },
+      }),
+      rendered: false,
+    };
+  }
+
+  function activate(view) {
+    toggle.querySelectorAll(".format-tab").forEach(function (tab) {
+      tab.classList.toggle("active", tab.getAttribute("data-view") === view);
+    });
+    show(view);
   }
 
   function show(view) {
