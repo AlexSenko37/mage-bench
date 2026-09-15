@@ -224,7 +224,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // buildPrompt() showing an empty pool on every pick.
         messages.add(chatMessage("system",
                 "You are drafting in a Magic: The Gathering booster draft. "
-                        + "Respond with ONLY the pack number of your pick, nothing else."));
+                        + "Respond with ONLY a JSON object, no prose and no code fences."));
         messages.add(chatMessage("user", buildPrompt(cards, deck, draft)));
         payload.add("messages", messages);
         payload.addProperty("max_tokens", PICK_MAX_TOKENS);
@@ -234,10 +234,36 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // asks for a bare number -- so there was no record at all of why any card was taken.
         // The tokens are billed regardless of whether we ask for the trace back.
         payload.addProperty("include_reasoning", true);
+        // The reply states why the card is taken. A reasoning trace is no substitute: many
+        // models return none at low effort, which left most picks in a replay unexplained.
+        payload.add("response_format", pickResponseFormat());
 
-        CallResult result =
-                sendChatCompletionRaw(payload, apiKey, REQUEST_TIMEOUT, getName(), "pick");
-        Card picked = parsePick(result.content, cards);
+        CallResult result;
+        try {
+            result = sendChatCompletionRaw(payload, apiKey, REQUEST_TIMEOUT, getName(), "pick");
+        } catch (IOException e) {
+            logger.warn("LlmDraftPlayer(" + getName() + "): pick failed with response_format set, "
+                    + "retrying without it: " + e.getMessage());
+            payload.remove("response_format");
+            result = sendChatCompletionRaw(payload, apiKey, REQUEST_TIMEOUT, getName(), "pick");
+        }
+        JsonObject reply = parseJsonObject(result.content);
+        String explanation = "";
+        Card picked;
+        if (reply != null) {
+            if (reply.has("explanation") && reply.get("explanation").isJsonPrimitive()) {
+                explanation = reply.get("explanation").getAsString();
+            }
+            // Parse the pick field on its own, never the whole reply: digits in the
+            // explanation ("my 2 colours") would otherwise be read as the pick.
+            String pickText = reply.has("pick") && reply.get("pick").isJsonPrimitive()
+                    ? reply.get("pick").getAsString()
+                    : null;
+            picked = parsePick(pickText, cards);
+        } else {
+            picked = parsePick(result.content, cards);
+        }
+        result.record.addProperty("explanation", explanation);
         // The pack is what makes a pick reviewable: without the cards that were passed up,
         // a replay can only show what was taken, which is the least interesting half. The
         // prompt itself is rebuilt from these two lists, so storing them beats storing prose.
@@ -1079,6 +1105,21 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         return format;
     }
 
+    /** Schema for a pick. "explanation" is listed first so it is written before the choice. */
+    private static JsonObject pickResponseFormat() {
+        JsonObject pick = new JsonObject();
+        pick.addProperty("type", "integer");
+
+        JsonObject props = new JsonObject();
+        props.add("explanation", stringProp());
+        props.add("pick", pick);
+
+        JsonArray required = new JsonArray();
+        required.add("explanation");
+        required.add("pick");
+        return schemaEnvelope("draft_pick", props, required);
+    }
+
     /** Schema for call 1. "analysis" is listed first so it is written before the choice. */
     private static JsonObject spellsResponseFormat() {
         JsonObject spells = new JsonObject();
@@ -1350,7 +1391,9 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             sb.append(i + 1).append(". ").append(cardSummary(cards.get(i))).append('\n');
         }
 
-        sb.append("\nRespond with ONLY the number (1-").append(cards.size()).append(") of the card to pick.");
+        sb.append("\nRespond with a JSON object with two fields: \"explanation\", a brief explanation ")
+                .append("of why you are taking this card, and \"pick\", the number (1-")
+                .append(cards.size()).append(") of the card to pick.");
         return sb.toString();
     }
 

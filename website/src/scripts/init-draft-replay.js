@@ -83,6 +83,11 @@ export function createDraftReplay(options) {
     } else if (s.reasoningPicks < s.picks) {
       bits.push(["Reasoning", s.reasoningPicks + " of " + s.picks + " picks"]);
     }
+    // Picks are answered with a stated reason. Say so when some are missing one, which
+    // happens when a reply could not be parsed.
+    if (s.explanationPicks > 0 && s.explanationPicks < s.picks) {
+      bits.push(["Explanations", s.explanationPicks + " of " + s.picks + " picks"]);
+    }
     if (s.fallbacks > 0) {
       bits.push(["Pick fallbacks", String(s.fallbacks)]);
     }
@@ -180,8 +185,15 @@ export function createDraftReplay(options) {
       reasoningEl.innerHTML = "";
       return;
     }
+    // The explanation is what the model wrote in its answer; the reasoning is the
+    // provider's trace of its thinking, which many models do not return at low effort.
+    var explanation = pick.explanation && pick.explanation.trim().length > 0 ? pick.explanation : null;
     var text = pick.reasoning && pick.reasoning.trim().length > 0 ? pick.reasoning : null;
     reasoningEl.innerHTML =
+      (explanation
+        ? '<div class="draft-panel-heading">Explanation</div>' +
+          '<div class="draft-reasoning-body">' + escapeHtml(explanation) + "</div>"
+        : "") +
       '<div class="draft-panel-heading">Reasoning</div>' +
       (text
         ? '<div class="draft-reasoning-body">' + escapeHtml(text) + "</div>"

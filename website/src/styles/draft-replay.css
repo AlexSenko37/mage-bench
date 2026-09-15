@@ -270,6 +270,10 @@
   overflow-y: auto;
 }
 
+.draft-reasoning-body + .draft-panel-heading {
+  margin-top: 0.75rem;
+}
+
 /* A deck the model did not build is the single most misleading thing this panel can
    show, so it gets the only warning colour in the view. */
 .draft-warning {
