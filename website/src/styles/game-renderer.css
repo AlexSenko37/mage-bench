@@ -663,13 +663,15 @@
   top: 0;
   right: auto;
   bottom: auto;
-  width: min(420px, calc(100vw - 24px));
+  /* The card image column is wide enough to read the printed text on the card itself,
+     which is the whole point of the preview. */
+  width: min(720px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: minmax(0, 360px) 1fr;
+  gap: 12px;
+  padding: 12px;
   border: 1px solid var(--border-default);
   border-radius: 8px;
   background: rgba(22, 33, 62, 0.97);
@@ -681,6 +683,10 @@
 #card-preview img:not(.mana-icon) {
   width: 100%;
   height: auto;
+  /* A tall card must not push the oracle text off a short viewport. */
+  max-height: calc(100vh - 48px);
+  object-fit: contain;
+  object-position: top;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -689,6 +695,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow-y: auto;
 }
 
 .card-name-row {
@@ -736,9 +743,23 @@
   margin-top: 4px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1000px) {
   #card-preview {
-    grid-template-columns: 100px 1fr;
+    width: min(560px, calc(100vw - 24px));
+    grid-template-columns: minmax(0, 260px) 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Too narrow for two columns: show the card, and let the text sit under it. */
+  #card-preview {
+    width: calc(100vw - 24px);
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  #card-preview img:not(.mana-icon) {
+    max-height: 55vh;
   }
 }
 

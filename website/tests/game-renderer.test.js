@@ -175,6 +175,27 @@ describe("resolveCardImage", () => {
     expect(url).toContain("version=normal");
   });
 
+  it("upgrades a baked version=normal URL to the requested version", () => {
+    // Exports bake card_images at version=normal, so the preview asked for a large image
+    // and was handed the normal one back: only "small" used to be rewritten.
+    const card_images = {
+      "Sol Ring": "https://api.scryfall.com/cards/m21/123?format=image&version=normal",
+    };
+    const url = R.resolveCardImage("Sol Ring", null, card_images, "large");
+    expect(url).toContain("version=large");
+    expect(url).not.toContain("version=normal");
+  });
+
+  it("upgrades the version for an MDFC back face too", () => {
+    const card_images = {
+      "Boggart Trawler": "https://api.scryfall.com/cards/dsk/75?format=image&version=normal",
+    };
+    const cardObj = { back_face: true, original_card: "Boggart Trawler" };
+    const url = R.resolveCardImage("Boggart Bog", cardObj, card_images, "large");
+    expect(url).toContain("version=large");
+    expect(url).toContain("face=back");
+  });
+
   it("falls back to Scryfall name-based URL", () => {
     const url = R.resolveCardImage("Lightning Bolt", null, {}, "small");
     expect(url).toBe(
