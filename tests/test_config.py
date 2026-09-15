@@ -351,6 +351,24 @@ def test_preset_without_reasoning_effort():
     resolve_preset(player, SAMPLE_PRESETS, SAMPLE_PROMPTS)
     assert player.model == "test/model-c"
     assert player.reasoning_effort is None
+    assert player.max_tokens is None
+
+
+def test_preset_sets_max_tokens():
+    """A preset's max_tokens reaches the player, which passes it to the pilot."""
+    presets = {"presets": {"capped": {"model": "test/model-a", "system_prompt": "default", "max_tokens": 2000}}}
+    player = PilotPlayer(name="test", preset="capped")
+    resolve_preset(player, presets, SAMPLE_PROMPTS)
+    assert player.max_tokens == 2000
+
+
+@pytest.mark.parametrize("bad", [0, -5, "2000", 1.5, True])
+def test_preset_rejects_invalid_max_tokens(bad):
+    """A cap that is not a positive integer fails at config time, not mid-game."""
+    presets = {"presets": {"capped": {"model": "test/model-a", "system_prompt": "default", "max_tokens": bad}}}
+    player = PilotPlayer(name="test", preset="capped")
+    with pytest.raises(ValueError, match="max_tokens"):
+        resolve_preset(player, presets, SAMPLE_PROMPTS)
 
 
 def test_preset_unknown_raises():

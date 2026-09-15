@@ -151,6 +151,7 @@ def _handle_truncated_response(
     choice: _ChoiceLike,
     response: _ResponseLike,
     game_log: GameLogWriter | None,
+    max_tokens: int = MAX_TOKENS,
 ) -> bool:
     """Handle max-token truncation and reset context after repeated failures."""
     return _handle_truncated_response_impl(
@@ -159,7 +160,7 @@ def _handle_truncated_response(
         response,
         game_log,
         logger=logger,
-        max_tokens=MAX_TOKENS,
+        max_tokens=max_tokens,
         max_consecutive_truncations=MAX_CONSECUTIVE_TRUNCATIONS,
     )
 
@@ -605,6 +606,7 @@ async def run_pilot_loop(
     ignore_providers: list[str] | None = None,
     provider_order: list[str] | None = None,
     cache_control: dict | None = None,
+    max_tokens: int = MAX_TOKENS,
 ) -> None:
     """Run the LLM-driven game-playing loop."""
     try:
@@ -632,7 +634,7 @@ async def run_pilot_loop(
                 "messages": messages,
                 "tools": tools,
                 "tool_choice": "auto",
-                "max_tokens": MAX_TOKENS,
+                "max_tokens": max_tokens,
             }
             extra_body: dict = {}
             if reasoning_effort:
@@ -677,7 +679,7 @@ async def run_pilot_loop(
                 continue
             state.consecutive_empty_choices = 0
             choice = response.choices[0]
-            if _handle_truncated_response(state, choice, response, game_log):
+            if _handle_truncated_response(state, choice, response, game_log, max_tokens=max_tokens):
                 continue
 
             if trace_log:
@@ -890,6 +892,7 @@ async def run_pilot(
     ignore_providers: list[str] | None = None,
     provider_order: list[str] | None = None,
     cache_control: dict | None = None,
+    max_tokens: int = MAX_TOKENS,
 ) -> None:
     """Run the pilot client."""
     base_url = llm_base_url(provider)
@@ -898,6 +901,8 @@ async def run_pilot(
     logger.info("[pilot] Provider: %s", provider)
     if reasoning_effort:
         logger.info("[pilot] Reasoning effort: %s", reasoning_effort)
+    if max_tokens != MAX_TOKENS:
+        logger.info("[pilot] Max tokens: %d", max_tokens)
     if tools is not None:
         logger.info("[pilot] Custom toolset: %s", sorted(tools))
     if ignore_providers:
@@ -987,6 +992,7 @@ async def run_pilot(
                     ignore_providers=ignore_providers,
                     provider_order=provider_order,
                     cache_control=cache_control,
+                    max_tokens=max_tokens,
                 )
         finally:
             if game_log:
@@ -1019,6 +1025,12 @@ def main() -> int:
         "--reasoning-effort",
         default="",
         help="OpenRouter reasoning effort: low, medium, high",
+    )
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=MAX_TOKENS,
+        help=f"Output-token cap per LLM call (default {MAX_TOKENS}); set from a preset's max_tokens",
     )
     parser.add_argument("--tools", default="", help="Comma-separated MCP tool names (default: all)")
     parser.add_argument(
@@ -1094,6 +1106,7 @@ def main() -> int:
                 prices=prices,
                 max_interactions_per_turn=args.max_interactions_per_turn,
                 reasoning_effort=args.reasoning_effort,
+                max_tokens=args.max_tokens,
                 tools=pilot_tools,
                 ignore_providers=ignore_providers,
                 provider_order=provider_order,

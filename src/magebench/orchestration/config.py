@@ -47,6 +47,7 @@ class PilotPlayer:
     system_prompt: str | None = None  # System prompt (resolved from preset -> prompts.json)
     max_interactions_per_turn: int | None = None  # Loop detection threshold (default 25 in Java)
     reasoning_effort: str | None = None  # Reasoning effort (resolved from preset)
+    max_tokens: int | None = None  # Output-token cap per LLM call (resolved from preset; pilot default otherwise)
     personality: str | None = None  # Named personality from personalities.json
     prompt_suffix: str | None = None  # Extra prompt text (set by personality resolution)
     tools: list[str] | None = None  # MCP tool names (resolved from preset -> toolsets.json)
@@ -174,6 +175,13 @@ def resolve_preset(
         player.model = pdata["model"]
     if player.reasoning_effort is None and "reasoning_effort" in pdata:
         player.reasoning_effort = pdata["reasoning_effort"]
+    if player.max_tokens is None and "max_tokens" in pdata:
+        max_tokens = pdata["max_tokens"]
+        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or max_tokens <= 0:
+            raise ValueError(
+                f"Preset {player.preset!r} has invalid max_tokens {max_tokens!r}; expected a positive integer"
+            )
+        player.max_tokens = max_tokens
     if player.system_prompt is None and "system_prompt" in pdata:
         prompt_key = pdata["system_prompt"]
         if prompt_key not in prompts:
