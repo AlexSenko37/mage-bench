@@ -108,6 +108,24 @@ public final class BridgeInteractionState {
         poolManaAttempts = 0;
     }
 
+    // The colour the automatic payment is producing from a costed any-colour source
+    // ("{1}: Add one mana of any color"). XMage asks which colour once the cost is paid;
+    // this answers it. Cleared by any decision the model makes, so a stale value cannot
+    // answer a later colour choice that is the model's to make.
+    private mage.constants.ManaType autoColorChoice = null;
+
+    public void setAutoColorChoice(mage.constants.ManaType type) {
+        autoColorChoice = type;
+    }
+
+    public mage.constants.ManaType autoColorChoice() {
+        return autoColorChoice;
+    }
+
+    public void clearAutoColorChoice() {
+        autoColorChoice = null;
+    }
+
     private boolean poolFirstTracking = false;
     private UUID poolFirstPayingForId = null;
     private String poolFirstLastPrompt = null;

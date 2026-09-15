@@ -4760,6 +4760,177 @@ class BridgeCallbackHandlerTest {
         assertThat((String) unpaid.invoke(null, (Object) null)).isNull();
     }
 
+    @Test
+    void autoPayActivatesACostedAnyColorSourceWhenNoLandMakesTheColor() throws Exception {
+        // The board from game_20260915_105053: Mountain, Plains, Forest and Barrels of
+        // Blasting Jelly ({1}: Add one mana of any color). "Pay {B}" has no black land, but
+        // Barrels can make it with the Forest paying its cost. The old fallback tapped the
+        // Forest for {B} instead, wasted it, and cancelled Fire Lord Zuko.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID forestId = UUID.randomUUID();
+        UUID barrelsId = UUID.randomUUID();
+        List<UUID> sentIds = new ArrayList<>();
+        List<Object> booleans = new ArrayList<>();
+        client.setSession(recordingPaymentSession(sentIds, booleans, new ArrayList<>()));
+
+        PlayerView player = playerView(playerId, "TestPlayer", "p99");
+        @SuppressWarnings("unchecked")
+        Map<UUID, Object> battlefield = (Map<UUID, Object>) getField(player, "battlefield");
+        battlefield.put(forestId, permanentView(forestId, "p1", "Forest", false));
+        battlefield.put(barrelsId, permanentView(barrelsId, "p2", "Barrels of Blasting Jelly", false));
+        GameView manaView = gameView(80, List.of(player), new CardsView());
+        setField(manaView, "myPlayerId", playerId);
+        LinkedHashMap<UUID, PlayableObjectStats> canPlay = new LinkedHashMap<>();
+        canPlay.put(forestId, manaStats("{T}: Add {G}."));
+        // getAllManaAbilityNames() truncates at 50 characters, as the server does.
+        canPlay.put(barrelsId, manaStats("{1}: Add one mana of any color. Activate only onc..."));
+        setField(manaView, "canPlayObjects", playableObjects(canPlay));
+        addActiveGame(handler, gameId, playerId);
+
+        PendingAction action = manaAction(gameId, manaView, "Pay {B}Fire Lord Zuko [290]", 80);
+        setField(handler, "pendingAction", action);
+
+        assertThat(invokeDecisionBoundaryStatus(handler, action, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(sentIds).containsExactly(barrelsId);
+        assertThat(booleans).isEmpty();
+        BridgeInteractionState interaction = (BridgeInteractionState) getProcessorStateField(handler, "interactionState");
+        assertThat(interaction.autoColorChoice()).isEqualTo(mage.constants.ManaType.BLACK);
+    }
+
+    @Test
+    void autoPayDoesNotTapAnOffColorLandForAColoredPip() throws Exception {
+        // With only a Forest, "Pay {B}" cannot be paid. Tapping the Forest anyway wasted it
+        // as floating green before the cancel; now the spell is cancelled with the land untapped.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID forestId = UUID.randomUUID();
+        List<UUID> sentIds = new ArrayList<>();
+        List<Object> booleans = new ArrayList<>();
+        client.setSession(recordingPaymentSession(sentIds, booleans, new ArrayList<>()));
+
+        PlayerView player = playerView(playerId, "TestPlayer", "p99");
+        @SuppressWarnings("unchecked")
+        Map<UUID, Object> battlefield = (Map<UUID, Object>) getField(player, "battlefield");
+        battlefield.put(forestId, permanentView(forestId, "p1", "Forest", false));
+        GameView manaView = gameView(81, List.of(player), new CardsView());
+        setField(manaView, "myPlayerId", playerId);
+        setField(manaView, "canPlayObjects", playableObjects(Map.of(forestId, manaStats("{T}: Add {G}."))));
+        addActiveGame(handler, gameId, playerId);
+
+        PendingAction action = manaAction(gameId, manaView, "Pay {B}Fire Lord Zuko [290]", 81);
+        setField(handler, "pendingAction", action);
+
+        assertThat(invokeDecisionBoundaryStatus(handler, action, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(sentIds).isEmpty();
+        assertThat(booleans).containsExactly(false);
+    }
+
+    @Test
+    void autoPayTapsAnAnyColorLandForAColoredPip() throws Exception {
+        // "{T}: Add one mana of any color." names no colour symbol; it still pays {B}.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID prismId = UUID.randomUUID();
+        List<UUID> sentIds = new ArrayList<>();
+        client.setSession(recordingPaymentSession(sentIds, new ArrayList<>(), new ArrayList<>()));
+
+        PlayerView player = playerView(playerId, "TestPlayer", "p99");
+        @SuppressWarnings("unchecked")
+        Map<UUID, Object> battlefield = (Map<UUID, Object>) getField(player, "battlefield");
+        battlefield.put(prismId, permanentView(prismId, "p1", "Prismatic Land", false));
+        GameView manaView = gameView(82, List.of(player), new CardsView());
+        setField(manaView, "myPlayerId", playerId);
+        setField(manaView, "canPlayObjects", playableObjects(Map.of(prismId, manaStats("{T}: Add one mana of any color."))));
+        addActiveGame(handler, gameId, playerId);
+
+        PendingAction action = manaAction(gameId, manaView, "Pay {B}Fire Lord Zuko [290]", 82);
+        setField(handler, "pendingAction", action);
+
+        assertThat(invokeDecisionBoundaryStatus(handler, action, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(sentIds).containsExactly(prismId);
+    }
+
+    @Test
+    void manaColorChoiceIsAnsweredForTheAutomaticPayment() throws Exception {
+        // After the costed source is activated, XMage asks which colour. That question belongs
+        // to the automatic payment, not the model, so it is answered with the colour owed.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        List<String> strings = new ArrayList<>();
+        client.setSession(recordingPaymentSession(new ArrayList<>(), new ArrayList<>(), strings));
+
+        BridgeInteractionState interaction = (BridgeInteractionState) getProcessorStateField(handler, "interactionState");
+        interaction.setAutoColorChoice(mage.constants.ManaType.BLACK);
+
+        ChoiceImpl choice = new ChoiceImpl(true);
+        choice.setMessage("Select a color of mana to add 1 of it");
+        choice.setChoices(new LinkedHashSet<>(List.of("White", "Blue", "Black", "Red", "Green")));
+        GameView view = gameView(83);
+        addActiveGame(handler, gameId);
+        PendingAction action = new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_CHOOSE_CHOICE,
+            new GameClientMessage(view, Collections.<String, Serializable>emptyMap(), choice),
+            "Select a color of mana to add 1 of it",
+            83
+        );
+        setField(handler, "pendingAction", action);
+
+        assertThat(invokeDecisionBoundaryStatus(handler, action, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(strings).containsExactly("Black");
+        assertThat(interaction.autoColorChoice()).isNull();
+
+        // With no automatic payment in progress the same question is left to the model.
+        PendingAction again = new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_CHOOSE_CHOICE,
+            new GameClientMessage(view, Collections.<String, Serializable>emptyMap(), choice),
+            "Select a color of mana to add 1 of it",
+            84
+        );
+        setField(handler, "pendingAction", again);
+        assertThat(invokeDecisionBoundaryStatus(handler, again, "test")).isNotEqualTo("AUTO_HANDLED");
+        assertThat(strings).containsExactly("Black");
+    }
+
+    private static Session recordingPaymentSession(List<UUID> sentIds, List<Object> booleans, List<String> strings) {
+        return (Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "sendPlayerUUID" -> {
+                        sentIds.add((UUID) args[1]);
+                        return true;
+                    }
+                    case "sendPlayerBoolean" -> {
+                        booleans.add(args[1]);
+                        return true;
+                    }
+                    case "sendPlayerString" -> {
+                        strings.add((String) args[1]);
+                        return true;
+                    }
+                    default -> {
+                        return defaultReturnValue(method.getReturnType());
+                    }
+                }
+            }
+        );
+    }
+
     private static Session recordingManaSession(List<UUID> tappedIds, List<Object> poolTypes) {
         return (Session) Proxy.newProxyInstance(
             Session.class.getClassLoader(),
