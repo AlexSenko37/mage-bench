@@ -522,6 +522,55 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
+    void repeatedEmptyStackResolvedPassesOnce() throws Exception {
+        // Once a decision has been reported as having an empty stack, asking again means "move
+        // on". Returning at once every time would let a model repeat the call forever.
+        CountDownLatch autoPassSent = new CountDownLatch(1);
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        client.setSession(sessionProxy(autoPassSent, sendPlayerBooleanCalls));
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        GameView emptyStack = gameView(7);
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", emptyStack);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            new GameClientMessage(emptyStack, Collections.<String, Serializable>emptyMap(), "Pass"),
+            "Pass",
+            7
+        ));
+
+        ActionResult first = handler.passPriority("stack_resolved", null);
+        assertThat(first.stop_reason).isEqualTo("stack_resolved");
+        assertThat(sendPlayerBooleanCalls.get()).isZero();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<ActionResult> future = executor.submit(() -> handler.passPriority("stack_resolved", null));
+
+            assertThat(autoPassSent.await(1, TimeUnit.SECONDS)).isTrue();
+            enqueueCallback(
+                handler,
+                ClientCallbackMethod.GAME_ASK,
+                gameId,
+                new GameClientMessage(gameView(8), Collections.<String, Serializable>emptyMap(), "Mulligan hand?")
+            );
+
+            ActionResult second = future.get(1, TimeUnit.SECONDS);
+            assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
+            assertThat(second.stop_reason).isEqualTo("non_priority_action");
+            assertThat(second.game_seq).isEqualTo(8);
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
     void passPriorityUsesLatestPassiveGameUpdateWhenNextSelectLacksGameView() throws Exception {
         CountDownLatch autoPassSent = new CountDownLatch(1);
         AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
@@ -4261,6 +4310,15 @@ class BridgeCallbackHandlerTest {
             @Override
             public PendingAction resolvePassPriorityAction(PendingAction action) {
                 return action;
+            }
+
+            @Override
+            public int stackResolvedReportedSeq() {
+                return -1;
+            }
+
+            @Override
+            public void setStackResolvedReportedSeq(int gameSeq) {
             }
 
             @Override

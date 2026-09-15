@@ -42,6 +42,10 @@ public interface BridgePassPriorityFlowContext {
 
     UUID lowestStackObjectId(GameView gameView);
 
+    int stackResolvedReportedSeq();
+
+    void setStackResolvedReportedSeq(int gameSeq);
+
     boolean stackContains(GameView gameView, UUID stackObjectId);
 
     boolean clearPendingActionIfCurrent(PendingAction action);

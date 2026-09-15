@@ -422,6 +422,7 @@ public final class BridgePublishedQueryBuilder {
                         choiceEntry.put("action", offBattlefieldAction(cardView, nonManaAbilities));
                         List<String> otherAbilities = nonManaAbilities.stream()
                             .filter(name -> !name.startsWith("Cast ") && !name.startsWith("Play "))
+                            .map(BridgePromptFormatting::stripHtml)
                             .toList();
                         if (!otherAbilities.isEmpty()) {
                             choiceEntry.put("playable_abilities", otherAbilities);

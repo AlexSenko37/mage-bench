@@ -850,6 +850,14 @@ public final class BridgeDecisionFlowService {
         return lowest;
     }
 
+    public int stackResolvedReportedSeq() {
+        return processorState.interactionState().stackResolvedReportedSeq();
+    }
+
+    public void setStackResolvedReportedSeq(int gameSeq) {
+        processorState.interactionState().setStackResolvedReportedSeq(gameSeq);
+    }
+
     public boolean stackContains(GameView gameView, UUID stackObjectId) {
         return gameView != null
             && gameView.getStack() != null

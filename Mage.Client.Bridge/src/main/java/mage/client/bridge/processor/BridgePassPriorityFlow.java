@@ -136,6 +136,9 @@ public final class BridgePassPriorityFlow {
             if (yieldUntilStackResolved) {
                 GameView gv = actionView;
                 if (!context.stackContains(gv, yieldUntilStackResolvedObjectId)) {
+                    if (context.lowestStackObjectId(gv) == null) {
+                        context.setStackResolvedReportedSeq(action.gameSeq());
+                    }
                     finish(context.stackResolvedResult(action, boardCursorParam), action, gv, true);
                     return;
                 }
@@ -275,11 +278,14 @@ public final class BridgePassPriorityFlow {
                 yieldUntilStackResolved = true;
                 yieldUntilStackResolvedObjectId = lowestStackObject;
                 armedClientSideYield = true;
-            } else if (currentAction != null) {
+            } else if (currentAction != null && currentAction.gameSeq() != context.stackResolvedReportedSeq()) {
                 // Nothing to wait for. Falling through to a plain pass would give up priority
                 // and move the game to the next step: GPT-6 Astra played a land, asked to wait
                 // for the stack, and lost its main phase and a lethal Avatar's Wrath to combat
-                // (game_20260915_134604).
+                // (game_20260915_134604). Once this decision has been reported as having an
+                // empty stack, asking again falls through to the plain pass, so repeating the
+                // call still moves the game on.
+                context.setStackResolvedReportedSeq(currentAction.gameSeq());
                 finish(
                     context.pendingActionResult(
                         currentAction,
