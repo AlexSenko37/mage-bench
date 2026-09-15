@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mage.Mana;
+import mage.abilities.costs.mana.ManaCost;
+import mage.abilities.costs.mana.MonoHybridManaCost;
 import mage.cards.Card;
 import mage.cards.repository.CardInfo;
 import mage.cards.decks.Deck;
@@ -34,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -711,7 +714,9 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // ---- call 2: the mana base, anchored on a proportional suggestion ----------
         int landsNeeded = Math.max(0, deckMinSize - chosen.size());
         Map<String, Integer> pips = pipCounts(chosen);
-        Map<String, Integer> suggestion = proportionalLands(pips, landsNeeded);
+        Map<String, Integer> hybrids = hybridPipCounts(chosen);
+        Map<String, Integer> suggestion = proportionalLands(pips, hybrids, landsNeeded);
+        List<Card> poolLands = nonBasicLands(pool, chosen);
 
         // The land integers come back corrupted often enough that they have to be checked
         // rather than trusted. Under the strict JSON schema this model has emitted
@@ -720,7 +725,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // sane and only the numbers are wrong, so this is a decoding artifact, not a
         // deckbuilding mistake. Retry, then settle for the proportional split.
         Map<String, Integer> lands = null;
-        String landPrompt = buildLandPrompt(chosen, pips, suggestion, landsNeeded, deckMinSize);
+        List<Card> chosenPoolLands = new ArrayList<>();
+        String landPrompt = buildLandPrompt(chosen, pips, hybrids, suggestion, poolLands, landsNeeded, deckMinSize);
         for (int attempt = 1; attempt <= DECKBUILD_ATTEMPTS; attempt++) {
             JsonObject landAnswer = requestJson("lands", landPrompt, landsResponseFormat());
             if (landAnswer == null) {
@@ -728,13 +734,16 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             }
             logAnalysis("lands", landAnswer);
             Map<String, Integer> candidate = parseBasicLands(landAnswer);
-            String problem = landProblem(candidate, pips, landsNeeded);
+            List<Card> candidatePoolLands = resolveNamedCards(landAnswer, "pool_lands", poolLands);
+            String problem = landProblem(candidate, candidatePoolLands, pips, hybrids, landsNeeded);
             if (problem == null) {
                 lands = candidate;
+                chosenPoolLands = candidatePoolLands;
                 break;
             }
             logger.warn("LlmDraftPlayer(" + getName() + "): land counts rejected (" + problem
-                    + "): " + candidate + "; retrying [" + attempt + "/" + DECKBUILD_ATTEMPTS + "]");
+                    + "): " + candidate + " + " + cardNames(candidatePoolLands)
+                    + "; retrying [" + attempt + "/" + DECKBUILD_ATTEMPTS + "]");
         }
         if (lands == null) {
             logger.warn("LlmDraftPlayer(" + getName() + "): no usable land counts; "
@@ -746,7 +755,11 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             deck.getCards().add(card);
             deck.getSideboard().remove(card);
         }
-        int landTotal = 0;
+        for (Card card : chosenPoolLands) {
+            deck.getCards().add(card);
+            deck.getSideboard().remove(card);
+        }
+        int landTotal = chosenPoolLands.size();
         for (Map.Entry<String, Integer> e : lands.entrySet()) {
             addBasicLands(deck, e.getKey(), e.getValue());
             landTotal += e.getValue();
@@ -754,8 +767,9 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
 
         int size = deck.getMaindeckCards().size();
         logger.info("LlmDraftPlayer(" + getName() + "): model chose " + chosen.size()
-                + " spells + " + landTotal + " basic lands = " + size + " cards"
-                + " (target " + deckMinSize + "); pips=" + pips
+                + " spells + " + chosenPoolLands.size() + " drafted lands + "
+                + (landTotal - chosenPoolLands.size()) + " basics = " + size + " cards"
+                + " (target " + deckMinSize + "); pips=" + pips + "; hybrid=" + hybrids
                 + "; suggested=" + suggestion + "; chosen=" + lands);
 
         int shortfall = deckMinSize - size;
@@ -803,24 +817,107 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
      * Checks the two things that actually ruin a deck: a total that isn't the number of
      * lands the deck needs, and a colour the deck genuinely needs with no sources at all.
      */
-    private static String landProblem(Map<String, Integer> lands, Map<String, Integer> pips,
+    private static String landProblem(Map<String, Integer> lands, List<Card> poolLands,
+                                      Map<String, Integer> pips, Map<String, Integer> hybrids,
                                       int landsNeeded) {
-        if (lands.isEmpty()) {
+        if (lands.isEmpty() && poolLands.isEmpty()) {
             return "no lands at all";
         }
-        int total = 0;
+        int total = poolLands.size();
         for (int n : lands.values()) {
             total += n;
         }
         if (total != landsNeeded) {
             return "total " + total + " != the " + landsNeeded + " lands the deck needs";
         }
+        // Sources per colour: the basics plus whatever the drafted lands produce.
+        Map<String, Integer> sources = new LinkedHashMap<>(lands);
+        for (Card land : poolLands) {
+            for (String basic : landsProducedBy(land)) {
+                sources.merge(basic, 1, Integer::sum);
+            }
+        }
         for (Map.Entry<String, Integer> e : pips.entrySet()) {
-            if (e.getValue() >= MIN_PIPS_NEEDING_A_SOURCE && lands.getOrDefault(e.getKey(), 0) == 0) {
-                return e.getValue() + " " + e.getKey() + " pips but no " + e.getKey();
+            if (e.getValue() >= MIN_PIPS_NEEDING_A_SOURCE && sources.getOrDefault(e.getKey(), 0) == 0) {
+                return e.getValue() + " " + colourNameFor(e.getKey()) + " pips but no "
+                        + colourNameFor(e.getKey()) + " source";
+            }
+        }
+        // A hybrid pip is only dead when neither of its colours has a source. Counting
+        // {B/R} as a red pip used to reject a correct Island/Swamp base three times running
+        // and then force two Mountains into a blue-black deck (draft_20260914_173851).
+        for (Map.Entry<String, Integer> e : hybrids.entrySet()) {
+            if (e.getValue() < MIN_PIPS_NEEDING_A_SOURCE) {
+                continue;
+            }
+            boolean anySource = false;
+            for (String basic : e.getKey().split("/")) {
+                if (sources.getOrDefault(basic, 0) > 0) {
+                    anySource = true;
+                }
+            }
+            if (!anySource) {
+                return e.getValue() + " hybrid " + hybridLabel(e.getKey()) + " pips but no source of either colour";
             }
         }
         return null;
+    }
+
+    /** "Swamp/Mountain" -> "black/red". */
+    private static String hybridLabel(String key) {
+        List<String> names = new ArrayList<>();
+        for (String basic : key.split("/")) {
+            names.add(colourNameFor(basic));
+        }
+        return String.join("/", names);
+    }
+
+    private static final Pattern MANA_SYMBOL = Pattern.compile("\\{([WUBRG])\\}");
+
+    /**
+     * Basic land names for the colours a land can produce, read from its rules text
+     * ("{T}: Add {B} or {R}."). "any color" means all five.
+     */
+    private static List<String> landsProducedBy(Card land) {
+        Set<String> out = new LinkedHashSet<>();
+        for (String rule : land.getRules()) {
+            int add = rule.indexOf("Add ");
+            if (add < 0) {
+                continue;
+            }
+            String tail = rule.substring(add);
+            if (tail.toLowerCase().contains("any color")) {
+                out.addAll(BASIC_LAND_NAMES);
+                continue;
+            }
+            Matcher m = MANA_SYMBOL.matcher(tail);
+            while (m.find()) {
+                out.add(basicForSymbol(m.group(1)));
+            }
+        }
+        return new ArrayList<>(out);
+    }
+
+    private static String basicForSymbol(String symbol) {
+        switch (symbol) {
+            case "W": return "Plains";
+            case "U": return "Island";
+            case "B": return "Swamp";
+            case "R": return "Mountain";
+            case "G": return "Forest";
+            default: return symbol;
+        }
+    }
+
+    /** The non-basic lands in the pool that are not already in the chosen spells. */
+    private static List<Card> nonBasicLands(List<Card> pool, List<Card> chosen) {
+        List<Card> out = new ArrayList<>();
+        for (Card card : pool) {
+            if (card.isLand() && !card.isBasic() && !chosen.contains(card)) {
+                out.add(card);
+            }
+        }
+        return out;
     }
 
     private static boolean isAccept(JsonObject answer) {
@@ -854,7 +951,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
         sb.append("\nWhat that adds up to:\n");
         sb.append("- ").append(chosen.size()).append(" spells, so ").append(lands)
-                .append(" basic lands to reach ").append(deckMinSize).append(" cards")
+                .append(" lands to reach ").append(deckMinSize).append(" cards")
                 .append(lands == 17 ? "" : " (17 is typical)").append('\n');
         // Previously the feedback only reported the resulting land count and left the model
         // to infer that 30 spells was unusable. It did not: qwen3-235b was shown "30 spells,
@@ -880,6 +977,11 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 sb.append(e.getValue()).append(' ').append(colourNameFor(e.getKey()));
                 any = true;
             }
+        }
+        for (Map.Entry<String, Integer> e : hybridPipCounts(chosen).entrySet()) {
+            sb.append(any ? ", " : "").append(e.getValue()).append(" hybrid ")
+                    .append(hybridLabel(e.getKey())).append(" (either colour pays)");
+            any = true;
         }
         sb.append(any ? "\n" : "none\n");
         int colours = 0;
@@ -916,12 +1018,25 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
     }
 
-    /** Coloured pip counts across the chosen spells, keyed by basic land name. */
+    /**
+     * Committed coloured pip counts across the chosen spells, keyed by basic land name.
+     *
+     * A symbol that only one colour can pay. Hybrid symbols are counted separately by
+     * hybridPipCounts(): XMage's HybridManaCost.getMana() carries both colours, so summing
+     * costs made {B/R} look like a black pip and a red pip at once. Mono-hybrid ({2/W})
+     * can be paid with generic mana and counts as nothing.
+     */
     private static Map<String, Integer> pipCounts(List<Card> chosen) {
         Mana mana = new Mana();
         for (Card card : chosen) {
-            if (card.getManaCost() != null) {
-                mana.add(card.getManaCost().getMana());
+            for (ManaCost cost : manaCostsOf(card)) {
+                if (cost instanceof MonoHybridManaCost) {
+                    continue;
+                }
+                Mana part = cost.getMana();
+                if (colourCount(part) == 1) {
+                    mana.add(part);
+                }
             }
         }
         Map<String, Integer> pips = new LinkedHashMap<>();
@@ -931,6 +1046,63 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         pips.put("Mountain", mana.getRed());
         pips.put("Forest", mana.getGreen());
         return pips;
+    }
+
+    /** Hybrid pip counts, keyed by the basic lands of the pair ("Swamp/Mountain"). */
+    private static Map<String, Integer> hybridPipCounts(List<Card> chosen) {
+        Map<String, Integer> out = new LinkedHashMap<>();
+        for (Card card : chosen) {
+            for (ManaCost cost : manaCostsOf(card)) {
+                if (cost instanceof MonoHybridManaCost) {
+                    continue;
+                }
+                Mana part = cost.getMana();
+                if (colourCount(part) >= 2) {
+                    out.merge(String.join("/", landsFor(part)), 1, Integer::sum);
+                }
+            }
+        }
+        return out;
+    }
+
+    private static List<ManaCost> manaCostsOf(Card card) {
+        return card.getManaCost() == null ? List.of() : new ArrayList<>(card.getManaCost());
+    }
+
+    private static int colourCount(Mana mana) {
+        return landsFor(mana).size();
+    }
+
+    /** Basic land names for the colours present in `mana`, in WUBRG order. */
+    private static List<String> landsFor(Mana mana) {
+        List<String> out = new ArrayList<>();
+        if (mana.getWhite() > 0) out.add("Plains");
+        if (mana.getBlue() > 0) out.add("Island");
+        if (mana.getBlack() > 0) out.add("Swamp");
+        if (mana.getRed() > 0) out.add("Mountain");
+        if (mana.getGreen() > 0) out.add("Forest");
+        return out;
+    }
+
+    /**
+     * Split `count` lands across colours in proportion to their pip counts, after folding
+     * each hybrid pip into whichever of its colours the deck already leans on.
+     */
+    private static Map<String, Integer> proportionalLands(Map<String, Integer> pips,
+                                                          Map<String, Integer> hybrids, int count) {
+        Map<String, Integer> effective = new LinkedHashMap<>(pips);
+        for (Map.Entry<String, Integer> e : hybrids.entrySet()) {
+            String best = null;
+            for (String basic : e.getKey().split("/")) {
+                if (best == null || pips.getOrDefault(basic, 0) > pips.getOrDefault(best, 0)) {
+                    best = basic;
+                }
+            }
+            if (best != null) {
+                effective.merge(best, e.getValue(), Integer::sum);
+            }
+        }
+        return proportionalLands(effective, count);
     }
 
     /** Split `count` lands across colours in proportion to their pip counts. */
@@ -988,9 +1160,10 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // two colours, what a splash costs, leave off-colour cards in the sideboard) is the
         // deckbuilding judgement this is supposed to measure.
         sb.append("\nBuild your deck from these cards. It must be exactly ").append(deckMinSize)
-                .append(" cards: the cards you pick here plus basic lands.\n");
-        sb.append("Basic lands are added in a separate step straight after this one and are ")
-                .append("unlimited, so choose only non-land cards here.\n");
+                .append(" cards: the cards you pick here plus lands.\n");
+        sb.append("Lands are added in a separate step straight after this one: basic lands are ")
+                .append("unlimited, and any lands you drafted can be played too. So choose only ")
+                .append("non-land cards here.\n");
         // Its own sentence, not a clause. Buried mid-sentence as "about 23, leaving room for
         // about 17 lands", qwen3-235b came back with 32/30/30 spells twice running and lost
         // the deck to the heuristic builder both times.
@@ -1006,7 +1179,8 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     }
 
     private String buildLandPrompt(List<Card> chosen, Map<String, Integer> pips,
-                                   Map<String, Integer> suggestion, int landsNeeded, int deckMinSize) {
+                                   Map<String, Integer> hybrids, Map<String, Integer> suggestion,
+                                   List<Card> poolLands, int landsNeeded, int deckMinSize) {
         StringBuilder sb = new StringBuilder();
         sb.append("These are the ").append(chosen.size()).append(" spells you chose:\n");
         for (Card card : chosen) {
@@ -1020,8 +1194,15 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                         .append(e.getValue()).append('\n');
             }
         }
+        if (!hybrids.isEmpty()) {
+            sb.append("Hybrid mana symbols, which either colour can pay:\n");
+            for (Map.Entry<String, Integer> e : hybrids.entrySet()) {
+                sb.append("- ").append(e.getKey()).append(" (").append(hybridLabel(e.getKey()))
+                        .append("): ").append(e.getValue()).append('\n');
+            }
+        }
         sb.append("\nTo reach exactly ").append(deckMinSize).append(" cards you need ")
-                .append(landsNeeded).append(" basic lands.\n");
+                .append(landsNeeded).append(" lands.\n");
         if (!suggestion.isEmpty()) {
             sb.append("Split proportionally to those symbols, that would be: ");  // offered, not prescribed
             boolean first = true;
@@ -1036,10 +1217,21 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         }
         // "never a negative number" used to be here, after a model answered -1. That is a
         // constraint, not advice, so it now lives in the response schema as minimum 0.
-        sb.append("The counts must add up to ").append(landsNeeded)
-                .append(". Use 0 for a basic land type you are not playing.\n");
-        sb.append("\nIn \"analysis\", briefly justify your split. Then give the counts in ")
-                .append("\"land_counts\".");
+        if (!poolLands.isEmpty()) {
+            sb.append("\nLands you drafted, which you can play as well:\n");
+            for (Card card : poolLands) {
+                sb.append("- ").append(cardSummary(card)).append('\n');
+            }
+            sb.append("Name any you want to play in \"pool_lands\", using the exact names. Each ")
+                    .append("counts as one of the ").append(landsNeeded)
+                    .append(" lands, so reduce the basic lands to match. Leave \"pool_lands\" ")
+                    .append("empty to play only basic lands.\n");
+        }
+        sb.append("The basic land counts, plus any lands from \"pool_lands\", must add up to ")
+                .append(landsNeeded).append(". Use 0 for a basic land type you are not playing.\n");
+        sb.append("\nIn \"analysis\", briefly justify your choice. Then give the counts in ")
+                .append("\"land_counts\"").append(poolLands.isEmpty() ? "" : " and the names in \"pool_lands\"")
+                .append(".");
         return sb.toString();
     }
 
@@ -1191,12 +1383,18 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         lands.add("required", landRequired);
         lands.addProperty("additionalProperties", false);
 
+        JsonObject poolLands = new JsonObject();
+        poolLands.addProperty("type", "array");
+        poolLands.add("items", stringProp());
+
         JsonObject props = new JsonObject();
         props.add("analysis", stringProp());
         props.add("land_counts", lands);
+        props.add("pool_lands", poolLands);
         JsonArray required = new JsonArray();
         required.add("analysis");
         required.add("land_counts");
+        required.add("pool_lands");
         return schemaEnvelope("land_counts", props, required);
     }
 
@@ -1243,8 +1441,13 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     }
 
     private List<Card> resolveChosenSpells(JsonObject choice, List<Card> pool) {
+        return resolveNamedCards(choice, "chosen_spells", pool);
+    }
+
+    /** The cards named in choice[key], resolved by name against `pool`. */
+    private List<Card> resolveNamedCards(JsonObject choice, String key, List<Card> pool) {
         List<Card> chosen = new ArrayList<>();
-        if (!choice.has("chosen_spells") || !choice.get("chosen_spells").isJsonArray()) {
+        if (!choice.has(key) || !choice.get(key).isJsonArray()) {
             return chosen;
         }
 
@@ -1253,7 +1456,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             available.computeIfAbsent(normaliseCardName(card.getName()), k -> new ArrayList<>()).add(card);
         }
 
-        for (JsonElement el : choice.getAsJsonArray("chosen_spells")) {
+        for (JsonElement el : choice.getAsJsonArray(key)) {
             String name;
             try {
                 name = el.getAsString();
