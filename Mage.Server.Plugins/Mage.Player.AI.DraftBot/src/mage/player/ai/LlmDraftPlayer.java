@@ -453,6 +453,29 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         appendRecord(record);
     }
 
+    /**
+     * Record that the harness, not the model, chose this seat's basic lands. The spells are
+     * still the model's, so this is not a deckbuild_fallback, but a replay that says "built
+     * by the model" over a harness mana base would be wrong.
+     */
+    private static void recordLandsFallback(String seat, String reason) {
+        JsonObject record = new JsonObject();
+        record.addProperty("ts", Instant.now().toString());
+        record.addProperty("seat", seat);
+        record.addProperty("stage", "lands_fallback");
+        record.addProperty("content", reason);
+        record.addProperty("reasoning", "");
+        appendRecord(record);
+    }
+
+    private static List<String> landNames(List<Card> cards) {
+        List<String> names = new ArrayList<>();
+        for (Card card : cards) {
+            names.add(card.getName());
+        }
+        return names;
+    }
+
     /** Record a non-HTTP event (a heuristic fallback, say) on the same timeline as the calls. */
     private static void recordEvent(String seat, String stage, String detail) {
         JsonObject record = new JsonObject();
@@ -669,6 +692,15 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             logAnalysis("spells", answer);
 
             List<Card> candidate = resolveChosenSpells(answer, pool);
+            // The spell step asks for non-land cards, but a land named here used to be
+            // accepted as a spell: DeepSeek V3.2 listed two drafted duals, played 19 lands,
+            // and lost those two from the land step's list (draft_20260914_225439). They
+            // are set aside for the land step, which offers them again.
+            List<Card> landsInList = splitOutLands(candidate);
+            if (!landsInList.isEmpty()) {
+                logger.info("LlmDraftPlayer(" + getName() + "): " + landsInList.size()
+                        + " land(s) in the spell list set aside for the land step: " + cardNames(landsInList));
+            }
             boolean accepted = round > 1 && isAccept(answer);
             boolean usable = !candidate.isEmpty() && isPlausibleSpellCount(candidate.size(), deckMinSize);
             if (usable) {
@@ -701,7 +733,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             }
             // Hand back what the proposal actually amounts to and let the model
             // reconcile it against its own stated plan.
-            feedback = reviewFeedback(candidate, deckMinSize);
+            feedback = reviewFeedback(candidate, landsInList, deckMinSize);
         }
         if (chosen == null || chosen.isEmpty()) {
             logger.error("LlmDraftPlayer(" + getName() + "): no usable spell list after "
@@ -726,8 +758,15 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         // deckbuilding mistake. Retry, then settle for the proportional split.
         Map<String, Integer> lands = null;
         List<Card> chosenPoolLands = new ArrayList<>();
-        String landPrompt = buildLandPrompt(chosen, pips, hybrids, suggestion, poolLands, landsNeeded, deckMinSize);
+        // A rejected answer used to be retried with the identical prompt, and the model
+        // gave the identical answer: qwen3-coder chose 17 lands for a deck that needed 21,
+        // twice (draft_20260914_225439). The retry now carries the reason.
+        String landFeedback = null;
+        String lastProblem = null;
+        int rejected = 0;
         for (int attempt = 1; attempt <= DECKBUILD_ATTEMPTS; attempt++) {
+            String landPrompt = buildLandPrompt(chosen, pips, hybrids, suggestion, poolLands,
+                    landsNeeded, deckMinSize, landFeedback);
             JsonObject landAnswer = requestJson("lands", landPrompt, landsResponseFormat());
             if (landAnswer == null) {
                 break;
@@ -744,10 +783,21 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             logger.warn("LlmDraftPlayer(" + getName() + "): land counts rejected (" + problem
                     + "): " + candidate + " + " + cardNames(candidatePoolLands)
                     + "; retrying [" + attempt + "/" + DECKBUILD_ATTEMPTS + "]");
+            rejected++;
+            lastProblem = problem;
+            landFeedback = "Your last answer was rejected: " + problem + ". You gave " + candidate
+                    + (candidatePoolLands.isEmpty() ? "" : " plus " + String.join(", ", landNames(candidatePoolLands)))
+                    + ". Answer again.";
         }
         if (lands == null) {
-            logger.warn("LlmDraftPlayer(" + getName() + "): no usable land counts; "
-                    + "using the proportional suggestion " + suggestion);
+            String reason = rejected == 0
+                    ? "the model gave no parseable land answer"
+                    : "the model's land answers were rejected " + rejected + " time(s), last because "
+                            + lastProblem;
+            logger.warn("LlmDraftPlayer(" + getName() + "): " + reason + "; using the proportional suggestion "
+                    + suggestion);
+            // Visible in the replay: the spells are the model's, the lands are not.
+            recordLandsFallback(getName(), reason + "; the harness used the proportional split " + suggestion);
             lands = suggestion;
         }
 
@@ -932,7 +982,19 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
      * did not match -- so rather than police that from the outside, show it the numbers
      * and let it reconcile them.
      */
-    private String reviewFeedback(List<Card> chosen, int deckMinSize) {
+    /** Remove lands from `cards` in place and return them. */
+    private static List<Card> splitOutLands(List<Card> cards) {
+        List<Card> lands = new ArrayList<>();
+        for (Card card : cards) {
+            if (card.isLand()) {
+                lands.add(card);
+            }
+        }
+        cards.removeAll(lands);
+        return lands;
+    }
+
+    private String reviewFeedback(List<Card> chosen, List<Card> setAsideLands, int deckMinSize) {
         Map<String, Integer> pips = pipCounts(chosen);
         int creatures = 0;
         Map<Integer, Integer> curve = new java.util.TreeMap<>();
@@ -950,6 +1012,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
             sb.append("- ").append(cardSummary(card)).append('\n');
         }
         sb.append("\nWhat that adds up to:\n");
+        if (!setAsideLands.isEmpty()) {
+            sb.append("- ").append(setAsideLands.size()).append(" of the cards you named are lands (")
+                    .append(String.join(", ", landNames(setAsideLands)))
+                    .append("). Lands are chosen in the next step, so they were set aside and ")
+                    .append("do not count as spells here.\n");
+        }
         sb.append("- ").append(chosen.size()).append(" spells, so ").append(lands)
                 .append(" lands to reach ").append(deckMinSize).append(" cards")
                 .append(lands == 17 ? "" : " (17 is typical)").append('\n');
@@ -1105,8 +1173,25 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         return proportionalLands(effective, count);
     }
 
-    /** Split `count` lands across colours in proportion to their pip counts. */
+    /**
+     * Split `count` lands across colours in proportion to their pip counts.
+     *
+     * A colour with fewer pips than MIN_PIPS_NEEDING_A_SOURCE gets no land: a proportional
+     * share of one or two symbols rounds to a single Island or Forest, which is a dead
+     * draw far more often than it casts the card. The harness gave DeepSeek V3.2's Boros
+     * deck exactly that, 1 Island and 1 Forest (draft_20260914_225439). If no colour
+     * reaches the threshold the split falls back to all of them.
+     */
     private static Map<String, Integer> proportionalLands(Map<String, Integer> pips, int count) {
+        Map<String, Integer> supported = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> e : pips.entrySet()) {
+            if (e.getValue() >= MIN_PIPS_NEEDING_A_SOURCE) {
+                supported.put(e.getKey(), e.getValue());
+            }
+        }
+        if (!supported.isEmpty()) {
+            pips = supported;
+        }
         int total = 0;
         for (int n : pips.values()) {
             total += n;
@@ -1180,8 +1265,12 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
 
     private String buildLandPrompt(List<Card> chosen, Map<String, Integer> pips,
                                    Map<String, Integer> hybrids, Map<String, Integer> suggestion,
-                                   List<Card> poolLands, int landsNeeded, int deckMinSize) {
+                                   List<Card> poolLands, int landsNeeded, int deckMinSize,
+                                   String feedback) {
         StringBuilder sb = new StringBuilder();
+        if (feedback != null) {
+            sb.append(feedback).append("\n\n");
+        }
         sb.append("These are the ").append(chosen.size()).append(" spells you chose:\n");
         for (Card card : chosen) {
             sb.append("- ").append(cardSummary(card)).append('\n');
