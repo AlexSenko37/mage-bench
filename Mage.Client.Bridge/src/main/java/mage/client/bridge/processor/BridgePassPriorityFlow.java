@@ -269,11 +269,31 @@ public final class BridgePassPriorityFlow {
 
         boolean armedClientSideYield = false;
         if ("stack_resolved".equals(until)) {
-            UUID lowestStackObject = context.lowestStackObjectId(context.lastGameView());
+            GameView stackView = currentAction != null ? extractGameView(currentAction) : context.lastGameView();
+            UUID lowestStackObject = context.lowestStackObjectId(stackView);
             if (lowestStackObject != null) {
                 yieldUntilStackResolved = true;
                 yieldUntilStackResolvedObjectId = lowestStackObject;
                 armedClientSideYield = true;
+            } else if (currentAction != null) {
+                // Nothing to wait for. Falling through to a plain pass would give up priority
+                // and move the game to the next step: GPT-6 Astra played a land, asked to wait
+                // for the stack, and lost its main phase and a lethal Avatar's Wrath to combat
+                // (game_20260915_134604).
+                finish(
+                    context.pendingActionResult(
+                        currentAction,
+                        "stack_resolved",
+                        boardCursorParam,
+                        built -> built.warning = "The stack was already empty, so nothing was passed and you "
+                            + "still have priority. Play a card or ability now, or call pass_priority "
+                            + "without until to move on."
+                    ),
+                    currentAction,
+                    stackView,
+                    true
+                );
+                return false;
             }
         } else if ("my_turn".equals(until)) {
             yieldUntilMyTurn = true;

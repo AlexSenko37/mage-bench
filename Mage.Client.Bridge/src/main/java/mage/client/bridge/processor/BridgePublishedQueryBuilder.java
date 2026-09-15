@@ -399,25 +399,33 @@ public final class BridgePublishedQueryBuilder {
                 choiceEntry.put("index", idx);
                 choiceEntry.put("id", processorServices.viewLocator().getStableShortId(objectId, cardView, gameView));
 
-                boolean isOnBattlefield = cardView == null
-                    || (gameView.getMyHand().get(objectId) == null && gameView.getStack().get(objectId) == null);
+                // A card in exile or a graveyard is not on the battlefield either: an airbended
+                // Pirate Peddlers, castable from exile, was labelled "activate".
+                boolean isOnBattlefield = processorServices.viewLocator().findPermanentViewById(objectId, gameView) != null;
+
+                var manaNameSet = new HashSet<>(manaNames);
+                var nonManaAbilities = new ArrayList<String>();
+                for (String name : abilityNames) {
+                    if (!manaNameSet.contains(name)) {
+                        nonManaAbilities.add(name);
+                    }
+                }
 
                 if (cardView != null) {
                     choiceEntry.put("name", processorServices.cardFormatter().safeDisplayName(cardView));
                     if (isOnBattlefield) {
                         choiceEntry.put("action", "activate");
-                        var manaNameSet = new HashSet<>(stats.getAllManaAbilityNames());
-                        var nonManaAbilities = new ArrayList<String>();
-                        for (String name : abilityNames) {
-                            if (!manaNameSet.contains(name)) {
-                                nonManaAbilities.add(name);
-                            }
-                        }
                         if (!nonManaAbilities.isEmpty()) {
                             choiceEntry.put("playable_abilities", nonManaAbilities);
                         }
                     } else {
-                        choiceEntry.put("action", cardView.isLand() ? "land" : "cast");
+                        choiceEntry.put("action", offBattlefieldAction(cardView, nonManaAbilities));
+                        List<String> otherAbilities = nonManaAbilities.stream()
+                            .filter(name -> !name.startsWith("Cast ") && !name.startsWith("Play "))
+                            .toList();
+                        if (!otherAbilities.isEmpty()) {
+                            choiceEntry.put("playable_abilities", otherAbilities);
+                        }
                         String manaCost = cardView.getManaCostStr();
                         if (manaCost != null && !manaCost.isEmpty()) {
                             choiceEntry.put("mana_cost", manaCost);
@@ -517,6 +525,10 @@ public final class BridgePublishedQueryBuilder {
                                     attackerInfo.put("power", attacker.getPower());
                                     attackerInfo.put("toughness", attacker.getToughness());
                                 }
+                                List<String> attackerRules = combatRules(attacker);
+                                if (!attackerRules.isEmpty()) {
+                                    attackerInfo.put("combat_rules", attackerRules);
+                                }
                                 incomingAttackers.add(attackerInfo);
                             }
                         }
@@ -541,6 +553,10 @@ public final class BridgePublishedQueryBuilder {
                             choiceEntry.put("toughness", permanent.getToughness());
                         }
                         choiceEntry.put("choice_type", "blocker");
+                        List<String> blockerRules = combatRules(permanent);
+                        if (!blockerRules.isEmpty()) {
+                            choiceEntry.put("combat_rules", blockerRules);
+                        }
                         choiceList.add(choiceEntry);
                         indexToUuid.add(blockerId);
                         idx++;
@@ -566,6 +582,44 @@ public final class BridgePublishedQueryBuilder {
         result.response_type = "boolean";
         result.respond_with = "choice=yes (confirm) or choice=no (pass)";
         return List.of();
+    }
+
+    /**
+     * "land", "cast" or "activate" for a playable card that is not on the battlefield, from
+     * the abilities XMage says it can use now. Canyon Crawler in hand with two lands could
+     * only swampcycle, yet was offered as "cast" (game_20260915_134604).
+     */
+    private static String offBattlefieldAction(CardView cardView, List<String> nonManaAbilities) {
+        boolean canPlay = nonManaAbilities.stream().anyMatch(name -> name.startsWith("Play "));
+        boolean canCast = nonManaAbilities.stream().anyMatch(name -> name.startsWith("Cast "));
+        if (nonManaAbilities.isEmpty() || (canPlay && canCast)) {
+            return cardView.isLand() ? "land" : "cast";
+        }
+        if (canPlay) {
+            return "land";
+        }
+        return canCast ? "cast" : "activate";
+    }
+
+    // Rules text that decides which creature can block which: evasion on an attacker, reach or
+    // a blocking restriction on a blocker. XMage offers every untapped creature as a blocker, so
+    // without this a model reads the list as permission (Fable 5.1 tried twice to block a flier
+    // with a ground creature, game_20260915_134604).
+    private static final Pattern COMBAT_RULE = Pattern.compile(
+        "(?i)\\b(flying|reach|menace|shadow|horsemanship|fear|intimidate|skulk|protection from|\\w+walk)\\b"
+            + "|can't be blocked|can't block|can block|blocked except|be blocked by|blocks each combat");
+
+    private static List<String> combatRules(CardView card) {
+        if (card == null || card.getRules() == null) {
+            return List.of();
+        }
+        var matched = new ArrayList<String>();
+        for (String rule : BridgePromptFormatting.stripHtmlList(card.getRules())) {
+            if (rule != null && !rule.isBlank() && COMBAT_RULE.matcher(rule).find()) {
+                matched.add(rule.trim());
+            }
+        }
+        return matched;
     }
 
     private List<Object> buildManaChoices(ActionResult result, Object data, GameView gameView) {
