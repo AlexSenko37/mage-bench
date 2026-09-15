@@ -1474,3 +1474,30 @@ async def test_consecutive_empty_choices_triggers_auto_pass():
         mock_auto_pass.assert_called_once()
 
     assert client.chat.completions.create.call_count == MAX_CONSECUTIVE_EMPTY_CHOICES
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("_no_prefetch")
+async def test_run_pilot_loop_sends_configured_max_tokens():
+    """A preset's max_tokens reaches the request, so a runaway completion stops at the cap."""
+    session = MagicMock()
+    session.call_tool = AsyncMock(return_value=_mock_tool_result('{"game_over": true}'))
+    client = MagicMock()
+    client.chat.completions.create = AsyncMock(return_value=_make_llm_response("pass_priority", "{}"))
+
+    with patch("magebench.pilot.pilot.auto_pass_loop", new_callable=AsyncMock):
+        await asyncio.wait_for(
+            run_pilot_loop(
+                session=session,
+                client=client,
+                model="test-model",
+                system_prompt="You are a test.",
+                tools=_TOOLS,
+                prices={},
+                username="test-player",
+                max_tokens=2000,
+            ),
+            timeout=2,
+        )
+
+    assert client.chat.completions.create.await_args.kwargs["max_tokens"] == 2000

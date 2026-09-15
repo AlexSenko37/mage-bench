@@ -1293,3 +1293,16 @@ def test_draft_provider_routing_rejects_slugs_that_cannot_travel(tmp_path: Path,
             log_dir=tmp_path,
             seat_a_provider_order=[bad],
         )
+
+
+def test_draft_max_tokens_reaches_the_server_jvm(tmp_path: Path):
+    """A preset's max_tokens caps that seat's draft calls, not only its game calls."""
+    args = draft_seat_jvm_args(
+        seat_a_name="ModelA-A",
+        seat_a_model="m/a",
+        seat_b_name="ModelB-B",
+        seat_b_model="openai/gpt-6-astra",
+        log_dir=tmp_path,
+        seat_b_max_tokens=2000,
+    )
+    assert [a for a in args if "maxTokens" in a] == ["-Dxmage.llmDraft.maxTokens.ModelB-B=2000"]

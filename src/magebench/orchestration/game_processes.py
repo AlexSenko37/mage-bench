@@ -297,6 +297,8 @@ def draft_seat_jvm_args(
     seat_b_provider_order: list[str] | None = None,
     seat_a_ignore_providers: list[str] | None = None,
     seat_b_ignore_providers: list[str] | None = None,
+    seat_a_max_tokens: int | None = None,
+    seat_b_max_tokens: int | None = None,
 ) -> list[str]:
     """Per-seat draft configuration for the *server* JVM.
 
@@ -333,6 +335,9 @@ def draft_seat_jvm_args(
         # preset's reasoning_effort would apply to gameplay but not to drafting.
         *([f"-Dxmage.llmDraft.effort.{seat_a_name}={seat_a_effort}"] if seat_a_effort else []),
         *([f"-Dxmage.llmDraft.effort.{seat_b_name}={seat_b_effort}"] if seat_b_effort else []),
+        # A preset's max_tokens caps the draft calls as well as the game calls.
+        *([f"-Dxmage.llmDraft.maxTokens.{seat_a_name}={seat_a_max_tokens}"] if seat_a_max_tokens else []),
+        *([f"-Dxmage.llmDraft.maxTokens.{seat_b_name}={seat_b_max_tokens}"] if seat_b_max_tokens else []),
         # Turns on the structured per-call record (tokens, cost, reasoning) in draft_picks.jsonl.
         f"-Dxmage.llmDraft.logDir={log_dir}",
         # OpenRouter provider routing from models.json. The play path has always sent it;
@@ -548,6 +553,8 @@ def start_pilot_client(
         args.extend(["--max-interactions-per-turn", str(player.max_interactions_per_turn)])
     if player.reasoning_effort:
         args.extend(["--reasoning-effort", player.reasoning_effort])
+    if player.max_tokens is not None:
+        args.extend(["--max-tokens", str(player.max_tokens)])
     if player.tools is not None:
         args.extend(["--tools", ",".join(player.tools)])
     if player.ignore_providers:

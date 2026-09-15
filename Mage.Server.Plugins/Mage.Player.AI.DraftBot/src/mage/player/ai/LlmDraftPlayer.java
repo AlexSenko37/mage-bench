@@ -227,7 +227,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                         + "Respond with ONLY a JSON object, no prose and no code fences."));
         messages.add(chatMessage("user", buildPrompt(cards, deck, draft)));
         payload.add("messages", messages);
-        payload.addProperty("max_tokens", PICK_MAX_TOKENS);
+        payload.addProperty("max_tokens", maxTokensFor(getName(), PICK_MAX_TOKENS));
         applyReasoningEffort(payload);
         applyProviderRouting(payload);
         // Picks were the one call whose reasoning was never requested, and the system prompt
@@ -476,6 +476,34 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 "xmage.llmDraft.effort." + playerName,
                 System.getProperty("xmage.llmDraft.effort", ""));
         return effort.isEmpty() ? null : effort;
+    }
+
+    /**
+     * Output-token cap for this seat's calls, or null to use each stage's own default.
+     * Set from a preset's max_tokens, which caps the game calls too. Without it a model
+     * prone to runaway output (GPT-6 Astra padding its JSON with whitespace) runs each such
+     * call to PICK_MAX_TOKENS or DECKBUILD_MAX_TOKENS.
+     */
+    private static Integer resolveMaxTokens(String playerName) {
+        String raw = System.getProperty(
+                "xmage.llmDraft.maxTokens." + playerName,
+                System.getProperty("xmage.llmDraft.maxTokens", ""));
+        if (raw.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            int value = Integer.parseInt(raw.trim());
+            return value > 0 ? value : null;
+        } catch (NumberFormatException e) {
+            logger.warn("LlmDraftPlayer(" + playerName + "): ignoring invalid maxTokens " + raw);
+            return null;
+        }
+    }
+
+    /** A stage's default output-token limit, lowered to the seat's cap when one is set. */
+    private static int maxTokensFor(String playerName, int stageDefault) {
+        Integer cap = resolveMaxTokens(playerName);
+        return cap == null ? stageDefault : Math.min(cap, stageDefault);
     }
 
     /**
@@ -1046,7 +1074,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                             + "Respond with ONLY a JSON object, no prose and no code fences."));
             messages.add(chatMessage("user", userPrompt));
             payload.add("messages", messages);
-            payload.addProperty("max_tokens", DECKBUILD_MAX_TOKENS);
+            payload.addProperty("max_tokens", maxTokensFor(getName(), DECKBUILD_MAX_TOKENS));
             applyReasoningEffort(payload);
             applyProviderRouting(payload);
             // We are already paying for this model's reasoning tokens; capturing the trace

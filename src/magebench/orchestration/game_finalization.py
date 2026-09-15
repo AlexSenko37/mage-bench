@@ -120,7 +120,7 @@ def write_game_meta(game_dir: Path, config: Config, project_root: Path) -> None:
         *((p, "cpu") for p in config.cpu_players),
     ]
     for player, ptype in all_players:
-        entry: dict[str, str | list[str]] = {"name": player.name, "type": ptype}
+        entry: dict[str, str | int | list[str]] = {"name": player.name, "type": ptype}
         if player.deck:
             entry["deck_path"] = player.deck
             deck_file = project_root / player.deck
@@ -138,6 +138,8 @@ def write_game_meta(game_dir: Path, config: Config, project_root: Path) -> None:
                 entry["system_prompt"] = player.system_prompt
             if player.reasoning_effort:
                 entry["reasoning_effort"] = player.reasoning_effort
+            if player.max_tokens is not None:
+                entry["max_tokens"] = player.max_tokens
         players.append(entry)
 
     meta = {

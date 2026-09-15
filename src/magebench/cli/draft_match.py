@@ -85,6 +85,19 @@ def _effort_for_preset(preset_name: str) -> str | None:
     return str(effort) if effort else None
 
 
+def _max_tokens_for_preset(preset_name: str) -> int | None:
+    """Output-token cap configured for a preset, or None for the draft bot's stage defaults.
+
+    The same preset field caps the game calls (config.py). Passing it to the draft too keeps
+    a model prone to runaway output from running each pick to the draft bot's own limit.
+    """
+    pdata = load_presets(None)["presets"].get(preset_name)
+    if pdata is None:
+        raise ValueError(f"Unknown preset: {preset_name!r}")
+    value = pdata.get("max_tokens")
+    return int(value) if value else None
+
+
 def _provider_routing_for_preset(preset_name: str) -> tuple[list[str] | None, list[str] | None]:
     """(provider_order, ignore_providers) from the model's models.json entry.
 
@@ -306,6 +319,8 @@ def run_draft(
                 seat_b_provider_order=routing_b[0],
                 seat_a_ignore_providers=routing_a[1],
                 seat_b_ignore_providers=routing_b[1],
+                seat_a_max_tokens=_max_tokens_for_preset(preset_a),
+                seat_b_max_tokens=_max_tokens_for_preset(preset_b),
             ),
         )
         if not wait_for_port(config.server, config.port, config.server_wait):
