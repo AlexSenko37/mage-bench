@@ -93,6 +93,16 @@ public final class BridgePassPriorityFlowContextImpl implements BridgePassPriori
     }
 
     @Override
+    public int stackResolvedReportedSeq() {
+        return decisionFlowService.stackResolvedReportedSeq();
+    }
+
+    @Override
+    public void setStackResolvedReportedSeq(int gameSeq) {
+        decisionFlowService.setStackResolvedReportedSeq(gameSeq);
+    }
+
+    @Override
     public boolean stackContains(GameView gameView, UUID stackObjectId) {
         return decisionFlowService.stackContains(gameView, stackObjectId);
     }

@@ -126,6 +126,20 @@ public final class BridgeInteractionState {
         autoColorChoice = null;
     }
 
+    // game_seq of the decision for which pass_priority last reported that the stack is empty
+    // or has resolved. A stack_resolved call on an empty stack keeps priority the first time,
+    // so a model that played a land and asked to wait keeps its main phase; asking again for
+    // the same decision passes, so a model repeating the call still moves the game on.
+    private int stackResolvedReportedSeq = -1;
+
+    public int stackResolvedReportedSeq() {
+        return stackResolvedReportedSeq;
+    }
+
+    public void setStackResolvedReportedSeq(int gameSeq) {
+        stackResolvedReportedSeq = gameSeq;
+    }
+
     private boolean poolFirstTracking = false;
     private UUID poolFirstPayingForId = null;
     private String poolFirstLastPrompt = null;

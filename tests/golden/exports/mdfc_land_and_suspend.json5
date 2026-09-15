@@ -616,16 +616,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 3,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",
@@ -703,16 +700,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
       "choice_count": 7,
       "choices": [
         {
-          "action": "activate",
+          "action": "land",
           "id": "l17",
           "index": 0,
           "name": "Boggart Bog",
-          "playable_abilities": [
-            "Play Boggart Bog",
-          ]
         },
         {
-          "action": "cast",
+          "action": "land",
           "id": "p10",
           "index": 1,
           "mana_cost": "{2}{B}",
@@ -870,11 +864,14 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 6,
         "choices": [
           {
-            "action": "cast",
+            "action": "activate",
             "id": "p11",
             "index": 0,
             "name": "Crashing Footfalls",
-          }
+            "playable_abilities": [
+              "Suspend 4&mdash;{G} (Rather than cast this car...",
+            ]
+          },
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
         "game_seq": 18,
@@ -890,16 +887,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
       "choice_count": 7,
       "choices": [
         {
-          "action": "activate",
+          "action": "land",
           "id": "l17",
           "index": 0,
           "name": "Boggart Bog",
-          "playable_abilities": [
-            "Play Boggart Bog",
-          ]
         },
         {
-          "action": "cast",
+          "action": "land",
           "id": "p10",
           "index": 1,
           "mana_cost": "{2}{B}",
@@ -976,11 +970,14 @@ Create two 4/4 green Rhino creature tokens with trample.",
       "choice_count": 1,
       "choices": [
         {
-          "action": "cast",
+          "action": "activate",
           "id": "p11",
           "index": 0,
           "name": "Crashing Footfalls",
-        }
+          "playable_abilities": [
+            "Suspend 4&mdash;{G} (Rather than cast this car...",
+          ]
+        },
       ],
       "chosen": null,
       "chosen_args": {},
@@ -1123,16 +1120,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 12,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",
@@ -1184,16 +1178,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
       "choice_count": 8,
       "choices": [
         {
-          "action": "activate",
+          "action": "land",
           "id": "l17",
           "index": 0,
           "name": "Boggart Bog",
-          "playable_abilities": [
-            "Play Boggart Bog",
-          ]
         },
         {
-          "action": "cast",
+          "action": "land",
           "id": "p10",
           "index": 1,
           "mana_cost": "{2}{B}",
@@ -1202,10 +1193,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
           "toughness": "1",
         },
         {
-          "action": "cast",
+          "action": "activate",
           "id": "p11",
           "index": 2,
           "name": "Crashing Footfalls",
+          "playable_abilities": [
+            "Suspend 4&mdash;{G} (Rather than cast this car...",
+          ]
         },
         {
           "action": "land",
@@ -1278,16 +1272,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
       "choice_count": 7,
       "choices": [
         {
-          "action": "activate",
+          "action": "land",
           "id": "l17",
           "index": 0,
           "name": "Boggart Bog",
-          "playable_abilities": [
-            "Play Boggart Bog",
-          ]
         },
         {
-          "action": "cast",
+          "action": "land",
           "id": "p10",
           "index": 1,
           "mana_cost": "{2}{B}",
@@ -1486,16 +1477,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
       "choice_count": 7,
       "choices": [
         {
-          "action": "activate",
+          "action": "land",
           "id": "l17",
           "index": 0,
           "name": "Boggart Bog",
-          "playable_abilities": [
-            "Play Boggart Bog",
-          ]
         },
         {
-          "action": "cast",
+          "action": "land",
           "id": "p10",
           "index": 1,
           "mana_cost": "{2}{B}",
@@ -3427,16 +3415,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 3,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",
@@ -3604,16 +3589,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 5,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",
@@ -3775,11 +3757,14 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 6,
         "choices": [
           {
-            "action": "cast",
+            "action": "activate",
             "id": "p11",
             "index": 0,
             "name": "Crashing Footfalls",
-          }
+            "playable_abilities": [
+              "Suspend 4&mdash;{G} (Rather than cast this car...",
+            ]
+          },
         ],
         "context": "T1 Postcombat Main/Postcombat Main (TestPlayer) YOUR_MAIN",
         "game_seq": 18,
@@ -3931,16 +3916,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 10,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",
@@ -3949,10 +3931,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
             "toughness": "1",
           },
           {
-            "action": "cast",
+            "action": "activate",
             "id": "p11",
             "index": 2,
             "name": "Crashing Footfalls",
+            "playable_abilities": [
+              "Suspend 4&mdash;{G} (Rather than cast this car...",
+            ]
           },
           {
             "action": "land",
@@ -4133,16 +4118,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 12,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",
@@ -4331,16 +4313,13 @@ Create two 4/4 green Rhino creature tokens with trample.",
         "board_cursor": 14,
         "choices": [
           {
-            "action": "activate",
+            "action": "land",
             "id": "l17",
             "index": 0,
             "name": "Boggart Bog",
-            "playable_abilities": [
-              "Play Boggart Bog",
-            ]
           },
           {
-            "action": "cast",
+            "action": "land",
             "id": "p10",
             "index": 1,
             "mana_cost": "{2}{B}",

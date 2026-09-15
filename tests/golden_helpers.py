@@ -1741,6 +1741,18 @@ def _normalize_prompt_for_golden(obj: object) -> object:
     return obj
 
 
+def _save_mismatched_golden(golden_file: Path, actual_json5: str) -> Path:
+    """Write the actual output next to the other golden logs under tmp/golden-actual/.
+
+    CI uploads tmp/golden-*/ when the golden job fails, so an intended output change can be
+    copied into tests/golden from the artifact without running the goldens under xvfb locally.
+    """
+    saved = TESTS_DIR.parent / "tmp" / "golden-actual" / golden_file.parent.name / golden_file.name
+    saved.parent.mkdir(parents=True, exist_ok=True)
+    saved.write_text(actual_json5 + "\n")
+    return saved
+
+
 def assert_golden_prompt(name: str, actual: list[dict], *, name_map: Mapping[str, str] | None = None) -> None:
     """Compare prompt messages against golden file, or update in UPDATE_GOLDEN mode."""
     normalized = _normalize_prompt_for_golden(actual)
@@ -1758,6 +1770,7 @@ def assert_golden_prompt(name: str, actual: list[dict], *, name_map: Mapping[str
 
     expected = golden_file.read_text().rstrip()
     if expected != actual_json5:
+        _save_mismatched_golden(golden_file, actual_json5)
         expected_obj = loads_json5(expected)
         actual_obj = loads_json5(actual_json5)
         diff_lines = _json_diff(expected_obj, actual_obj)
@@ -1879,6 +1892,7 @@ def assert_golden_export(name: str, export_data: dict, *, name_map: Mapping[str,
 
     expected = golden_file.read_text().rstrip()
     if expected != actual_json5:
+        _save_mismatched_golden(golden_file, actual_json5)
         expected_obj = loads_json5(expected)
         diff_lines = _json_diff(expected_obj, normalized_export)
         diff_text = "\n".join(diff_lines)

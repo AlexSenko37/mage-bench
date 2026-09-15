@@ -45,6 +45,7 @@ import mage.util.SubTypes;
 import mage.view.AbilityPickerView;
 import mage.view.CardView;
 import mage.view.CardsView;
+import mage.view.CombatGroupView;
 import mage.view.GameClientMessage;
 import mage.view.GameView;
 import mage.view.ManaPoolView;
@@ -487,7 +488,10 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
-    void treatsEmptyStackResolvedAsSinglePass() throws Exception {
+    void emptyStackResolvedKeepsPriorityInsteadOfPassing() throws Exception {
+        // GPT-6 Astra played a land, asked to wait for the stack, and the plain pass this used to
+        // fall back to moved the game to combat before it could cast its sorcery
+        // (game_20260915_134604).
         CountDownLatch autoPassSent = new CountDownLatch(1);
         AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
         BridgeMageClient client = new BridgeMageClient("TestPlayer");
@@ -507,28 +511,59 @@ class BridgeCallbackHandlerTest {
             7
         ));
 
+        ActionResult result = handler.passPriority("stack_resolved", null);
+
+        assertThat(sendPlayerBooleanCalls.get()).isZero();
+        assertThat(result.stop_reason).isEqualTo("stack_resolved");
+        assertThat(result.action_pending).isTrue();
+        assertThat(result.action_type).isEqualTo("GAME_SELECT");
+        assertThat(result.game_seq).isEqualTo(7);
+        assertThat(result.warning).contains("already empty").contains("still have priority");
+    }
+
+    @Test
+    void repeatedEmptyStackResolvedPassesOnce() throws Exception {
+        // Once a decision has been reported as having an empty stack, asking again means "move
+        // on". Returning at once every time would let a model repeat the call forever.
+        CountDownLatch autoPassSent = new CountDownLatch(1);
+        AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        client.setSession(sessionProxy(autoPassSent, sendPlayerBooleanCalls));
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        GameView emptyStack = gameView(7);
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", emptyStack);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            new GameClientMessage(emptyStack, Collections.<String, Serializable>emptyMap(), "Pass"),
+            "Pass",
+            7
+        ));
+
+        ActionResult first = handler.passPriority("stack_resolved", null);
+        assertThat(first.stop_reason).isEqualTo("stack_resolved");
+        assertThat(sendPlayerBooleanCalls.get()).isZero();
+
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             Future<ActionResult> future = executor.submit(() -> handler.passPriority("stack_resolved", null));
 
             assertThat(autoPassSent.await(1, TimeUnit.SECONDS)).isTrue();
-            assertThatThrownBy(() -> future.get(200, TimeUnit.MILLISECONDS))
-                .isInstanceOf(TimeoutException.class);
-
-            GameView nextActionView = gameView(8);
             enqueueCallback(
                 handler,
                 ClientCallbackMethod.GAME_ASK,
                 gameId,
-                new GameClientMessage(nextActionView, Collections.<String, Serializable>emptyMap(), "Mulligan hand?")
+                new GameClientMessage(gameView(8), Collections.<String, Serializable>emptyMap(), "Mulligan hand?")
             );
 
-            ActionResult result = future.get(1, TimeUnit.SECONDS);
+            ActionResult second = future.get(1, TimeUnit.SECONDS);
             assertThat(sendPlayerBooleanCalls.get()).isEqualTo(1);
-            assertThat(result.stop_reason).isEqualTo("non_priority_action");
-            assertThat(result.action_pending).isTrue();
-            assertThat(result.action_type).isEqualTo("GAME_ASK");
-            assertThat(result.game_seq).isEqualTo(8);
+            assertThat(second.stop_reason).isEqualTo("non_priority_action");
+            assertThat(second.game_seq).isEqualTo(8);
         } finally {
             executor.shutdownNow();
             executor.awaitTermination(1, TimeUnit.SECONDS);
@@ -1734,6 +1769,202 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
+    void batchBlockWithAnInvalidPairLeavesTheDeclarationOpen() throws Exception {
+        // Fable 5.1 paired a ground creature with a flier. The bridge confirmed the block without
+        // it and still called the failure retryable, when the step had moved on
+        // (game_20260915_134604).
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID blockerUuid = UUID.randomUUID();
+        UUID flierUuid = UUID.randomUUID();
+        UUID otherAttackerUuid = UUID.randomUUID();
+        AtomicInteger sendPlayerUuidCalls = new AtomicInteger();
+        List<Object> booleansSent = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        registerShortId(handler, blockerUuid, "p25");
+        registerShortId(handler, flierUuid, "p23");
+
+        var combatOptions = new LinkedHashMap<String, Serializable>();
+        combatOptions.put("possibleBlockers", new ArrayList<>(List.of(blockerUuid)));
+        GameClientMessage combatMessage = new GameClientMessage(gameView(60), combatOptions, "Select blockers");
+        GameClientMessage targetMessage = new GameClientMessage(
+            gameView(61),
+            Collections.<String, Serializable>emptyMap(),
+            "Select attacker to block",
+            new CardsView(),
+            Set.of(otherAttackerUuid),
+            true
+        );
+        GameClientMessage reopenedMessage = new GameClientMessage(gameView(62), combatOptions, "Select blockers");
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "sendPlayerUUID" -> {
+                        sendPlayerUuidCalls.incrementAndGet();
+                        assertThat(args[1]).isEqualTo(blockerUuid);
+                        enqueueCallback(handler, ClientCallbackMethod.GAME_TARGET, gameId, targetMessage);
+                        return true;
+                    }
+                    case "sendPlayerBoolean" -> {
+                        booleansSent.add(args[1]);
+                        enqueueCallback(handler, ClientCallbackMethod.GAME_SELECT, gameId, reopenedMessage);
+                        return true;
+                    }
+                    default -> {
+                        return defaultReturnValue(method.getReturnType());
+                    }
+                }
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", gameView(60));
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            combatMessage,
+            "Select blockers",
+            60
+        ));
+
+        ChooseActionTool.Result result = handler.chooseAction(
+            null, null, null, null, null, null, null, null, null, null, new String[]{"p25:p23"}
+        );
+
+        assertThat(sendPlayerUuidCalls.get()).isEqualTo(1);
+        assertThat(booleansSent).containsExactly(false);
+        assertThat(result.success).isFalse();
+        assertThat(result.retryable).isTrue();
+        assertThat(result.error).contains("p25: can't block p23").contains("not confirmed");
+        assertThat(result.action_pending).isTrue();
+        assertThat(result.game_seq).isEqualTo(62);
+    }
+
+    @Test
+    void batchBlockDoesNotResendAPairThatIsAlreadyDeclared() throws Exception {
+        // Selecting a creature that is already blocking removes its block in XMage, so a retry
+        // that repeats a pair which went through the first time must not send it again.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID blockerUuid = UUID.randomUUID();
+        UUID attackerUuid = UUID.randomUUID();
+        AtomicInteger sendPlayerUuidCalls = new AtomicInteger();
+        List<Object> booleansSent = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        registerShortId(handler, blockerUuid, "p5");
+        registerShortId(handler, attackerUuid, "p1");
+
+        CombatGroupView group = (CombatGroupView) UNSAFE.allocateInstance(CombatGroupView.class);
+        CardsView attackers = new CardsView();
+        attackers.put(attackerUuid, cardView(attackerUuid, "p1", "Grizzly Bears"));
+        CardsView blockers = new CardsView();
+        blockers.put(blockerUuid, cardView(blockerUuid, "p5", "Wall of Wood"));
+        setField(group, "attackers", attackers);
+        setField(group, "blockers", blockers);
+        GameView combatView = gameView(70);
+        setField(combatView, "combat", List.of(group));
+
+        var combatOptions = new LinkedHashMap<String, Serializable>();
+        combatOptions.put("possibleBlockers", new ArrayList<>(List.of(blockerUuid)));
+        GameClientMessage combatMessage = new GameClientMessage(combatView, combatOptions, "Select blockers");
+        GameClientMessage nextDecisionMessage = new GameClientMessage(
+            gameView(71),
+            Collections.<String, Serializable>emptyMap(),
+            "Play spells and abilities"
+        );
+
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "sendPlayerUUID" -> {
+                        sendPlayerUuidCalls.incrementAndGet();
+                        return true;
+                    }
+                    case "sendPlayerBoolean" -> {
+                        booleansSent.add(args[1]);
+                        enqueueCallback(handler, ClientCallbackMethod.GAME_SELECT, gameId, nextDecisionMessage);
+                        return true;
+                    }
+                    default -> {
+                        return defaultReturnValue(method.getReturnType());
+                    }
+                }
+            }
+        ));
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", combatView);
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_SELECT,
+            combatMessage,
+            "Select blockers",
+            70
+        ));
+
+        ChooseActionTool.Result result = handler.chooseAction(
+            null, null, null, null, null, null, null, null, null, null, new String[]{"p5:p1"}
+        );
+
+        assertThat(sendPlayerUuidCalls.get()).isZero();
+        assertThat(booleansSent).containsExactly(true);
+        assertThat(result.success).isTrue();
+        assertThat(result.declared).containsExactly(Map.of("id", "p5", "blocks", "p1"));
+        assertThat(result.game_seq).isEqualTo(71);
+    }
+
+    @Test
+    void playableCardsOffTheBattlefieldAreLabelledByTheAbilityTheyCanUse() throws Exception {
+        // Canyon Crawler in hand with two lands could only swampcycle but was offered as "cast",
+        // and an airbended Pirate Peddlers castable from exile as "activate" (game_20260915_134604).
+        Method action = mage.client.bridge.processor.BridgePublishedQueryBuilder.class
+            .getDeclaredMethod("offBattlefieldAction", CardView.class, List.class);
+        action.setAccessible(true);
+        CardView crawler = cardView(UUID.randomUUID(), "p3", "Canyon Crawler");
+        CardView forest = cardView(UUID.randomUUID(), "p9", "Forest");
+        setField(forest, "cardTypes", List.of(CardType.LAND));
+
+        assertThat(action.invoke(null, crawler, List.of("Swampcycling {2}"))).isEqualTo("activate");
+        assertThat(action.invoke(null, crawler, List.of("Cast Canyon Crawler", "Swampcycling {2}"))).isEqualTo("cast");
+        assertThat(action.invoke(null, crawler, List.of("Cast Pirate Peddlers"))).isEqualTo("cast");
+        assertThat(action.invoke(null, forest, List.of("Play Forest"))).isEqualTo("land");
+        assertThat(action.invoke(null, forest, List.of())).isEqualTo("land");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void combatRulesKeepOnlyTheTextThatDecidesBlocks() throws Exception {
+        Method combatRules = mage.client.bridge.processor.BridgePublishedQueryBuilder.class
+            .getDeclaredMethod("combatRules", CardView.class);
+        combatRules.setAccessible(true);
+
+        CardView token = cardView(UUID.randomUUID(), "p87", "Spirit Token");
+        setField(token, "rules", List.of(
+            "Flying",
+            "Deathtouch",
+            "This token can't block or be blocked by non-Spirit creatures.",
+            "<i>Raid</i> &mdash; At the beginning of your end step, put a +1/+1 counter on another target creature."
+        ));
+        CardView archers = cardView(UUID.randomUUID(), "p61", "Yuyan Archers");
+        setField(archers, "rules", List.of("Reach", "When this creature enters, you may discard a card. If you do, draw a card."));
+
+        assertThat((List<String>) combatRules.invoke(null, token))
+            .containsExactly("Flying", "This token can't block or be blocked by non-Spirit creatures.");
+        assertThat((List<String>) combatRules.invoke(null, archers)).containsExactly("Reach");
+    }
+
+    @Test
     void chooseActionReturnsAfterClientStopWithoutFollowupCallback() throws Exception {
         BridgeMageClient client = new BridgeMageClient("TestPlayer");
         BridgeCallbackHandler handler = client.getCallbackHandler();
@@ -2188,7 +2419,8 @@ class BridgeCallbackHandlerTest {
         AtomicInteger sendPlayerBooleanCalls = new AtomicInteger();
         AtomicInteger sendPlayerUuidCalls = new AtomicInteger();
 
-        GameView initialView = gameView(30);
+        // A spell on the stack, so stack_resolved arms a yield rather than returning at once.
+        GameView initialView = gameView(30, UUID.randomUUID());
         GameView targetView = gameView(31);
         GameView nextDecisionView = gameView(32);
         GameClientMessage targetMessage = new GameClientMessage(
@@ -4078,6 +4310,15 @@ class BridgeCallbackHandlerTest {
             @Override
             public PendingAction resolvePassPriorityAction(PendingAction action) {
                 return action;
+            }
+
+            @Override
+            public int stackResolvedReportedSeq() {
+                return -1;
+            }
+
+            @Override
+            public void setStackResolvedReportedSeq(int gameSeq) {
             }
 
             @Override

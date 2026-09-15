@@ -3,6 +3,7 @@ package mage.client.bridge.processor;
 import mage.client.bridge.PendingAction;
 import mage.client.bridge.tools.ChooseActionTool;
 import mage.interfaces.callback.ClientCallbackMethod;
+import mage.view.CombatGroupView;
 import mage.view.GameClientMessage;
 
 import java.io.Serializable;
@@ -307,6 +308,10 @@ public final class BridgeChooseActionFlow {
                 possibleCombatants = extractUuidOptionList(action, "possibleBlockers");
                 while (batchIndex < blockerAssignments.size()) {
                     BridgeChooseActionBlockerAssignment assignment = blockerAssignments.get(batchIndex);
+                    if (skipAlreadyBlocking(action, assignment)) {
+                        batchIndex++;
+                        continue;
+                    }
                     UUID blockerUuid = resolveCombatant(assignment.id(), "not a valid blocker");
                     if (blockerUuid == null) {
                         batchIndex++;
@@ -320,6 +325,13 @@ public final class BridgeChooseActionFlow {
                     return;
                 }
 
+                if (!batchFailed.isEmpty()) {
+                    // Leave the declaration open so the failed pairs can be fixed. Confirming
+                    // here locked in the blocks without them and still reported the failure as
+                    // retryable, when the step had already moved on (game_20260915_134604).
+                    transitionBatchToNextDecision(false);
+                    return;
+                }
                 context.clearPendingActionIfCurrent(action);
                 context.sendBooleanOrDie(action.gameId(), true, "batchBlock:confirm");
                 transitionBatchToNextDecision(false);
@@ -352,6 +364,40 @@ public final class BridgeChooseActionFlow {
         }
     }
 
+    /**
+     * Records a pairing without sending it when the blocker is already blocking. XMage treats
+     * selecting a creature that is already blocking as removing its block, so a retry that
+     * repeats a pairing from a partly failed declaration would otherwise undo it.
+     */
+    private boolean skipAlreadyBlocking(PendingAction action, BridgeChooseActionBlockerAssignment assignment) {
+        if (!(action.data() instanceof GameClientMessage message)
+                || message.getGameView() == null
+                || message.getGameView().getCombat() == null) {
+            return false;
+        }
+        UUID blockerUuid;
+        UUID attackerUuid;
+        try {
+            blockerUuid = context.resolveShortId(assignment.id());
+            attackerUuid = context.resolveShortId(assignment.blocks());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+        for (CombatGroupView group : message.getGameView().getCombat()) {
+            if (group.getBlockers() == null || !group.getBlockers().containsKey(blockerUuid)) {
+                continue;
+            }
+            if (group.getAttackers() != null && group.getAttackers().containsKey(attackerUuid)) {
+                batchDeclared.add(Map.of("id", assignment.id(), "blocks", assignment.blocks()));
+            } else {
+                batchFailed.add(Map.of("id", assignment.id(), "reason",
+                    "already blocking a different attacker; a declared block can't be moved here"));
+            }
+            return true;
+        }
+        return false;
+    }
+
     private boolean handleBatchBlockerTarget(PendingAction action, BridgeChooseActionBlockerAssignment assignment) {
         UUID attackerUuid;
         try {
@@ -368,7 +414,9 @@ public final class BridgeChooseActionFlow {
         Set<UUID> validTargets = context.validTargets(action);
         if (validTargets == null || !validTargets.contains(attackerUuid)) {
             batchFailed.add(Map.of("id", assignment.id(), "reason",
-                "attacker " + assignment.blocks() + " is not a valid block target"));
+                "can't block " + assignment.blocks() + " (check combat_rules on the attacker and blocker: "
+                    + "flying needs a blocker with flying or reach, and some attackers can only be blocked "
+                    + "by certain creatures)"));
             context.clearPendingActionIfCurrent(action);
             context.sendBooleanOrDie(action.gameId(), false, "batchBlock:cancel_invalid_target");
             batchIndex++;
@@ -412,6 +460,11 @@ public final class BridgeChooseActionFlow {
         if (!batchFailed.isEmpty()) {
             partialResult.failed = new ArrayList<>(batchFailed);
             partialResult.error = batchFailedMessage();
+            if (batchMode == BatchMode.BLOCKERS && !interrupted) {
+                partialResult.error += ". Blocks are not confirmed yet: the pairs in declared are in place and "
+                    + "the declare-blockers decision is still open. Send the corrected blockers list (pairs "
+                    + "already declared are kept), or choice=yes to confirm the blocks as they stand.";
+            }
             partialResult.error_code = "batch_failed";
             partialResult.retryable = true;
         }
