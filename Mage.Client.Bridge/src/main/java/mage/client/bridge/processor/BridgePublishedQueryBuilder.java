@@ -714,7 +714,7 @@ public final class BridgePublishedQueryBuilder {
         AbilityPickerView picker = (AbilityPickerView) data;
         Map<UUID, String> choices = picker.getChoices();
         result.response_type = "index";
-        result.respond_with = "choice=0, choice=1, etc. (not yes/no)";
+        result.respond_with = "choice=0, choice=1, etc. to pick an ability, or choice=no to activate nothing";
 
         var choiceList = new ArrayList<Map<String, Object>>();
         var indexToUuid = new ArrayList<Object>();

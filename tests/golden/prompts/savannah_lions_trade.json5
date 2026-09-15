@@ -27,7 +27,7 @@ When asked \"Mulligan down to N cards?\", the board shows your current hand.\n\
 - The output shows the board state (life totals, hands, battlefields, graveyards), followed by choices.\n\
 - Your hand is shown in full. Opponent hands show only a count.\n\
 - A Card Reference section lists oracle text for non-basic cards when they first appear. It won't repeat oracle text for cards you've already seen — use `get_oracle_text` if you need a reminder.\n\
-- All cards listed in the Choices are confirmed castable with your current mana. The server pre-filters to only show cards you can legally play right now.\n\
+- The Choices list only cards the server judges playable with your current mana, so you never see a card you cannot pay for at all. A cost that depends on the target or on a choice made while casting (for example \"costs {1} less if it targets a creature with flying\") is judged at its cheapest, so such a spell can still fail to pay once you choose a target that does not qualify.\n\
 - Each choice shows its ID in brackets, e.g. `Lightning Bolt [id=p3, cast, {R}]`. Use the id to select it.\n\
 - The \"Respond\" line tells you the expected format for `choose_action`.\n\
 \n\

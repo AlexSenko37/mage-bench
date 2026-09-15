@@ -4694,6 +4694,72 @@ class BridgeCallbackHandlerTest {
         assertThat(oracle.success).isTrue();
     }
 
+    @Test
+    void gameChooseAbilityAcceptsNoToActivateNothing() throws Exception {
+        // Before this, the only answers were an index or an error, so a model that changed
+        // its mind after activating a permanent was stuck until the loop detector picked
+        // the first ability for it (game_20260915_084257).
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID abilityId = UUID.randomUUID();
+        GameView pickerView = gameView(30);
+        GameView nextDecisionView = gameView(31);
+        var abilities = new LinkedHashMap<UUID, String>();
+        abilities.put(abilityId, "Tap an untapped Ally you control: Exile target card from a graveyard.");
+        AbilityPickerView picker = new AbilityPickerView(pickerView, abilities, "Choose spell or ability to play");
+        GameClientMessage nextDecisionMessage = new GameClientMessage(
+            nextDecisionView,
+            Collections.<String, Serializable>emptyMap(),
+            "Play spells and abilities"
+        );
+        List<Object> sentIds = new ArrayList<>();
+
+        addActiveGame(handler, gameId);
+        setField(handler, "currentGameId", gameId);
+        setField(handler, "lastGameView", pickerView);
+        client.setSession((Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                if ("sendPlayerUUID".equals(method.getName())) {
+                    assertThat(args[0]).isEqualTo(gameId);
+                    sentIds.add(args[1]);
+                    enqueueCallback(handler, ClientCallbackMethod.GAME_SELECT, gameId, nextDecisionMessage);
+                    return true;
+                }
+                return defaultReturnValue(method.getReturnType());
+            }
+        ));
+        setField(handler, "pendingAction", new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_CHOOSE_ABILITY,
+            picker,
+            "Choose spell or ability to play",
+            30
+        ));
+
+        var result = handler.chooseAction(
+            null, null, false, null, null, null, null, null, null, null, null
+        );
+
+        assertThat(sentIds).containsExactly((Object) null);
+        assertThat(result.success).isTrue();
+        assertThat(result.action_taken).isEqualTo("cancelled_ability_choice");
+    }
+
+    @Test
+    void unpaidCostIsReadFromThePaymentPrompt() throws Exception {
+        java.lang.reflect.Method unpaid = mage.client.bridge.processor.BridgeDecisionFlowService.class
+            .getDeclaredMethod("unpaidCostFor", String.class);
+        unpaid.setAccessible(true);
+        assertThat((String) unpaid.invoke(null, "Pay {1}<div style='font-size:11pt'>Swampsnare Trap [896]</div>")).isEqualTo("{1}");
+        assertThat((String) unpaid.invoke(null, "Pay {3}{R}Ran and Shaw [107]")).isEqualTo("{3}{R}");
+        assertThat((String) unpaid.invoke(null, "Select a creature")).isNull();
+        assertThat((String) unpaid.invoke(null, (Object) null)).isNull();
+    }
+
     private static Session recordingManaSession(List<UUID> tappedIds, List<Object> poolTypes) {
         return (Session) Proxy.newProxyInstance(
             Session.class.getClassLoader(),

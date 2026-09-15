@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class BridgeDecisionFlowService {
@@ -539,9 +540,18 @@ public final class BridgeDecisionFlowService {
                     }
                 }
                 case GAME_CHOOSE_ABILITY -> {
+                    if (resolvedIndex == null && Boolean.FALSE.equals(answer)) {
+                        // XMage's own client backs out of the picker with a null id; the server
+                        // activates nothing and hands priority back (HumanPlayer.activateAbility).
+                        // With no way to say no, Qwen3 sent choice="no" six times and the loop
+                        // detector activated the ability it was declining (game_20260915_084257).
+                        sendUuidOrDie(gameId, null, "chooseAction:GAME_CHOOSE_ABILITY_cancel");
+                        result.action_taken = "cancelled_ability_choice";
+                        break;
+                    }
                     if (resolvedIndex == null) {
                         return chooseActionDone(buildChooseActionError(result, "missing_param",
-                            "GAME_CHOOSE_ABILITY requires index=N. Call get_action_choices first to see the available abilities, then choose_action with the index of the one you want.",
+                            "GAME_CHOOSE_ABILITY requires choice=N, the index of the ability to activate, or choice=\"no\" to activate nothing. Call get_action_choices to see the abilities.",
                             true, action, true));
                     }
                     if (resolvedIndex < 0 || resolvedIndex >= choiceBackings.size()) {
@@ -1688,11 +1698,16 @@ public final class BridgeDecisionFlowService {
         }
     }
 
-    private boolean cancelSpellFromBadManaPlan(UUID gameId, UUID payingForId) {
+    /**
+     * Cancel the spell because its mana plan could not be followed, saying why. The model
+     * only ever sees the system message: the bridge log knew "tap target p16 not available"
+     * while the model was told "incorrect or incomplete" (game_20260915_090817).
+     */
+    private boolean cancelSpellFromBadManaPlan(UUID gameId, UUID payingForId, String reason) {
         processorState.interactionState().markFailedManaCast(payingForId);
         processorState.interactionState().clearManaPlan();
-        processorState.gameLogState().addSystemMessage("[System] Spell cancelled — mana plan was incorrect or incomplete.");
-        eventLogger.log("SPELL_CANCELLED", processorState.gameState().currentGameId(), "mana plan was incorrect or incomplete");
+        processorState.gameLogState().addSystemMessage("[System] Spell cancelled — mana plan rejected: " + reason + ".");
+        eventLogger.log("SPELL_CANCELLED", processorState.gameState().currentGameId(), "mana plan rejected: " + reason);
         sendBooleanOrDie(gameId, false, "cancelSpellFromBadManaPlan");
         return true;
     }
@@ -1723,7 +1738,8 @@ public final class BridgeDecisionFlowService {
                 UUID targetId = processorServices.shortIds().tryResolve(entry.value());
                 if (targetId == null) {
                     logger.warn("[" + username + "] Mana plan: unknown short ID '" + entry.value() + "', cancelling spell");
-                    return cancelSpellFromBadManaPlan(gameId, payingForId);
+                    return cancelSpellFromBadManaPlan(gameId, payingForId,
+                        "'" + entry.value() + "' is not the ID of a permanent you control");
                 }
                 PlayableObjectsList playableForPlan = gameView != null ? gameView.getCanPlayObjects() : null;
                 if (playableForPlan != null) {
@@ -1736,7 +1752,8 @@ public final class BridgeDecisionFlowService {
                     }
                 }
                 logger.warn("[" + username + "] Mana plan: tap target " + entry.value() + " not available, cancelling spell");
-                return cancelSpellFromBadManaPlan(gameId, payingForId);
+                return cancelSpellFromBadManaPlan(gameId, payingForId,
+                    "'" + entry.value() + "' cannot produce mana right now (already tapped, or no mana ability)");
             }
 
             if ("pool".equals(entry.type())) {
@@ -1748,11 +1765,12 @@ public final class BridgeDecisionFlowService {
                     return true;
                 }
                 logger.warn("[" + username + "] Mana plan: pool entry failed (no player ID), cancelling spell");
-                return cancelSpellFromBadManaPlan(gameId, payingForId);
+                return cancelSpellFromBadManaPlan(gameId, payingForId,
+                    "the pool entry " + entry.value() + " could not be paid from your mana pool");
             }
 
             logger.warn("[" + username + "] Mana plan: unknown entry type '" + entry.type() + "', cancelling spell");
-            return cancelSpellFromBadManaPlan(gameId, payingForId);
+            return cancelSpellFromBadManaPlan(gameId, payingForId, "unknown entry '" + entry.value() + "'");
         }
 
         if (plan != null) {
@@ -1761,7 +1779,9 @@ public final class BridgeDecisionFlowService {
                 processorState.interactionState().clearManaPlan();
             } else {
                 logger.warn("[" + username + "] Mana plan: exhausted with pips remaining, cancelling spell (auto_tap=false)");
-                return cancelSpellFromBadManaPlan(gameId, payingForId);
+                String unpaid = unpaidCostFor(messageText);
+                return cancelSpellFromBadManaPlan(gameId, payingForId,
+                    "the plan ran out with " + (unpaid == null ? "mana" : unpaid) + " still to pay and auto_tap=false");
             }
         }
 
@@ -1851,7 +1871,7 @@ public final class BridgeDecisionFlowService {
                     processorState.interactionState().resetPoolManaTracking();
                     processorState.interactionState().clearManaPlan();
                     processorState.interactionState().markFailedManaCast(payingForId);
-                    processorState.gameLogState().addSystemMessage("[System] Spell cancelled — not enough mana to complete payment.");
+                    processorState.gameLogState().addSystemMessage(notEnoughManaMessage(messageText));
                     eventLogger.log("SPELL_CANCELLED", processorState.gameState().currentGameId(), "not enough mana to complete payment");
                     sendBooleanOrDie(gameId, false, "manaAuto:pool_loop_cancel");
                     return true;
@@ -1872,9 +1892,33 @@ public final class BridgeDecisionFlowService {
         logger.info("[" + username + "] Mana: \"" + messageText + "\" -> no mana source available, cancelling spell");
         processorState.interactionState().markFailedManaCast(payingForId);
         processorState.interactionState().clearManaPlan();
-        processorState.gameLogState().addSystemMessage("[System] Spell cancelled — not enough mana to complete payment.");
+        processorState.gameLogState().addSystemMessage(notEnoughManaMessage(messageText));
         eventLogger.log("SPELL_CANCELLED", processorState.gameState().currentGameId(), "not enough mana to complete payment");
         sendBooleanOrDie(gameId, false, "manaAuto:no_source_cancel");
         return true;
+    }
+
+    private static final Pattern UNPAID_COST = Pattern.compile("^\\s*Pay ((?:\\{[^}]+\\})+)");
+
+    /** The mana still owed in a payment prompt ("Pay {1}<div>...</div>") as "{1}", or null. */
+    static String unpaidCostFor(String promptText) {
+        if (promptText == null) {
+            return null;
+        }
+        Matcher m = UNPAID_COST.matcher(promptText);
+        return m.find() ? m.group(1) : null;
+    }
+
+    /**
+     * The Choices only list spells the server can pay for at their cheapest. A cost that
+     * depends on the target ("costs {1} less if it targets a creature with flying") can rise
+     * once the target is chosen, and the spell is then cancelled here. Swampsnare Trap was
+     * listed with two lands open and cancelled on a non-flying target (game_20260915_084257).
+     */
+    private static String notEnoughManaMessage(String promptText) {
+        String unpaid = unpaidCostFor(promptText);
+        return "[System] Spell cancelled — could not pay "
+            + (unpaid == null ? "the remaining cost" : "the remaining " + unpaid)
+            + ". If the card's cost depends on its target or on a choice made while casting, the choice you made may have raised it.";
     }
 }
