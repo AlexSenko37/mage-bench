@@ -159,6 +159,7 @@ export function stageLabel(stage) {
     spells_review: "Deckbuild: reviewing the proposal",
     lands: "Deckbuild: choosing lands",
     deckbuild_fallback: "Deckbuild fell back to the heuristic",
+    lands_fallback: "Lands fell back to the harness split",
   };
   return LABELS[stage] || stage;
 }
@@ -175,6 +176,20 @@ export const DECKBUILD_FALLBACK_STAGE = "deckbuild_fallback";
 export function deckbuildFallbackReason(draft, seatName) {
   const step = deckbuildForSeat(draft, seatName).find(function (s) {
     return s.stage === DECKBUILD_FALLBACK_STAGE;
+  });
+  return step ? step.content : null;
+}
+
+/** Marker stage written when the harness chose the basic lands after the model's answers were rejected. */
+export const LANDS_FALLBACK_STAGE = "lands_fallback";
+
+/**
+ * Why the harness chose this seat's lands, or null if the model's land answer was used.
+ * The spells are still the model's in this case, unlike a deckbuild fallback.
+ */
+export function landsFallbackReason(draft, seatName) {
+  const step = deckbuildForSeat(draft, seatName).find(function (s) {
+    return s.stage === LANDS_FALLBACK_STAGE;
   });
   return step ? step.content : null;
 }

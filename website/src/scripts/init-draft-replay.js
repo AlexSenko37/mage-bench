@@ -2,6 +2,7 @@ import {
   classifyPackCard,
   deckbuildAnalysis,
   deckbuildFallbackReason,
+  landsFallbackReason,
   deckbuildForSeat,
   draftPrompts,
   draftSeatLabels,
@@ -95,7 +96,11 @@ export function createDraftReplay(options) {
     // RateCard's. Nothing in the decklist shows that, so say it here.
     bits.push([
       "Deck built by",
-      deckbuildFallbackReason(draft, state.seat) ? "heuristic (model answer rejected)" : "the model",
+      deckbuildFallbackReason(draft, state.seat)
+        ? "heuristic (model answer rejected)"
+        : landsFallbackReason(draft, state.seat)
+          ? "the model (lands by the harness)"
+          : "the model",
     ]);
     summaryEl.innerHTML = bits
       .map(function (pair) {
@@ -213,11 +218,16 @@ export function createDraftReplay(options) {
         '<p class="draft-warning"><strong>This deck was built by the heuristic, not the model.</strong> ' +
         escapeHtml(fallbackReason) +
         ". The picks below are still the model's; the 40 cards it played are not.</p>";
+    } else if (landsFallbackReason(draft, state.seat)) {
+      html +=
+        '<p class="draft-warning"><strong>The spells are the model\'s, but the harness chose the basic lands.</strong> ' +
+        escapeHtml(landsFallbackReason(draft, state.seat)) +
+        ".</p>";
     } else {
       html += '<p class="draft-deckbuild-note">After the 45 picks, the model chose which 23 spells made the deck and how the lands were split. Everything it left behind became the sideboard.</p>';
     }
     steps.forEach(function (step) {
-      if (step.stage === "deckbuild_fallback") {
+      if (step.stage === "deckbuild_fallback" || step.stage === "lands_fallback") {
         return; // already stated in the banner above
       }
       // The analysis field is the model's own one-line summary and is often thin --

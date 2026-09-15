@@ -4,6 +4,7 @@ import {
   deckbuildAnalysis,
   deckbuildFallbackReason,
   deckbuildForSeat,
+  landsFallbackReason,
   draftPrompts,
   draftSeatLabels,
   draftSeats,
@@ -374,5 +375,23 @@ describe("draftSeatLabels", () => {
 
   it("is empty for a game with no draft", () => {
     expect(draftSeatLabels(null, [], {})).toEqual({});
+  });
+});
+
+describe("landsFallbackReason", () => {
+  it("is null when the model's land answer was used", () => {
+    const draft = draftWith([pick({})], undefined, [
+      { seat: "modelA-A", stage: "lands", content: "{}", reasoning: "", cost_usd: 0 },
+    ]);
+    expect(landsFallbackReason(draft, "modelA-A")).toBeNull();
+  });
+
+  it("returns the reason when the harness chose the lands", () => {
+    const draft = draftWith([pick({})], undefined, [
+      { seat: "modelA-A", stage: "lands", content: "{}", reasoning: "", cost_usd: 0 },
+      { seat: "modelA-A", stage: "lands_fallback", content: "rejected 3 times", reasoning: "", cost_usd: 0 },
+    ]);
+    expect(landsFallbackReason(draft, "modelA-A")).toBe("rejected 3 times");
+    expect(landsFallbackReason(draft, "modelB-B")).toBeNull();
   });
 });
