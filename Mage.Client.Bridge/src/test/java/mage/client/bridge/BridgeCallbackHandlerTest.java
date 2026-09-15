@@ -4574,6 +4574,172 @@ class BridgeCallbackHandlerTest {
             .containsExactly("Blue", "Red");
     }
 
+    @Test
+    void autoPaySpendsFloatingPoolManaBeforeTappingALand() throws Exception {
+        // Firebending left {R}{R} floating while a {3}{R} pump was paid from four lands
+        // (game_20260914_174527). With red in the pool, the red pip must come from the pool.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID mountainId = UUID.randomUUID();
+        List<UUID> tappedIds = new ArrayList<>();
+        List<Object> poolTypes = new ArrayList<>();
+        client.setSession(recordingManaSession(tappedIds, poolTypes));
+
+        GameView manaView = manaViewWithPoolAndMountain(playerId, mountainId, 70, manaPoolView(2, 0, 0, 0, 0, 0));
+        addActiveGame(handler, gameId, playerId);
+        PendingAction action = manaAction(gameId, manaView, "Pay {3}{R}", 70);
+        setField(handler, "pendingAction", action);
+
+        assertThat(invokeDecisionBoundaryStatus(handler, action, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(poolTypes).containsExactly(mage.constants.ManaType.RED);
+        assertThat(tappedIds).isEmpty();
+    }
+
+    @Test
+    void autoPayUsesPoolForGenericManaThenTapsIfThePromptDoesNotChange() throws Exception {
+        // Pool mana can pay a generic part. If the server hands back the same prompt, the
+        // pool payment was not applied, so the next attempt must tap instead of looping.
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID mountainId = UUID.randomUUID();
+        List<UUID> tappedIds = new ArrayList<>();
+        List<Object> poolTypes = new ArrayList<>();
+        client.setSession(recordingManaSession(tappedIds, poolTypes));
+
+        GameView manaView = manaViewWithPoolAndMountain(playerId, mountainId, 71, manaPoolView(1, 0, 0, 0, 0, 0));
+        addActiveGame(handler, gameId, playerId);
+
+        PendingAction first = manaAction(gameId, manaView, "Pay {3}", 71);
+        setField(handler, "pendingAction", first);
+        assertThat(invokeDecisionBoundaryStatus(handler, first, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(poolTypes).containsExactly(mage.constants.ManaType.RED);
+        assertThat(tappedIds).isEmpty();
+
+        PendingAction repeated = manaAction(gameId, manaView, "Pay {3}", 71);
+        setField(handler, "pendingAction", repeated);
+        assertThat(invokeDecisionBoundaryStatus(handler, repeated, "test")).isEqualTo("AUTO_HANDLED");
+        assertThat(poolTypes).hasSize(1);
+        assertThat(tappedIds).containsExactly(mountainId);
+    }
+
+    @Test
+    void gameSelectMissingParamErrorIsWordedForTheDecision() throws Exception {
+        // During declare blockers the generic "choice=pN to play a card" text sent DeepSeek
+        // V3.2 round three times with its block in the wrong field (game_20260914_230049).
+        java.lang.reflect.Method message = mage.client.bridge.processor.BridgeDecisionFlowService.class
+            .getDeclaredMethod("gameSelectMissingParamMessage", String.class);
+        message.setAccessible(true);
+
+        assertThat((String) message.invoke(null, "Select blockers"))
+            .contains("blockers=")
+            .doesNotContain("to play a card");
+        assertThat((String) message.invoke(null, "Select attackers"))
+            .contains("attackers=")
+            .doesNotContain("to play a card");
+        assertThat((String) message.invoke(null, "Play spells and abilities"))
+            .contains("choice=pN to play a card");
+    }
+
+    @Test
+    void getOracleTextFindsCardsOfferedByThePendingDecision() throws Exception {
+        // Scry offers the top card of the library with an ID. That card is in no visible zone,
+        // so looking it up by the ID used to fail (game_20260914_230049, Compassionate Healer).
+        BridgeMageClient client = new BridgeMageClient("TestPlayer");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        BridgeProcessor processor = (BridgeProcessor) getDirectField(handler, "processor");
+        BridgeDecisionState decisionState = (BridgeDecisionState) getProcessorStateField(handler, "decisionState");
+        BridgeGameState gameState = (BridgeGameState) getProcessorStateField(handler, "gameState");
+        BridgePublishedQueryState publishedQueryState =
+            (BridgePublishedQueryState) getDirectField(handler, "publishedQueryState");
+
+        UUID gameId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        UUID offeredId = UUID.randomUUID();
+
+        PlayerView player = playerView(playerId, "TestPlayer", "p2");
+        GameView view = gameView(13, List.of(player), new CardsView());
+        setField(view, "myPlayerId", playerId);
+
+        CardsView offered = new CardsView();
+        offered.put(offeredId, cardView(offeredId, "l1", "Raucous Audience"));
+        String prompt = "Select up to one card to PUT on the BOTTOM of your library (Scry)";
+        PendingAction pendingAction = new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_TARGET,
+            new GameClientMessage(view, Collections.<String, Serializable>emptyMap(), prompt, offered, Set.of(offeredId), false),
+            prompt,
+            13
+        );
+
+        processor.submit(BridgeCommand.of(() -> {
+            gameState.activateGame(gameId, playerId);
+            publishedQueryState.projectGameState(view, 1, "test_init");
+            decisionState.replacePendingAction(pendingAction);
+            return null;
+        }));
+
+        ActionResult choices = handler.getActionChoices(null);
+        @SuppressWarnings("unchecked")
+        String objectId = (String) ((Map<String, Object>) choices.choices.getFirst()).get("id");
+
+        GetOracleTextTool.Result oracle = handler.getOracleText(null, objectId, null, null);
+
+        assertThat(oracle.error).isNull();
+        assertThat(oracle.success).isTrue();
+    }
+
+    private static Session recordingManaSession(List<UUID> tappedIds, List<Object> poolTypes) {
+        return (Session) Proxy.newProxyInstance(
+            Session.class.getClassLoader(),
+            new Class<?>[]{Session.class},
+            (proxy, method, args) -> {
+                switch (method.getName()) {
+                    case "sendPlayerUUID" -> {
+                        tappedIds.add((UUID) args[1]);
+                        return true;
+                    }
+                    case "sendPlayerManaType" -> {
+                        poolTypes.add(args[2]);
+                        return true;
+                    }
+                    default -> {
+                        return defaultReturnValue(method.getReturnType());
+                    }
+                }
+            }
+        );
+    }
+
+    private static GameView manaViewWithPoolAndMountain(UUID playerId, UUID mountainId, int gameSeq, ManaPoolView pool)
+            throws Exception {
+        PlayerView player = playerView(playerId, "TestPlayer", "p99");
+        setField(player, "manaPool", pool);
+        @SuppressWarnings("unchecked")
+        Map<UUID, Object> battlefield = (Map<UUID, Object>) getField(player, "battlefield");
+        battlefield.put(mountainId, permanentView(mountainId, "p1", "Mountain", false));
+
+        GameView manaView = gameView(gameSeq, List.of(player), new CardsView());
+        setField(manaView, "myPlayerId", playerId);
+        setField(manaView, "canPlayObjects", playableObjects(Map.of(mountainId, manaStats("{T}: Add {R}."))));
+        return manaView;
+    }
+
+    private static PendingAction manaAction(UUID gameId, GameView manaView, String prompt, int gameSeq) {
+        return new PendingAction(
+            gameId,
+            ClientCallbackMethod.GAME_PLAY_MANA,
+            new GameClientMessage(manaView, Collections.<String, Serializable>emptyMap(), prompt),
+            prompt,
+            gameSeq
+        );
+    }
+
     private static GameClientMessage multiAmountMessage(List<MultiAmountMessage> items, int min, int max) {
         return new GameClientMessage(null, Collections.<String, Serializable>emptyMap(), items, min, max);
     }
