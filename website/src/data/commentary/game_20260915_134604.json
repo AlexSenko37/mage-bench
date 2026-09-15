@@ -1,0 +1,69 @@
+{
+  "gameId": "game_20260915_134604",
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": { "PilotA": 1, "PilotB": 2 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] goes first and puts down a [[card:Swamp]].",
+        "[[player:PilotB|Astra]] goes second, puts down a [[card:Plains]] and casts [[card:Momo, Playful Pet]]. Momo is OP and Astra is AGI."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": { "PilotA": 3, "PilotB": 4 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] puts down a [[card:Mountain]] and casts [[card:Corrupt Court Official]], which makes the opponent discard a card. Astra discards its most expensive card, [[card:Beetle-Headed Merchants]], in favour of more immediately playable ones.",
+        "[[player:PilotB|Astra]] puts down [[card:Realm of Koh]], a land that makes black mana and can also pay {3}{B} for an unblockable 1/1 Spirit token. [[card:Momo, Playful Pet|Momo]] attacks for 1, bringing Fable to 19."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": { "PilotA": 5, "PilotB": 6 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] has no second land in hand, so it pays 2 and discards [[card:Canyon Crawler]] to fetch a [[card:Swamp]] and play it. It could attack with [[card:Corrupt Court Official]], but reasons that a block from [[card:Momo, Playful Pet|Momo]] would be a bad trade — despite Momo getting in free damage every turn. First blunder.",
+        "[[player:PilotB|Astra]] gets its third land and plays [[card:Fire Nation Engineer]], whose Raid ability adds a +1/+1 counter to a creature or Vehicle on each turn it attacks. Momo attacks for another 1, bringing Fable to 18, and the Engineer's trigger makes Momo a 2/2."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": { "PilotA": 7, "PilotB": 8 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] draws a land and plays it, but it enters tapped, so it still has only 3 mana available. It plays [[card:Pirate Peddlers]].",
+        "[[player:PilotB|Astra]] puts down a white-black land that enters tapped and plays [[card:Earth Village Ruffians]], which earthbends 2 when it dies — two +1/+1 counters on a land, which becomes a hasty creature that still taps for mana. Momo attacks for 2 and Fable goes to 16, and the Engineer adds another counter to Momo. Not sure why Astra played the creature and tapped out before combat, except perhaps it correctly judged that Fable was already tapped out with no possible blockers."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": { "PilotA": 9, "PilotB": 10 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] has 4 lands now and uses them to cast [[card:Sold Out]] on Momo, exiling him and handing Astra a Clue token as a consolation prize. Momo's leaving trigger offers a Food token, Scry 2, or a +1/+1 counter; Astra takes the counter and puts it on [[card:Earth Village Ruffians]], making it a 4/2. That choice is probably downstream of holding [[card:Glider Staff]], an equipment that grants flying: Astra reckons it can keep going over the heads of Fable's creatures, so maximising power matters most. Fable chooses not to attack, perhaps reasoning that its creatures are better as blockers.",
+        "[[player:PilotB|Astra]] casts [[card:Glider Staff]], airbending Fable's [[card:Pirate Peddlers]] — airbending exiles a creature, where its owner may recast it for {2} — then attaches the Staff to the Ruffians, making it a 5/3 flier. It attacks with Ruffians and the Engineer for 7. Fable declines to chump block with its 1/1 [[card:Corrupt Court Official]], keeping it back to crew [[card:Tundra Tank]], and falls to 9. The Engineer triggers again and Ruffians becomes a 6/4. Astra is running away with the game in the air."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": { "PilotA": 11, "PilotB": 12 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] continues to be slightly short on mana. It holds two 5-mana bombs with only 4 lands. One more land and it could wipe the board with [[card:Day of Black Sun]] and maybe win the race that follows, since Astra has no creatures in hand and Fable has three, two of them big enough to take over. Instead it settles for recasting [[card:Pirate Peddlers]] from exile for {2}, perhaps thinking a good ground blocker is the best it can do, and attacks with [[card:Corrupt Court Official]] for 1. Astra's creatures are tapped from the last attack, so it takes the damage and goes to 19.",
+        "[[player:PilotB|Astra]] attacks with [[card:Earth Village Ruffians]] for 6 and Fable falls to 3. Astra holds [[card:Avatar's Wrath]], which airbends all creatures but one, but Fable's board is no trouble, so it instead pays {3}{B} to [[card:Realm of Koh]] for an unblockable Spirit token. The Engineer's trigger goes on the Spirit, spreading Astra's bets."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": { "PilotA": 13, "PilotB": 14 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] is still mana screwed. It draws and plays [[card:Yuyan Archers]], discarding [[card:Combustion Man]] — one of its currently uncastable 5-drops — to draw its fifth land, a [[card:Mountain]]. It then casts [[card:Day of Black Sun]] with X=0 to clear the Spirit token and buy itself some time.",
+        "[[player:PilotB|Astra]] attacks with the 6/4 flying Ruffians. Fable chump blocks with [[card:Yuyan Archers]], which dies. Astra makes a replacement Spirit token with [[card:Realm of Koh]] and puts the Engineer's counter on it, making it a 2/2."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": { "PilotA": 15, "PilotB": 16 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] finally has 5 mana and uses it to play [[card:Ran and Shaw]], a 4/4 flying dragon. It doesn't attack.",
+        "[[player:PilotB|Astra]] switches the [[card:Glider Staff]] to the Spirit token, making it a 3/3. It attacks with the token, Fable goes to 0, and the game ends."
+      ]
+    }
+  ]
+}

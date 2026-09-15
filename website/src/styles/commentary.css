@@ -1,0 +1,62 @@
+/* Commentary tab: hand-written turn-by-turn notes on a game. */
+
+#commentary {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.commentary-intro {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.commentary-round {
+  margin-bottom: 1.75rem;
+}
+
+.commentary-round-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.commentary-paragraph {
+  margin: 0 0 0.75rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.commentary-card {
+  color: var(--accent-primary);
+  font-weight: 600;
+  cursor: help;
+  border-bottom: 1px dotted currentColor;
+}
+
+.commentary-jump {
+  font-weight: 700;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--accent-primary);
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.commentary-jump:hover,
+.commentary-jump:focus-visible {
+  color: var(--accent-primary);
+}
+
+.commentary-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 1.5rem;
+}
