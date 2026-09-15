@@ -272,6 +272,21 @@ def _build_assistant_tool_message(message: _AssistantMessageLike) -> dict:
     return assistant_msg
 
 
+def _reasoning_text(message: object) -> str | None:
+    """The model's readable reasoning trace for one response, or None if there is none.
+
+    OpenRouter returns it as `reasoning`; `reasoning_content` is the DeepSeek-native name.
+    Only `reasoning_content` used to be read, and OpenRouter never sets it, so no exported
+    game ever had thinking in its log. Encrypted traces (OpenAI's `reasoning_details`) are
+    not readable and are not returned here.
+    """
+    for attr in ("reasoning", "reasoning_content"):
+        value = getattr(message, attr, None)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
 def _maybe_extract_result_dict(result_text: str) -> dict | None:
     """Parse a JSON tool result when it is a dict."""
     try:
@@ -708,7 +723,7 @@ async def run_pilot_loop(
 
             if game_log:
                 llm_event = {"reasoning": choice.message.content}
-                thinking = getattr(choice.message, "reasoning_content", None)
+                thinking = _reasoning_text(choice.message)
                 if thinking:
                     llm_event["thinking"] = thinking
                 if choice.message.tool_calls:

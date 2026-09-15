@@ -18,6 +18,7 @@ from magebench.pilot.pilot import (
     MAX_TOKENS,
     PermanentLLMError,
     _parse_tool_arguments,
+    _reasoning_text,
     _prefetch_first_action,
     _process_tool_calls,
     main,
@@ -1501,3 +1502,41 @@ async def test_run_pilot_loop_sends_configured_max_tokens():
         )
 
     assert client.chat.completions.create.await_args.kwargs["max_tokens"] == 2000
+
+
+def _chat_message(**fields):
+    from openai.types.chat import ChatCompletion
+
+    completion = ChatCompletion.model_validate(
+        {
+            "id": "gen-1",
+            "object": "chat.completion",
+            "created": 1,
+            "model": "m",
+            "choices": [
+                {"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": None, **fields}}
+            ],
+        }
+    )
+    return completion.choices[0].message
+
+
+def test_reasoning_text_reads_openrouter_reasoning_field():
+    """OpenRouter returns the trace as `reasoning`, an extra field on the SDK message."""
+    message = _chat_message(reasoning="Wan Shi Tong is a 3/3.", reasoning_details=[{"type": "reasoning.text"}])
+    assert _reasoning_text(message) == "Wan Shi Tong is a 3/3."
+
+
+def test_reasoning_text_falls_back_to_reasoning_content():
+    assert _reasoning_text(_chat_message(reasoning_content="native trace")) == "native trace"
+
+
+@pytest.mark.parametrize("fields", [{}, {"reasoning": ""}, {"reasoning": "   "}, {"reasoning": None}])
+def test_reasoning_text_is_none_without_readable_text(fields):
+    """No trace, an empty one, or only encrypted details: nothing to show."""
+    assert _reasoning_text(_chat_message(**fields)) is None
+
+
+def test_reasoning_text_ignores_non_string_attributes():
+    """A MagicMock message (as most pilot tests use) must not be logged as thinking."""
+    assert _reasoning_text(MagicMock()) is None
