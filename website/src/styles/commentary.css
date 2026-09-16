@@ -12,6 +12,54 @@
   margin: 0 0 1.5rem;
 }
 
+.commentary-opening {
+  margin-bottom: 1.75rem;
+}
+
+.commentary-hands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.commentary-hand-label,
+.commentary-draw-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.commentary-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.commentary-thumb {
+  width: 92px;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid var(--border-default);
+  cursor: help;
+}
+
+.commentary-thumb:hover {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.commentary-draws {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.commentary-draw-label {
+  display: block;
+}
+
 .commentary-round {
   margin-bottom: 1.75rem;
 }

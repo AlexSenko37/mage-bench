@@ -153,7 +153,13 @@ const runningCostsJson = JSON.stringify(runningCostBySnapshot).replace(/</g, '\\
     </div>
     {hasDecklists && <DeckExplorerView />}
     {hasDraft && <DraftReplayView />}
-    {commentary && <CommentaryView commentary={commentary} />}
+    {commentary && (
+      <CommentaryView
+        commentary={commentary}
+        snapshots={fullGame.snapshots ?? []}
+        cardImages={fullGame.card_images ?? {}}
+      />
+    )}
     {auditMode && <div id="audit-container"></div>}
   </div>
 </div>
