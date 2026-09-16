@@ -232,6 +232,73 @@ describe("resolveCardImage", () => {
   });
 });
 
+// ── computePreviewPosition ──────────────────────────────────────
+
+describe("computePreviewPosition", () => {
+  const viewport = { viewportWidth: 1000, viewportHeight: 800 };
+  const size = { previewWidth: 720, previewHeight: 500 };
+
+  it("sits beside the cursor when there is room", () => {
+    expect(
+      R.computePreviewPosition({ ...viewport, ...size, pointerX: 100, pointerY: 300 })
+    ).toEqual({ left: 120, top: 280 });
+  });
+
+  it("flips to the other side of the cursor near the right edge", () => {
+    const pos = R.computePreviewPosition({ ...viewport, ...size, pointerX: 900, pointerY: 300 });
+    expect(pos.left).toBe(160); // 900 - 720 - 20
+  });
+
+  it("never hangs off the left edge", () => {
+    // Too wide to fit on either side of the cursor: it used to be pushed off-screen left.
+    const pos = R.computePreviewPosition({
+      ...viewport,
+      previewWidth: 960,
+      previewHeight: 500,
+      pointerX: 500,
+      pointerY: 300,
+    });
+    expect(pos.left).toBeGreaterThanOrEqual(0);
+    expect(pos.left + 960).toBeLessThanOrEqual(1000);
+  });
+
+  it("keeps the popup inside the top and bottom edges", () => {
+    expect(R.computePreviewPosition({ ...viewport, ...size, pointerX: 100, pointerY: 5 }).top).toBe(8);
+    const low = R.computePreviewPosition({ ...viewport, ...size, pointerX: 100, pointerY: 790 });
+    expect(low.top + 500).toBeLessThanOrEqual(800);
+  });
+
+  it("centres the popup when centered is asked for (touch screens)", () => {
+    const pos = R.computePreviewPosition({
+      viewportWidth: 390,
+      viewportHeight: 844,
+      previewWidth: 360,
+      previewHeight: 700,
+      pointerX: 200,
+      pointerY: 400,
+      centered: true,
+    });
+    expect(pos).toEqual({ left: 15, top: 72 });
+  });
+
+  it("centres when there is no pointer at all", () => {
+    const pos = R.computePreviewPosition({ ...viewport, ...size, pointerX: null, pointerY: null });
+    expect(pos).toEqual({ left: 140, top: 150 });
+  });
+
+  it("keeps a popup taller than the viewport on screen", () => {
+    const pos = R.computePreviewPosition({
+      viewportWidth: 390,
+      viewportHeight: 600,
+      previewWidth: 360,
+      previewHeight: 900,
+      centered: true,
+    });
+    expect(pos.left).toBe(15);
+    expect(pos.top).toBe(8);
+  });
+});
+
 // ── diffStringBag ───────────────────────────────────────────────
 
 describe("diffStringBag", () => {

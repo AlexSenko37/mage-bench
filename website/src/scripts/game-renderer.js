@@ -457,6 +457,20 @@
     els.image.src = imgUrl;
     els.image.alt = cardName;
     els.container.classList.remove("hidden");
+    // Position it now it has a size. A touch screen never fires the mouse move that used
+    // to do this, which left the popup wherever it happened to be -- off-screen on a phone.
+    positionPreview(els.container);
+    // The card image is usually still loading, so the popup is at its empty height here.
+    // Centring on that height leaves the finished popup hanging off the bottom, so place
+    // it again once the image has a size.
+    if (!els.image.complete) {
+      els.image.onload = function () {
+        positionPreview(els.container);
+      };
+      els.image.onerror = function () {
+        positionPreview(els.container);
+      };
+    }
   }
 
   function hidePreview(els) {
@@ -1594,22 +1608,105 @@
 
   // ── Mouse-following card preview ──
 
+  var PREVIEW_MARGIN = 8;
+  var PREVIEW_CURSOR_GAP = 20;
+
+  // Where the last mouse was, so a preview opened by something other than a mouse move
+  // (a tap, or a hover triggered by keyboard focus) still lands somewhere sensible.
+  var _lastPointer = { x: null, y: null };
+
+  /** A touch screen: no cursor to follow, so the preview is centred instead. */
+  function isCoarsePointer() {
+    return (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: none)").matches
+    );
+  }
+
+  /**
+   * Top-left for the preview popup, kept inside the viewport.
+   *
+   * Centred when there is no pointer to sit beside, which is the case on a touch screen:
+   * the popup used to keep whatever position the last mouse move gave it, so on a phone it
+   * stayed wherever it was -- usually off the left edge.
+   */
+  function computePreviewPosition(options) {
+    var vw = options.viewportWidth;
+    var vh = options.viewportHeight;
+    var w = options.previewWidth;
+    var h = options.previewHeight;
+    var centred = options.centered || options.pointerX == null || options.pointerY == null;
+
+    if (centred) {
+      return {
+        left: Math.max(PREVIEW_MARGIN, Math.round((vw - w) / 2)),
+        top: Math.max(PREVIEW_MARGIN, Math.round((vh - h) / 2)),
+      };
+    }
+
+    var x = options.pointerX + PREVIEW_CURSOR_GAP;
+    var y = options.pointerY - PREVIEW_CURSOR_GAP;
+    // Flip to the other side of the cursor when it would overflow the right edge, then
+    // clamp on every side: clamping only the right edge left it hanging off the left.
+    if (x + w > vw) x = options.pointerX - w - PREVIEW_CURSOR_GAP;
+    if (x + w > vw) x = vw - w - PREVIEW_MARGIN;
+    if (x < PREVIEW_MARGIN) x = PREVIEW_MARGIN;
+    if (y + h > vh) y = vh - h - PREVIEW_MARGIN;
+    if (y < PREVIEW_MARGIN) y = PREVIEW_MARGIN;
+    return { left: Math.round(x), top: Math.round(y) };
+  }
+
+  /** Place the popup against the current pointer, or centred on a touch screen. */
+  function positionPreview(container) {
+    if (!container || typeof window === "undefined") return;
+    var coarse = isCoarsePointer();
+    var position = computePreviewPosition({
+      pointerX: coarse ? null : _lastPointer.x,
+      pointerY: coarse ? null : _lastPointer.y,
+      previewWidth: container.offsetWidth,
+      previewHeight: container.offsetHeight,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      centered: coarse,
+    });
+    container.style.left = position.left + "px";
+    container.style.top = position.top + "px";
+  }
+
   function setupMousePreview(container) {
     if (typeof document === "undefined") return;
+
     document.addEventListener("mousemove", function (e) {
+      _lastPointer.x = e.clientX;
+      _lastPointer.y = e.clientY;
       if (!container || container.classList.contains("hidden")) return;
-      var x = e.clientX + 20;
-      var y = e.clientY - 20;
-      var vw = window.innerWidth;
-      var vh = window.innerHeight;
-      var w = container.offsetWidth;
-      var h = container.offsetHeight;
-      if (x + w > vw) x = e.clientX - w - 20;
-      if (y + h > vh) y = vh - h - 8;
-      if (y < 8) y = 8;
-      container.style.left = x + "px";
-      container.style.top = y + "px";
+      if (isCoarsePointer()) return; // A tap can synthesise a mouse move; stay centred.
+      positionPreview(container);
     });
+
+    // On a touch screen the preview opens on tap and there is no "mouse out" to close it,
+    // so a tap anywhere else, or a scroll, dismisses it.
+    document.addEventListener(
+      "touchstart",
+      function (e) {
+        if (!container || container.classList.contains("hidden")) return;
+        var onCard = e.target && e.target.closest
+          ? e.target.closest("[data-card], .card-thumb, .card-chip, .commentary-thumb")
+          : null;
+        if (!onCard) hidePreview({ container: container });
+      },
+      { passive: true }
+    );
+
+    window.addEventListener(
+      "scroll",
+      function () {
+        if (!container || container.classList.contains("hidden")) return;
+        if (isCoarsePointer()) hidePreview({ container: container });
+      },
+      { passive: true }
+    );
   }
 
   // ── Target arrows from stack items ──
@@ -1766,6 +1863,7 @@
     renderStatusLine: renderStatusLine,
     computePlayerTurnNumbers: computePlayerTurnNumbers,
     setupMousePreview: setupMousePreview,
+    computePreviewPosition: computePreviewPosition,
     // Diffs
     computeDiff: computeDiff,
     diffStringBag: diffStringBag,
