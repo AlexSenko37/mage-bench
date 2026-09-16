@@ -13,6 +13,7 @@ export function createCommentary(options) {
   var root = options.root;
   var game = options.game;
   var onJump = options.onJump;
+  var onSwitchView = options.onSwitchView;
 
   var panel = getRequiredElement(root, "#commentary");
   var renderer = getGameRenderer();
@@ -45,12 +46,21 @@ export function createCommentary(options) {
     });
   }
 
+  function bindViewLinks() {
+    panel.querySelectorAll("[data-view-link]").forEach(function (node) {
+      node.addEventListener("click", function () {
+        if (onSwitchView) onSwitchView(node.getAttribute("data-view-link"));
+      });
+    });
+  }
+
   function render() {
     if (bound) return;
     bound = true;
     renderer.preloadCardData(game.card_data || {});
     bindCards();
     bindJumps();
+    bindViewLinks();
   }
 
   return { render: render };

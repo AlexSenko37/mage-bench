@@ -12,6 +12,26 @@
   margin: 0 0 1.5rem;
 }
 
+.commentary-section {
+  margin-bottom: 1.5rem;
+}
+
+.commentary-view-link {
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  color: var(--accent-primary);
+  background: none;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  cursor: pointer;
+}
+
+.commentary-view-link:hover,
+.commentary-view-link:focus-visible {
+  color: var(--text-primary);
+}
+
 .commentary-opening {
   margin-bottom: 1.75rem;
 }
