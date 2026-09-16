@@ -35,6 +35,15 @@ describe("parseCommentaryText", () => {
     ]);
   });
 
+  it("reads a view marker as a tab plus its link text", () => {
+    expect(parseCommentaryText("picks [[view:draft|here]] and decks [[view:decks|here]]")).toEqual([
+      { kind: "text", text: "picks " },
+      { kind: "view", text: "here", view: "draft" },
+      { kind: "text", text: " and decks " },
+      { kind: "view", text: "here", view: "decks" },
+    ]);
+  });
+
   it("leaves a malformed marker as literal text rather than dropping the sentence", () => {
     const text = "a [[card Glider Staff]] typo";
     expect(parseCommentaryText(text)).toEqual([{ kind: "text", text }]);

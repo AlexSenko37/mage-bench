@@ -60,6 +60,10 @@ export function initReplayViews(options) {
           activate("replay");
           viewer.goTo(index);
         },
+        // The intro text links to the draft and the decklists, which are tabs of their own.
+        onSwitchView: function (view) {
+          if (panels[view] || view === "replay") activate(view);
+        },
       }),
       rendered: false,
     };
