@@ -7,19 +7,28 @@
  *   [[card:Momo, Playful Pet]]          a card, shown with the replay's hover preview
  *   [[card:Momo, Playful Pet|Momo]]     ... with different link text
  *   [[player:PilotA|Fable]]             a jump to that seat's turn in this round
+ *   [[view:draft|here]]                 a link that opens another tab on this page
  *
  * Card names must match the export's `card_data` / `card_images` keys, which is what the
  * preview looks cards up by.
  */
 
 export interface CommentarySegment {
-  kind: 'text' | 'card' | 'player';
+  kind: 'text' | 'card' | 'player' | 'view';
   /** Text to display. */
   text: string;
   /** Card name, for `card` segments. */
   card?: string;
   /** Seat name (e.g. "PilotA"), for `player` segments. */
   seat?: string;
+  /** Tab to open (e.g. "draft"), for `view` segments. */
+  view?: string;
+}
+
+/** A titled block above the turn-by-turn notes, e.g. "The Models" or "Draft". */
+export interface CommentarySection {
+  label: string;
+  paragraphs: string[];
 }
 
 export interface CommentaryRound {
@@ -35,10 +44,12 @@ export interface Commentary {
   /** Seat name -> the name the commentary calls that player, e.g. PilotA -> "Fable". */
   players?: Record<string, string>;
   intro?: string;
+  /** Titled blocks shown above the opening hands and the turn-by-turn notes. */
+  sections?: CommentarySection[];
   rounds: CommentaryRound[];
 }
 
-const MARKER = /\[\[(card|player):([^\]|]+)(?:\|([^\]]*))?\]\]/g;
+const MARKER = /\[\[(card|player|view):([^\]|]+)(?:\|([^\]]*))?\]\]/g;
 
 /**
  * Split commentary text into plain text and marker segments.
@@ -60,6 +71,8 @@ export function parseCommentaryText(text: string): CommentarySegment[] {
     const display = (label ?? target).trim();
     if (kind === 'card') {
       segments.push({ kind: 'card', text: display, card: target.trim() });
+    } else if (kind === 'view') {
+      segments.push({ kind: 'view', text: display, view: target.trim() });
     } else {
       segments.push({ kind: 'player', text: display, seat: target.trim() });
     }

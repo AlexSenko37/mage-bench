@@ -1,6 +1,18 @@
 {
   "gameId": "game_20260915_134604",
   "players": { "PilotA": "Fable", "PilotB": "Astra" },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": ["Fable 5.1 low effort vs GPT-6 Astra on low effort"]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "The models drafted their own decks. You can see their picks and thought process [[view:draft|here]] and final decks [[view:decks|here]]. Fable chose Rakdos with two copies of [[card:Combustion Man]] and Astra chose Orzhov allies (sadly without [[card:Avatar Enthusiasts]])."
+      ]
+    }
+  ],
   "rounds": [
     {
       "label": "Turn 1",

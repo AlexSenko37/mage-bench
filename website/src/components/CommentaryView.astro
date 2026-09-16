@@ -31,6 +31,29 @@ const roundDraws = commentary.rounds.map((round) =>
 <div id="commentary" class="hidden">
   {commentary.intro && <p class="commentary-intro">{commentary.intro}</p>}
 
+  {(commentary.sections ?? []).map((section) => (
+    <section class="commentary-section">
+      <h2 class="commentary-round-label">{section.label}</h2>
+      {section.paragraphs.map((paragraph) => (
+        <p class="commentary-paragraph">
+          {parseCommentaryText(paragraph).map((segment) => {
+            if (segment.kind === 'card') {
+              return <span class="commentary-card" data-card={segment.card}>{segment.text}</span>;
+            }
+            if (segment.kind === 'view') {
+              return (
+                <button type="button" class="commentary-view-link" data-view-link={segment.view}>
+                  {segment.text}
+                </button>
+              );
+            }
+            return <Fragment>{segment.text}</Fragment>;
+          })}
+        </p>
+      ))}
+    </section>
+  ))}
+
   {seatsWithOpening.length > 0 && (
     <section class="commentary-opening">
       <h2 class="commentary-round-label">Opening hands</h2>
