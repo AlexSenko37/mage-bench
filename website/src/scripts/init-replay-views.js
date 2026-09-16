@@ -1,3 +1,4 @@
+import { applyViewParam, parseViewParam } from "../utils/replay-view.ts";
 import { createCommentary } from "./init-commentary.js";
 import { createDeckExplorer } from "./init-deck-explorer.js";
 import { createDraftReplay } from "./init-draft-replay.js";
@@ -64,11 +65,23 @@ export function initReplayViews(options) {
     };
   }
 
+  // The tab lives in the URL so it can be linked to and shared, alongside the replay's
+  // own ?s= snapshot. Written with replaceState, like ?s=, so switching tabs does not
+  // fill the back button with history entries.
+  function syncUrl(view) {
+    var url = new URL(window.location.href);
+    var nextSearch = applyViewParam(url.search, view);
+    if (nextSearch === url.search) return;
+    url.search = nextSearch;
+    window.history.replaceState(null, "", url);
+  }
+
   function activate(view) {
     toggle.querySelectorAll(".format-tab").forEach(function (tab) {
       tab.classList.toggle("active", tab.getAttribute("data-view") === view);
     });
     show(view);
+    syncUrl(view);
   }
 
   function show(view) {
@@ -97,11 +110,16 @@ export function initReplayViews(options) {
   toggle.addEventListener("click", function (event) {
     var btn = event.target.closest("button[data-view]");
     if (!btn) return;
-    toggle.querySelectorAll(".format-tab").forEach(function (tab) {
-      tab.classList.toggle("active", tab === btn);
-    });
-    show(btn.getAttribute("data-view"));
+    activate(btn.getAttribute("data-view"));
   });
+
+  // A shared link can name the tab: ?view=commentary opens the commentary straight away.
+  // Anything this game cannot honour falls back to the replay, which is already the
+  // active tab in the markup -- so leave it alone rather than re-rendering it on load.
+  var initialView = parseViewParam(window.location.search, Object.keys(panels));
+  if (initialView !== "replay") {
+    activate(initialView);
+  }
 
   // Arrow keys step through picks while the draft tab is open. The replay view binds its
   // own arrow handling on #viewer-container, which is hidden here, so they cannot collide.
