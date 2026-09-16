@@ -116,17 +116,22 @@
         .replace("version=normal", "version=" + version)
         .replace("version=small", "version=" + version);
     }
+    // Exports bake card_images at version=normal, so swapping only "small" left the
+    // preview stuck at normal however large a version it asked for.
+    var withVersion = function (url) {
+      return url.replace(/version=(small|normal|large|png)/, "version=" + version);
+    };
     // Priority 2: cardImages lookup map (replay mode)
     if (cardImages && cardImages[cardName]) {
-      return cardImages[cardName].replace("version=small", "version=" + version);
+      return withVersion(cardImages[cardName]);
     }
     // Priority 2b: MDFC/transform back face — look up the front face and request back
     if (isBackFace && cardImages && cardObj.original_card && cardImages[cardObj.original_card]) {
-      return cardImages[cardObj.original_card].replace("version=small", "version=" + version) + "&face=back";
+      return withVersion(cardImages[cardObj.original_card]) + "&face=back";
     }
     // Priority 3: cached token image
     if (_tokenImageCache[cardName]) {
-      return _tokenImageCache[cardName].replace("version=small", "version=" + version);
+      return withVersion(_tokenImageCache[cardName]);
     }
     // Priority 4: Scryfall name-based fallback
     var url =
@@ -448,7 +453,7 @@
       }
     }
 
-    var imgUrl = resolveCardImage(cardName, cardObj, cardImages, "normal");
+    var imgUrl = resolveCardImage(cardName, cardObj, cardImages, "large");
     els.image.src = imgUrl;
     els.image.alt = cardName;
     els.container.classList.remove("hidden");
@@ -633,7 +638,7 @@
     }
 
     if (abilityInfo.sourceCard) {
-      els.image.src = resolveCardImage(abilityInfo.sourceCard, null, cardImages, "normal");
+      els.image.src = resolveCardImage(abilityInfo.sourceCard, null, cardImages, "large");
       els.image.alt = abilityInfo.sourceCard;
       _fetchScryfallCard(abilityInfo.sourceCard, cardImages, els);
     } else {
