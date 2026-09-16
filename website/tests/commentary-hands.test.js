@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { drawnCards, openingHands, thumbnailUrl } from "../src/utils/commentary-hands.ts";
 
-function snapshot(turn, step, hands, activePlayer) {
+function snapshot(turn, step, hands, activePlayer, battlefields = {}) {
   return {
     turn,
     step,
@@ -10,6 +10,7 @@ function snapshot(turn, step, hands, activePlayer) {
     players: Object.keys(hands).map((name) => ({
       name,
       hand: hands[name].map((card) => ({ name: card })),
+      battlefield: (battlefields[name] ?? []).map((card) => ({ name: card })),
     })),
   };
 }
@@ -59,6 +60,24 @@ describe("drawnCards", () => {
       snapshot(4, "PRECOMBAT_MAIN", { PilotA: ["Sold Out", "Mountain"], PilotB: ["Momo", "Glider Staff", "Swamp"] }, "PilotB"),
     ]);
     expect(drawnCards(extended, 4, "PilotB")).toEqual(["Swamp"]);
+  });
+
+  it("ignores a permanent bounced back to hand", () => {
+    // Astra's Submersible returned Fable's Warden to hand, which showed up as a second
+    // draw alongside the real one.
+    const bounced = [
+      snapshot(11, "END_TURN", { PilotA: [] }, "PilotA", { PilotA: ["Vindictive Warden"] }),
+      snapshot(13, "PRECOMBAT_MAIN", { PilotA: ["Vindictive Warden", "Combustion Technique"] }, "PilotA", { PilotA: [] }),
+    ];
+    expect(drawnCards(bounced, 13, "PilotA")).toEqual(["Combustion Technique"]);
+  });
+
+  it("still counts a card drawn while a copy of it is in play", () => {
+    const withCopy = [
+      snapshot(11, "END_TURN", { PilotA: [] }, "PilotA", { PilotA: ["Yuyan Archers"] }),
+      snapshot(13, "PRECOMBAT_MAIN", { PilotA: ["Yuyan Archers"] }, "PilotA", { PilotA: ["Yuyan Archers"] }),
+    ];
+    expect(drawnCards(withCopy, 13, "PilotA")).toEqual(["Yuyan Archers"]);
   });
 
   it("counts a duplicate draw", () => {
