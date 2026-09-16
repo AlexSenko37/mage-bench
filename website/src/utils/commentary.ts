@@ -32,6 +32,8 @@ export interface CommentaryRound {
 
 export interface Commentary {
   gameId: string;
+  /** Seat name -> the name the commentary calls that player, e.g. PilotA -> "Fable". */
+  players?: Record<string, string>;
   intro?: string;
   rounds: CommentaryRound[];
 }

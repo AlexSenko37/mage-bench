@@ -1,19 +1,87 @@
 ---
 import '../styles/commentary.css';
 import { parseCommentaryText, type Commentary } from '../utils/commentary';
+import { drawnCards, openingHands, thumbnailUrl, type HandSnapshot } from '../utils/commentary-hands';
 
 interface Props {
   commentary: Commentary;
+  snapshots: HandSnapshot[];
+  cardImages: Record<string, string>;
 }
 
-const { commentary } = Astro.props as Props;
+const { commentary, snapshots, cardImages } = Astro.props as Props;
+
+const labels = commentary.players ?? {};
+const seats = Object.keys(labels);
+const opening = openingHands(snapshots, seats);
+const seatsWithOpening = seats.filter((seat) => (opening[seat] ?? []).length > 0);
+
+// Each round's draws, worked out once here so the markup stays about layout.
+const roundDraws = commentary.rounds.map((round) =>
+  seats
+    .map((seat) => ({
+      seat,
+      label: labels[seat] ?? seat,
+      cards: round.gameTurns[seat] === undefined ? [] : drawnCards(snapshots, round.gameTurns[seat], seat),
+    }))
+    .filter((entry) => entry.cards.length > 0),
+);
 ---
 
 <div id="commentary" class="hidden">
   {commentary.intro && <p class="commentary-intro">{commentary.intro}</p>}
-  {commentary.rounds.map((round) => (
+
+  {seatsWithOpening.length > 0 && (
+    <section class="commentary-opening">
+      <h2 class="commentary-round-label">Opening hands</h2>
+      <div class="commentary-hands">
+        {seatsWithOpening.map((seat) => (
+          <div class="commentary-hand">
+            <div class="commentary-hand-label">{labels[seat] ?? seat}</div>
+            <div class="commentary-thumbs">
+              {opening[seat].map((name) => (
+                <img
+                  class="commentary-thumb"
+                  src={thumbnailUrl(cardImages, name)}
+                  alt={name}
+                  title={name}
+                  data-card={name}
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {commentary.rounds.map((round, roundIndex) => (
     <section class="commentary-round">
       <h2 class="commentary-round-label">{round.label}</h2>
+
+      {roundDraws[roundIndex].length > 0 && (
+        <div class="commentary-draws">
+          {roundDraws[roundIndex].map((entry) => (
+            <div class="commentary-draw">
+              <span class="commentary-draw-label">{entry.label} drew</span>
+              <div class="commentary-thumbs">
+                {entry.cards.map((name) => (
+                  <img
+                    class="commentary-thumb"
+                    src={thumbnailUrl(cardImages, name)}
+                    alt={name}
+                    title={name}
+                    data-card={name}
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {round.paragraphs.map((paragraph) => (
         <p class="commentary-paragraph">
           {parseCommentaryText(paragraph).map((segment) => {
@@ -42,6 +110,7 @@ const { commentary } = Astro.props as Props;
       ))}
     </section>
   ))}
+
   <p class="commentary-hint">
     Hover a card to see it. Click a player's name to open that turn in the replay.
   </p>

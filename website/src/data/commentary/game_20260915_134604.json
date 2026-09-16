@@ -1,5 +1,6 @@
 {
   "gameId": "game_20260915_134604",
+  "players": { "PilotA": "Fable", "PilotB": "Astra" },
   "rounds": [
     {
       "label": "Turn 1",
