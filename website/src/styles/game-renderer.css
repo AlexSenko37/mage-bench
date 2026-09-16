@@ -751,15 +751,18 @@
 }
 
 @media (max-width: 600px) {
-  /* Too narrow for two columns: show the card, and let the text sit under it. */
+  /* Too narrow for two columns: show the card, and let the text sit under it. On a phone
+     the popup is centred rather than following a cursor, so it has to fit on its own. */
   #card-preview {
-    width: calc(100vw - 24px);
+    width: min(360px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
     grid-template-columns: 1fr;
     gap: 8px;
+    overflow-y: auto;
   }
 
   #card-preview img:not(.mana-icon) {
-    max-height: 55vh;
+    max-height: 52vh;
   }
 }
 
