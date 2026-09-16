@@ -43,7 +43,13 @@ describe("openingHands", () => {
 describe("drawnCards", () => {
   it("finds the card gained since the end of that seat's previous turn", () => {
     expect(drawnCards(SNAPSHOTS, 3, "PilotA")).toEqual(["Mountain"]);
-    expect(drawnCards(SNAPSHOTS, 2, "PilotB")).toEqual([]);
+  });
+
+  it("shows the first-turn draw for the player on the draw", () => {
+    // Turn 2 is that seat's first turn, so there is no previous turn to compare against;
+    // measured against the opening hand it is a draw like any other. Skipping it hid
+    // Astra drawing Earth Village Ruffians on turn 2 of the published commentary.
+    expect(drawnCards(SNAPSHOTS, 2, "PilotB")).toEqual(["Glider Staff"]);
   });
 
   it("is not fooled by a card cast between the draw and the next turn", () => {
@@ -62,7 +68,7 @@ describe("drawnCards", () => {
     expect(drawnCards(withDuplicate, 4, "PilotB")).toEqual(["Momo"]);
   });
 
-  it("returns nothing for a seat's first turn", () => {
+  it("returns nothing for the player on the play, who skips its first draw", () => {
     expect(drawnCards(SNAPSHOTS, 1, "PilotA")).toEqual([]);
   });
 

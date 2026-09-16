@@ -69,8 +69,9 @@ export function openingHands(
  * What a seat gained in hand on one of its turns: the draw, in practice.
  *
  * Measured at that turn's first main phase against the end of the seat's previous turn,
- * so a card cast in between doesn't hide the draw. A seat's first turn has no previous
- * turn to compare with and returns nothing — its opening hand covers that.
+ * so a card cast in between doesn't hide the draw. On a seat's first turn there is no
+ * previous turn, so it is measured against the opening hand: the player on the draw does
+ * draw on its first turn, and only the player on the play skips one.
  */
 export function drawnCards(
   snapshots: HandSnapshot[] | null | undefined,
@@ -87,7 +88,14 @@ export function drawnCards(
   for (let i = 0; i < list.length; i += 1) {
     if (list[i].turn === previousTurn) baselineIndex = i;
   }
-  if (baselineIndex === -1) return [];
+  if (baselineIndex === -1) {
+    // A seat's first turn. Fall back to its opening hand: the player on the draw draws on
+    // its first turn, and only the player on the play skips one, which this comparison
+    // gives for free (its hand is unchanged). Returning nothing here instead hid the
+    // second player's opening draw.
+    baselineIndex = list.findIndex((snapshot) => handOf(snapshot, seat).length > 0);
+    if (baselineIndex === -1 || baselineIndex > mainIndex) return [];
+  }
 
   return added(handOf(list[mainIndex], seat), handOf(list[baselineIndex], seat));
 }
