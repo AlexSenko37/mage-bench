@@ -156,7 +156,7 @@ Turn 3 (TestPlayer):\n\
   Untapped lands: 1, Land drops remaining: 1\n\
   Message: Play spells and abilities\n\
   Choices (6): Plains [id=p11, land], Plains [id=p12, land], Plains [id=p13, land], Plains [id=p14, land], Plains [id=p15, land], Plains [id=p26, land]\n\
-  Respond: choice=pN to play, or choice=no to pass\n\
+  Respond: choice=pN to play, or choice=no to pass. Add rationale when you act\n\
 \n\
 [It's been 2 turns since you last chatted — send a message to your opponent!]",
     "role": "tool",

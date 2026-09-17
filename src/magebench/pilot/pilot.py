@@ -475,12 +475,20 @@ async def _process_tool_calls(
                 turn_state.had_actionable_opportunity = True
 
             summary_text = (args.get("summary") or choice.message.content or "(no summary provided)").strip()
+            # The rationale is recorded but never replayed: memory is the summary log, and
+            # feeding paragraphs of reasoning back would multiply the context every turn.
+            # Keeping it write-only also means it cannot steer later decisions.
+            rationale_arg = args.get("rationale")
+            rationale_text = rationale_arg.strip() if isinstance(rationale_arg, str) else None
+            if not rationale_text:
+                rationale_text = None
             if game_log:
                 game_log.emit(
                     "action_summary",
                     turn=state.current_game_turn,
                     action_taken=action_taken,
                     summary=summary_text,
+                    rationale=rationale_text,
                     game_seq=state.last_game_seq,
                 )
             pending_summary = f"[Turn {state.current_game_turn}] {summary_text}"

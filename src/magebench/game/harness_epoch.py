@@ -77,10 +77,13 @@ from magebench.game.season import SEASON_1_START_EPOCH as GAME_EXPORT_SEASON_1_S
 #  60 - Rename get_game_state cursor to snapshot_id for snapshot-style unchanged reads (Mar 22)
 #  61 - Pilot memory is an action-summary log: choose_action requires a summary, emitted
 #       as an action_summary event, replacing the raw transcript after each action (Aug 30)
+#  62 - choose_action splits recap from reasoning: summary stays the one-line memory, a new
+#       optional rationale records the thinking behind a real decision and is kept out of
+#       the memory log; select prompts ask for it (Sep 16)
 #  --- Golden exports updated: game export wire format v9 uses snake_case keys (Mar 21)
 #  --- Golden exports updated: add model to test pilot players for stricter export validation (Mar 16)
 #  --- Golden exports updated: dataclass serialization includes null optional fields (Mar 17)
-HARNESS_EPOCH = 61
+HARNESS_EPOCH = 62
 
 # Re-exported here so existing callers keep a stable import path while the
 # canonical season boundary now lives with the export pipeline.

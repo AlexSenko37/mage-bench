@@ -50,6 +50,11 @@ public final class BridgePublishedQueryBuilder {
     private record TargetChoice(UUID targetId, Map<String, Object> entry, CardView cardView) {
     }
 
+    // Asked for only where the model is choosing something that changes the game: a card to
+    // play, an attack, a block. A schema description alone is easy to skim past, and asking
+    // on every "play instants?" prompt would fill the log with prose about passing.
+    private static final String RATIONALE_HINT = ". Add rationale when you act";
+
     private final String username;
     private final BridgeProcessorServices processorServices;
     private final Supplier<Set<String>> deckCreatureTypesSupplier;
@@ -571,11 +576,11 @@ public final class BridgePublishedQueryBuilder {
             result.choices = choiceList;
             String combatPhase = result.combat_phase;
             if ("declare_attackers".equals(combatPhase)) {
-                result.respond_with = "attackers=p1,p2,... or choice=yes (confirm) or choice=no (skip)";
+                result.respond_with = "attackers=p1,p2,... or choice=yes (confirm) or choice=no (skip)" + RATIONALE_HINT;
             } else if ("declare_blockers".equals(combatPhase)) {
-                result.respond_with = "blockers=p5:p1,p6:p2 (blocker:attacker) or choice=yes (confirm) or choice=no (skip)";
+                result.respond_with = "blockers=p5:p1,p6:p2 (blocker:attacker) or choice=yes (confirm) or choice=no (skip)" + RATIONALE_HINT;
             } else {
-                result.respond_with = "choice=pN to play, or choice=no to pass";
+                result.respond_with = "choice=pN to play, or choice=no to pass" + RATIONALE_HINT;
             }
             return indexToUuid;
         }

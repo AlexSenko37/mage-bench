@@ -406,6 +406,10 @@ export interface LlmEvent {
    * Model-authored recap of what happened since its last action and why it made this choice — the compacted replacement for replaying raw board-state/tool-call history.
    */
   summary?: string | null;
+  /**
+   * Model-authored reasoning for a real decision: the board read, the line taken, the alternative rejected and the risk. Absent when the model was only passing. Recorded for the replay and never replayed back to the model, unlike summary.
+   */
+  rationale?: string | null;
   action_taken?: string | null;
   [k: string]: unknown;
 }

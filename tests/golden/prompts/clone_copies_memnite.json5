@@ -110,7 +110,7 @@ Continue playing. Call pass_priority.",
   Land drops remaining: 1\n\
   Message: Play spells and abilities\n\
   Choices (4): Island [id=p13, land], Island [id=p14, land], Island [id=p15, land], Island [id=p24, land]\n\
-  Respond: choice=pN to play, or choice=no to pass\n\
+  Respond: choice=pN to play, or choice=no to pass. Add rationale when you act\n\
 \n\
 [It's been 2 turns since you last chatted — send a message to your opponent!]",
     "role": "tool",

@@ -101,6 +101,7 @@ interface MergedLlmEvent {
   reason?: string;
   message?: string;
   summary?: string | null;
+  rationale?: string | null;
   turn?: number;
   action_taken?: string | null;
 }
@@ -162,6 +163,7 @@ function mergeLlmEvents(events: LlmEvent[]): MergedLlmEvent[] {
         reason: e.reason,
         message: (e as unknown as Record<string, unknown>).message as string | undefined,
         summary: e.summary,
+        rationale: e.rationale,
         turn: e.turn,
         action_taken: e.action_taken,
       });
@@ -329,6 +331,13 @@ function renderLlmEventHtml(
     }
     html = '<div>' + html + '</div>';
     html += '<div class="llm-reasoning llm-action-summary-text">' + escapeHtml(event.summary || '') + '</div>';
+    // Collapsed: the rationale runs several sentences, and the log is read as a timeline.
+    if (event.rationale) {
+      html += '<details class="llm-action-rationale">'
+        + '<summary>Rationale</summary>'
+        + '<div class="llm-action-rationale-text">' + escapeHtml(event.rationale) + '</div>'
+        + '</details>';
+    }
     if (event.action_taken) {
       html += '<div class="llm-action-summary-taken">Action: ' + escapeHtml(event.action_taken) + '</div>';
     }
