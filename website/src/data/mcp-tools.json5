@@ -57,6 +57,15 @@
           "type": "string",
           "description": "Player whose turn the log starts from",
           "conditional": "when since_turn parameter was used",
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message",
+          "conditional": "the call was malformed",
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Can retry with different parameters",
         }
       },
     },
@@ -123,6 +132,15 @@
         "event_count": {
           "type": "integer",
           "description": "Events in this response",
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message",
+          "conditional": "the call was malformed",
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Can retry with different parameters",
         }
       },
     },

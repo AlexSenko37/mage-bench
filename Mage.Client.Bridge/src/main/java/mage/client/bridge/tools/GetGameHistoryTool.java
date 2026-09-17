@@ -19,6 +19,12 @@ public class GetGameHistoryTool {
 
         @ResultField(description = "Events in this response")
         public Integer event_count;
+
+        @ResultField(description = "Error message", conditional = "the call was malformed")
+        public String error;
+
+        @ResultField(description = "Can retry with different parameters")
+        public Boolean retryable;
     }
 
     @Tool(
@@ -32,7 +38,12 @@ public class GetGameHistoryTool {
             @Param(description = "Cursor for incremental updates. Mutually exclusive with since_turn.") Integer cursor) {
 
         if (since_turn != null && cursor != null) {
-            throw new RuntimeException("since_turn and cursor are mutually exclusive — provide one or neither");
+            // Returned rather than thrown, for the same reason as get_game_log: a thrown
+            // exception reaches the pilot as a fatal tool error and ends the game.
+            Result invalid = new Result();
+            invalid.error = "since_turn and cursor are mutually exclusive — provide one or neither";
+            invalid.retryable = true;
+            return invalid;
         }
 
         return handler.getGameHistory(since_turn, cursor);

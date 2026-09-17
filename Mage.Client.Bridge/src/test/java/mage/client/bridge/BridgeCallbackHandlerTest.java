@@ -188,6 +188,26 @@ class BridgeCallbackHandlerTest {
     }
 
     @Test
+    void mutuallyExclusiveLogArgumentsReturnAnErrorInsteadOfThrowing() throws Exception {
+        // A thrown exception reaches the pilot as a fatal tool error and ends the game:
+        // GPT-6 Astra asked for the log by turn and by cursor at once on turn 3 and the run
+        // died there (game_20260916_223648). Bad arguments must come back as a result.
+        BridgeMageClient client = new BridgeMageClient("Alice");
+        BridgeCallbackHandler handler = client.getCallbackHandler();
+        setCachedBridgeEvents(handler, sampleBridgeLogEvents());
+
+        var log = mage.client.bridge.tools.GetGameLogTool.execute(handler, null, 4, 2, null);
+        assertThat(log.error).contains("mutually exclusive");
+        assertThat(log.retryable).isTrue();
+        assertThat(log.log).isNull();
+
+        var history = mage.client.bridge.tools.GetGameHistoryTool.execute(handler, 2, 4);
+        assertThat(history.error).contains("mutually exclusive");
+        assertThat(history.retryable).isTrue();
+        assertThat(history.history).isNull();
+    }
+
+    @Test
     void getGameLogChunkReportsFullLengthBeforeTruncating() throws Exception {
         BridgeMageClient client = new BridgeMageClient("Alice");
         BridgeCallbackHandler handler = client.getCallbackHandler();
