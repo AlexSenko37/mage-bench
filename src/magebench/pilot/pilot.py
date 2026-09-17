@@ -98,20 +98,6 @@ MAX_EMPTY_RESPONSES = 10
 MAX_REFUSALS = 3
 
 
-def _refusal_text(choice) -> str | None:
-    """Return the provider's refusal message, if this response was blocked.
-
-    A blocked request comes back as HTTP 200 with an empty message, so without this it
-    looks exactly like a degraded model and the pilot quietly auto-passes a whole game.
-    """
-    refusal = getattr(choice.message, "refusal", None)
-    if isinstance(refusal, str) and refusal.strip():
-        return refusal.strip()
-    if choice.finish_reason == "content_filter":
-        return "blocked by the provider's content filter (no message given)"
-    return None
-
-
 MAX_CHAT_MESSAGES_PER_TURN = 2  # max send_chat_message calls per LLM iteration
 
 
@@ -137,6 +123,20 @@ class _AssistantMessageLike(Protocol):
 class _ChoiceLike(Protocol):
     finish_reason: str | None
     message: _AssistantMessageLike
+
+
+def _refusal_text(choice: _ChoiceLike) -> str | None:
+    """Return the provider's refusal message, if this response was blocked.
+
+    A blocked request comes back as HTTP 200 with an empty message, so without this it
+    looks exactly like a degraded model and the pilot quietly auto-passes a whole game.
+    """
+    refusal = getattr(choice.message, "refusal", None)
+    if isinstance(refusal, str) and refusal.strip():
+        return refusal.strip()
+    if choice.finish_reason == "content_filter":
+        return "blocked by the provider's content filter (no message given)"
+    return None
 
 
 class _UsageLike(Protocol):
