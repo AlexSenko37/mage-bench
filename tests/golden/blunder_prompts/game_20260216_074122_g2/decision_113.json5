@@ -143,5 +143,5 @@ Parameters:\n\
 - auto_tap (boolean): Auto-tap mana (default true). Set false with mana_plan to require complete plan.\n\
 - attackers (string): Batch attack: comma-separated IDs (e.g. \"p1,p2\") or \"all\". Auto-confirms.\n\
 - blockers (string): Batch block: comma-separated \"blocker:attacker\" pairs (e.g. \"p5:p1,p6:p2\"). Auto-confirms.\n\
-- rationale (string): A short note explaining this play to the people watching, written after you have decided -- a record, not a plan to revise. Say what the board state means right now, the line you are taking and what you expect it to achieve, the strongest alternative you rejected and why, and the main risk if the opponent answers well. Three to five sentences when you cast, attack, block, activate or target. Leave it out when you are only passing priority. Not part of your memory: it is recorded for the replay, and you will not see it again.",
+- rationale (string): Optional note for viewers: what this play does and why. Two or three sentences when you cast, attack, block, activate or target. Leave it out when you are only passing priority.",
 }

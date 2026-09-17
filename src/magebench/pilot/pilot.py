@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import copy
 import json
 import os
 import re
@@ -137,6 +138,38 @@ def _refusal_text(choice: _ChoiceLike) -> str | None:
     if choice.finish_reason == "content_filter":
         return "blocked by the provider's content filter (no message given)"
     return None
+
+
+RATIONALE_PARAM = "rationale"
+
+
+def _rationale_properties(tool: dict) -> dict | None:
+    """Return the tool's properties mapping if it carries the rationale field."""
+    parameters = tool["function"]["parameters"]
+    if "properties" not in parameters:
+        return None
+    properties = parameters["properties"]
+    return properties if RATIONALE_PARAM in properties else None
+
+
+def _tools_without_rationale(tools: list[dict]) -> list[dict]:
+    """Drop the optional rationale field from the tool schema.
+
+    Anthropic's refusal classifier blocks the entire request over this one field, and a
+    blocked request stays blocked on replay, so retrying verbatim cannot recover. Dropping
+    the field costs one note; leaving it in costs the rest of the game.
+    """
+    trimmed = []
+    for tool in tools:
+        if _rationale_properties(tool) is not None:
+            tool = copy.deepcopy(tool)
+            del tool["function"]["parameters"]["properties"][RATIONALE_PARAM]
+        trimmed.append(tool)
+    return trimmed
+
+
+def _has_rationale(tools: list[dict]) -> bool:
+    return any(_rationale_properties(tool) is not None for tool in tools)
 
 
 class _UsageLike(Protocol):
@@ -692,10 +725,11 @@ async def run_pilot_loop(
             messages = await _build_loop_messages(state, session, system_prompt, cache_control)
             _mark_tail_cache_breakpoint(messages, state, cache_control)
 
+            call_tools = _tools_without_rationale(tools) if state.strip_rationale else tools
             create_kwargs: dict = {
                 "model": model,
                 "messages": messages,
-                "tools": tools,
+                "tools": call_tools,
                 "tool_choice": "auto",
                 "max_tokens": max_tokens,
             }
@@ -827,6 +861,7 @@ async def run_pilot_loop(
             refusal = _refusal_text(choice)
             if refusal is None:
                 state.refusals = 0
+                state.strip_rationale = False
             else:
                 state.refusals += 1
                 logger.error(
@@ -835,6 +870,12 @@ async def run_pilot_loop(
                     MAX_REFUSALS,
                     refusal[:300],
                 )
+                if not state.strip_rationale and _has_rationale(tools):
+                    logger.warning("[pilot] Retrying this decision without the rationale field")
+                    if game_log:
+                        game_log.emit("rationale_suppressed", reason=refusal[:200])
+                    state.strip_rationale = True
+                    continue
                 if state.refusals >= MAX_REFUSALS:
                     logger.error("[pilot] Refused %d times in a row, switching to auto-pass mode", state.refusals)
                     if game_log:
