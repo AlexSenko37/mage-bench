@@ -1,0 +1,136 @@
+{
+  "gameId": "game_20260917_103153",
+  "players": {
+    "PilotA": "Fable",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Fable 5.1 on medium effort against GPT-6 Astra on medium effort.",
+        "Nothing was redrafted for this one: both sides are playing the decks the two models built for the previous match, so the draft is settled and only the game is new. Each model also writes a short note explaining its play as it makes it, which you can read inline in the [[view:replay|replay]]."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "The models drafted their own decks. Their picks and reasoning are [[view:draft|here]] and the final lists [[view:decks|here]]. Both ended up in Azorius, so this is a colour mirror rather than a clash of plans.",
+        "Fable drafted the straightforward limited deck: two [[card:Teo, Spirited Glider]], two [[card:Iguana Parrot]] and two [[card:Kyoshi Warriors]] for the air, with [[card:Airbender's Reversal]], two [[card:Airbending Lesson]] and [[card:Earth Kingdom Jailer]] as removal, and [[card:Ty Lee, Chi Blocker]] as the one card that can ambush.",
+        "Astra drafted around enchantments: two [[card:Waterbender Ascension]], [[card:Airbender Ascension]], two [[card:Path to Redemption]] and [[card:Aang's Iceberg]]. The only Ascension it saw all game was in the seven it mulliganed away, which matters more than it sounds. The build-around half of the deck never arrived, and what was left was two [[card:Rowdy Snowballers]], a [[card:Flexible Waterbender]] and seventeen lands."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] takes the play and then mulligans a seven with no lands at all. Its six keeps three Islands, [[card:Rowdy Snowballers]], [[card:Flexible Waterbender]] and [[card:Aang's Iceberg]], bottoming [[card:Path to Redemption]] on the grounds that the Iceberg is the more flexible answer. It plays an Island.",
+        "[[player:PilotA|Fable]] keeps four lands, two [[card:Teo, Spirited Glider]] and [[card:The Mechanist, Aerial Artisan]], and leads on [[card:North Pole Gates]] tapped, which costs nothing with no one-drop to cast."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] plays a Plains to turn on its white removal. [[player:PilotA|Fable]] plays an Island. Neither model has a two-drop and neither pretends otherwise."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Rowdy Snowballers]] into an empty board, wasting the enter trigger that taps and stuns a creature. Its note calls this correctly: there is nothing to stun, but a clock is worth more than a held card.",
+        "[[player:PilotA|Fable]] answers with [[card:The Mechanist, Aerial Artisan]], a 1/3 that blanks the 2/2 in combat and sets up Clue tokens later."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] adds [[card:Flexible Waterbender]] and declines to attack into the 1/3, which is right — the Snowballers dies for nothing.",
+        "[[player:PilotA|Fable]] declines its own attack for the same reason and spends all four mana on [[card:Teo, Spirited Glider]], a 1/4 flier that loots whenever Fable's fliers attack."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] plays its best turn of the game. Five untapped lands let it cast [[card:Aang's Iceberg]] to exile [[card:The Mechanist, Aerial Artisan]], then [[card:Path to Redemption]] on Teo, which stops it attacking, blocking and looting. Both creatures attack into nothing for four. Fable is on 16 with an empty board.",
+        "[[player:PilotA|Fable]] plays a fifth land and passes with [[card:Ty Lee, Chi Blocker]] and [[card:Airbender's Reversal]] in hand — the first time all game it can do something on its opponent's turn."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotB": 11,
+        "PilotA": 12
+      },
+      "paragraphs": [
+        "The game turns on a single combat step. [[player:PilotB|Astra]] attacks with both creatures again. [[player:PilotA|Fable]] flashes in [[card:Ty Lee, Chi Blocker]] mid-combat, tapping [[card:Flexible Waterbender]] with her enter trigger — a lock that holds as long as Ty Lee lives — and blocks [[card:Rowdy Snowballers]] with her.",
+        "[[player:PilotB|Astra]] waterbends the unblocked Waterbender into a 5/2 to push three extra damage. [[player:PilotA|Fable]] casts [[card:Airbender's Reversal]] in destroy mode on it, and prowess makes Ty Lee a 3/2 that trades with the Snowballers. One attack, and Astra's whole board is gone; Fable took nothing.",
+        "On its own turn [[player:PilotA|Fable]] casts [[card:Earth Kingdom Jailer]], exiling [[card:Aang's Iceberg]] — which hands The Mechanist back — and spends the spare two mana on [[card:Yip Yip!]] purely to trigger a Clue."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotB": 13,
+        "PilotA": 14
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] sacrifices a [[card:North Pole Gates]] to dig, finds [[card:Momo, Playful Pet]] and deploys it as a flying blocker.",
+        "[[player:PilotA|Fable]] attacks with the Jailer for three, then finds the neatest line of the game: it casts its second [[card:Teo, Spirited Glider]] and uses the legend rule to bin the copy Astra had enchanted. [[card:Path to Redemption]] goes to the graveyard with it, and Fable has a clean flier."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotB": 15,
+        "PilotA": 16
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] plays a second [[card:North Pole Gates]] tapped and keeps Momo home rather than trade it off, holding it for an animated Clue that never comes.",
+        "[[player:PilotA|Fable]] attacks with Jailer and Teo for five. Teo's loot finds [[card:Iguana Parrot]] and pitches [[card:Messenger Hawk]] for a +1/+1 counter; the Parrot lands postcombat and the Clue gets cracked with the spare mana. Astra is on 12."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": {
+        "PilotB": 17,
+        "PilotA": 18
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] cashes in the second Gates and draws another Plains. By its own notes it has been flooded since turn seven, and both digs have found land.",
+        "[[player:PilotA|Fable]] attacks with everything except the Mechanist. Momo chump-blocks the Jailer, the fliers connect for four, and [[card:Kyoshi Warriors]] arrives postcombat with its Ally token. Astra is on 8, board empty, scrying toward a lone [[card:Iguana Parrot]]."
+      ]
+    },
+    {
+      "label": "Turn 10",
+      "gameTurns": {
+        "PilotB": 19,
+        "PilotA": 20
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts the Parrot as its only blocker. [[player:PilotA|Fable]] exiles it with [[card:Airbending Lesson]] and attacks with everything: six creatures into eight life and nothing left to block with. Fable wins on turn 20.",
+        "Astra's plan was sound and its turn-5 sequencing was the best play either model made. It lost to one flashed 2/1, and to a deck that kept handing it lands instead of the enchantments it had drafted around."
+      ]
+    }
+  ]
+}
