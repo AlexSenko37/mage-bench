@@ -112,7 +112,7 @@ Continue playing. Call pass_priority.",
   Untapped lands: 5, Land drops remaining: 1\n\
   Message: Play spells and abilities\n\
   Choices (6): Plains [id=p16, land], Plains [id=p24, land], Plains [id=p29, land], Plains [id=p32, land], Plains [id=p35, land], Plains [id=p42, land]\n\
-  Respond: choice=pN to play, or choice=no to pass\n\
+  Respond: choice=pN to play, or choice=no to pass. Add rationale when you act\n\
 \n\
 [It's been 6 turns since you last chatted — send a message to your opponent!]",
     "role": "tool",

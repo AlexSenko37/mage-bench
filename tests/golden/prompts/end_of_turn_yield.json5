@@ -107,7 +107,7 @@ Continue playing. Call pass_priority.",
   Untapped lands: 1\n\
   Message: Play instants and activated abilities\n\
   Choices (2): Lightning Bolt [id=p11, cast, {R}], Lightning Bolt [id=p12, cast, {R}]\n\
-  Respond: choice=pN to play, or choice=no to pass",
+  Respond: choice=pN to play, or choice=no to pass. Add rationale when you act",
     "role": "tool",
     "tool_call_id": "call_6",
   },
