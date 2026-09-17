@@ -1,0 +1,65 @@
+name: Regenerate goldens
+
+# Golden fixtures are recordings of real games: regenerating them replays every
+# scenario against an XMage server and a Swing spectator client, which needs a
+# display. A machine without xvfb cannot run `make regen-golden` at all, and the
+# golden job on a PR only ever reports the first failure per worker, so it can
+# never hand back a full set. This does the regeneration on demand and uploads
+# the result to be committed.
+#
+# Run it against the branch whose code changed the goldens, not master:
+#   gh workflow run regen-golden.yml --ref <branch>
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'pytest -k expression to regenerate a subset (blank regenerates all)'
+        required: false
+        default: ''
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            /*
+            !website/public/games
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      # See the java job: never resolve locally-built jars from the pom-keyed
+      # dependency cache. The golden fixtures install their own fresh modules.
+      - name: Purge locally-built artifacts from Maven dependency cache
+        run: rm -rf ~/.m2/repository/org/mage
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ~/.m2/build-cache
+          key: build-cache-${{ github.sha }}
+          restore-keys: build-cache-
+
+      - uses: astral-sh/setup-uv@v7
+
+      - run: sudo apt-get install -y xvfb
+
+      - name: Regenerate goldens
+        run: xvfb-run make regen-golden
+        env:
+          K: ${{ inputs.filter }}
+
+      - name: Show which goldens changed
+        run: git status --porcelain tests/golden
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: regenerated-goldens
+          path: tests/golden/
+          retention-days: 7
