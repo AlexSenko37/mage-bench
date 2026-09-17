@@ -111,6 +111,7 @@ def _refusal_text(choice) -> str | None:
         return "blocked by the provider's content filter (no message given)"
     return None
 
+
 MAX_CHAT_MESSAGES_PER_TURN = 2  # max send_chat_message calls per LLM iteration
 
 
