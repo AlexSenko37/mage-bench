@@ -95,6 +95,22 @@ MAX_CONSECUTIVE_PASS_ERRORS = 3
 MAX_CONSECUTIVE_TRUNCATIONS = 3
 MAX_CONSECUTIVE_EMPTY_ERRORS = 10  # bridge is dead if every tool returns empty error
 MAX_EMPTY_RESPONSES = 10
+MAX_REFUSALS = 3
+
+
+def _refusal_text(choice) -> str | None:
+    """Return the provider's refusal message, if this response was blocked.
+
+    A blocked request comes back as HTTP 200 with an empty message, so without this it
+    looks exactly like a degraded model and the pilot quietly auto-passes a whole game.
+    """
+    refusal = getattr(choice.message, "refusal", None)
+    if isinstance(refusal, str) and refusal.strip():
+        return refusal.strip()
+    if choice.finish_reason == "content_filter":
+        return "blocked by the provider's content filter (no message given)"
+    return None
+
 MAX_CHAT_MESSAGES_PER_TURN = 2  # max send_chat_message calls per LLM iteration
 
 
@@ -806,6 +822,24 @@ async def run_pilot_loop(
                 if state.last_game_seq is not None:
                     llm_event["game_seq"] = state.last_game_seq
                 game_log.emit("llm_response", **llm_event)
+
+            refusal = _refusal_text(choice)
+            if refusal is None:
+                state.refusals = 0
+            else:
+                state.refusals += 1
+                logger.error(
+                    "[pilot] Provider refused the request [%d/%d]: %s",
+                    state.refusals,
+                    MAX_REFUSALS,
+                    refusal[:300],
+                )
+                if state.refusals >= MAX_REFUSALS:
+                    logger.error("[pilot] Refused %d times in a row, switching to auto-pass mode", state.refusals)
+                    if game_log:
+                        game_log.emit("auto_pilot_mode", reason=f"provider refusal: {refusal[:200]}")
+                    await auto_pass_loop(session, "pilot")
+                    return
 
             turn_tools_called: set[str] = set()
             if choice.message.tool_calls:
