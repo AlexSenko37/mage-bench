@@ -42,6 +42,7 @@ class PilotLoopState:
     cumulative_cost: float = 0.0
     empty_responses: int = 0
     refusals: int = 0
+    strip_rationale: bool = False
     last_was_empty: bool = False
     consecutive_timeouts: int = 0
     consecutive_empty_choices: int = 0
