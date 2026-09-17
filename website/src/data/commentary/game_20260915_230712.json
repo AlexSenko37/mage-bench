@@ -1,0 +1,99 @@
+{
+  "gameId": "game_20260915_230712",
+  "players": { "PilotA": "Fable", "PilotB": "Astra" },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": ["Fable 5.1 medium effort vs GPT-6 Astra on medium effort"]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "The models drafted their own decks. You can see their picks and thought process [[view:draft|here]] and final decks [[view:decks|here]]. Fable chose Rakdos again, a removal-heavy midrange deck with three [[card:Yuyan Archers]], [[card:Koh, the Face Stealer]] at the top and [[card:Boiling Rock Prison]] as its only non-basic land. Astra went Azorius flying tempo: four [[card:Iguana Parrot]], three [[card:Invasion Submersible]] and two [[card:Abandoned Air Temple]] to pump the team."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": { "PilotA": 1, "PilotB": 2 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] goes first and plays a [[card:Swamp]] with nothing to cast.",
+        "[[player:PilotB|Astra]] plays an [[card:Island]] and passes, sitting on three Islands, two [[card:Iguana Parrot]] and [[card:Wan Shi Tong, Librarian]]."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": { "PilotA": 3, "PilotB": 4 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] plays a [[card:Mountain]] and casts [[card:Yuyan Archers]], a 3/1 with reach. Its enter trigger loots, and Fable pitches [[card:Fire Navy Trebuchet]] to dig for a land. It finds a Mountain, which is the whole difference between this game and the last one.",
+        "[[player:PilotB|Astra]] plays a second Island and casts [[card:Knowledge Seeker]], a 2/1 that leaves a Clue behind when it dies. It is a deliberate roadblock: trading with the 3/1 Archers would still net Astra a card."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": { "PilotA": 5, "PilotB": 6 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] plays a third land and declines to attack, reasoning that the Archers would trade with [[card:Knowledge Seeker]] and hand Astra a Clue for its trouble. It casts [[card:Vindictive Warden]] instead: a 2/3 with menace, firebending, and a 3-mana ability that pings for 1. Remember that ability.",
+        "[[player:PilotB|Astra]] plays a third Island and passes with all of it open, holding [[card:Ty Lee, Chi Blocker]] to flash in and lock the Warden down."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": { "PilotA": 7, "PilotB": 8 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] plays a fourth land and attacks with the Warden, which menace makes unblockable by a lone creature. Astra flashes in [[card:Ty Lee, Chi Blocker]] to tap it down permanently and goes to 18.",
+        "This is the pivot of the game. [[card:Ty Lee, Chi Blocker]] and [[card:Knowledge Seeker]] are both X/1, so Fable casts [[card:Iroh's Demonstration]] for 1 damage to each of Astra's creatures and kills both with one card. Astra gets its Clue, Fable adds a second [[card:Yuyan Archers]], and the board is suddenly three creatures to none.",
+        "[[player:PilotB|Astra]] rebuilds with [[card:Wan Shi Tong, Librarian]] for X=2, a 3/3 flier that draws a card on the way down."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": { "PilotA": 9, "PilotB": 10 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] plays a fifth land and attacks with everything. Astra could block an Archers with its 3/3 flier, but chooses to take all 8 and fall to 10 rather than trade it. Fable adds [[card:Buzzard-Wasp Colony]], a 2/2 flier of its own.",
+        "[[player:PilotB|Astra]] casts [[card:Jeong Jeong's Deserters]] and puts the counter on [[card:Wan Shi Tong, Librarian]], making it a 4/4 that survives a block from a 3/1. It adds an [[card:Iguana Parrot]] and attacks in the air for 4, taking Fable to 16. The plan is coherent: block on the ground, win in the sky."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": { "PilotA": 11, "PilotB": 12 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with all four creatures into three blockers. Astra blocks both [[card:Yuyan Archers]], trades its [[card:Iguana Parrot]] for the [[card:Buzzard-Wasp Colony]], and expects its 4/4 to eat an Archers for free.",
+        "Then Fable casts [[card:Heartless Act]] in the middle of combat, on the mode that removes all three counters from [[card:Wan Shi Tong, Librarian]]. The 4/4 becomes a 1/1 and dies to the Archers it was blocking. Every creature on both sides dies except the Warden, Astra drops to 8, and a Warden ping makes it 7. Best play of the game.",
+        "[[player:PilotB|Astra]] answers with [[card:Invasion Submersible]], bouncing the Warden and waterbending the Submersible into a 3/3, then cracks its Clue for a card."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": { "PilotA": 13, "PilotB": 14 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] exiles the Submersible with [[card:Combustion Technique]] and simply recasts [[card:Vindictive Warden]]. Astra has spent a card to delay a creature by one turn.",
+        "[[player:PilotB|Astra]] deploys [[card:Yue, the Moon Spirit]] and another [[card:Iguana Parrot]] on the same turn, specifically so two blockers can gang up on the menace Warden."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": { "PilotA": 15, "PilotB": 16 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] stops attacking altogether. With two untapped blockers opposite, the Warden would die to a double block, so it stays home and seven lands buy two pings instead: Astra 7 to 5. The Warden has stopped being a creature and become a burn spell that costs 3.",
+        "[[player:PilotB|Astra]] attacks with both fliers for 5, taking Fable to 11, and flashes in [[card:The Unagi of Kyoshi Island]], a 5/5, to speed the race up."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": { "PilotA": 17, "PilotB": 18 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] plays its eighth land, skips the attack again, and pings twice more. Astra 5 to 3.",
+        "[[player:PilotB|Astra]] casts [[card:Teo, Spirited Glider]] and loots looking for an answer to the Warden, finds a second [[card:Plains]], and attacks with everything for 10. Fable falls to 1. Astra needs exactly one more turn."
+      ]
+    },
+    {
+      "label": "Turn 10",
+      "gameTurns": { "PilotA": 19 },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] has eight lands and Astra is at 3. Two pings take Astra to 1 and leave two Swamps untapped. Then the Warden attacks, not to deal damage, but because firebending adds a red mana when it does. Red plus two Swamps is a third activation, and that is lethal. Fable wins at 1 life, with [[card:Hog-Monkey]] stranded in hand."
+      ]
+    }
+  ]
+}

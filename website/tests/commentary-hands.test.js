@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { drawnCards, openingHands, thumbnailUrl } from "../src/utils/commentary-hands.ts";
 
-function snapshot(turn, step, hands, activePlayer) {
+function snapshot(turn, step, hands, activePlayer, battlefields = {}) {
   return {
     turn,
     step,
@@ -10,6 +10,7 @@ function snapshot(turn, step, hands, activePlayer) {
     players: Object.keys(hands).map((name) => ({
       name,
       hand: hands[name].map((card) => ({ name: card })),
+      battlefield: (battlefields[name] ?? []).map((card) => ({ name: card })),
     })),
   };
 }
@@ -43,7 +44,13 @@ describe("openingHands", () => {
 describe("drawnCards", () => {
   it("finds the card gained since the end of that seat's previous turn", () => {
     expect(drawnCards(SNAPSHOTS, 3, "PilotA")).toEqual(["Mountain"]);
-    expect(drawnCards(SNAPSHOTS, 2, "PilotB")).toEqual([]);
+  });
+
+  it("shows the first-turn draw for the player on the draw", () => {
+    // Turn 2 is that seat's first turn, so there is no previous turn to compare against;
+    // measured against the opening hand it is a draw like any other. Skipping it hid
+    // Astra drawing Earth Village Ruffians on turn 2 of the published commentary.
+    expect(drawnCards(SNAPSHOTS, 2, "PilotB")).toEqual(["Glider Staff"]);
   });
 
   it("is not fooled by a card cast between the draw and the next turn", () => {
@@ -55,6 +62,24 @@ describe("drawnCards", () => {
     expect(drawnCards(extended, 4, "PilotB")).toEqual(["Swamp"]);
   });
 
+  it("ignores a permanent bounced back to hand", () => {
+    // Astra's Submersible returned Fable's Warden to hand, which showed up as a second
+    // draw alongside the real one.
+    const bounced = [
+      snapshot(11, "END_TURN", { PilotA: [] }, "PilotA", { PilotA: ["Vindictive Warden"] }),
+      snapshot(13, "PRECOMBAT_MAIN", { PilotA: ["Vindictive Warden", "Combustion Technique"] }, "PilotA", { PilotA: [] }),
+    ];
+    expect(drawnCards(bounced, 13, "PilotA")).toEqual(["Combustion Technique"]);
+  });
+
+  it("still counts a card drawn while a copy of it is in play", () => {
+    const withCopy = [
+      snapshot(11, "END_TURN", { PilotA: [] }, "PilotA", { PilotA: ["Yuyan Archers"] }),
+      snapshot(13, "PRECOMBAT_MAIN", { PilotA: ["Yuyan Archers"] }, "PilotA", { PilotA: ["Yuyan Archers"] }),
+    ];
+    expect(drawnCards(withCopy, 13, "PilotA")).toEqual(["Yuyan Archers"]);
+  });
+
   it("counts a duplicate draw", () => {
     const withDuplicate = SNAPSHOTS.concat([
       snapshot(4, "PRECOMBAT_MAIN", { PilotA: [], PilotB: ["Momo", "Glider Staff", "Momo"] }, "PilotB"),
@@ -62,7 +87,7 @@ describe("drawnCards", () => {
     expect(drawnCards(withDuplicate, 4, "PilotB")).toEqual(["Momo"]);
   });
 
-  it("returns nothing for a seat's first turn", () => {
+  it("returns nothing for the player on the play, who skips its first draw", () => {
     expect(drawnCards(SNAPSHOTS, 1, "PilotA")).toEqual([]);
   });
 
