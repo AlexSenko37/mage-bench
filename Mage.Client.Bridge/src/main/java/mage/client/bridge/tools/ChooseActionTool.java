@@ -49,8 +49,8 @@ public class ChooseActionTool {
     )
     public static Result execute(
             BridgeCallbackHandler handler,
-            @Param(description = "Brief recap of what happened since your last action "
-                + "(opponent's plays, attacks, triggers) and why you're making this choice now. "
+            @Param(description = "One-line recap of what happened since your last action "
+                + "(opponent's plays, attacks, triggers) and what you are doing now. "
                 + "Required for every real decision; this becomes your only memory of prior turns.",
                 required = true) String summary,
             @Param(description = "ID (\"p3\"), index (\"0\"), or yes/no. "
@@ -68,7 +68,14 @@ public class ChooseActionTool {
             @Param(description = "Batch attack: comma-separated IDs (e.g. \"p1,p2\") or \"all\". "
                 + "Auto-confirms.") String attackers,
             @Param(description = "Batch block: comma-separated \"blocker:attacker\" pairs "
-                + "(e.g. \"p5:p1,p6:p2\"). Auto-confirms.") String blockers) {
+                + "(e.g. \"p5:p1,p6:p2\"). Auto-confirms.") String blockers,
+            @Param(description = "Your reasoning for this decision, written after you have decided "
+                + "-- a record, not a plan to revise. Say what the board state means right now, the "
+                + "line you are taking and what you expect it to achieve, the strongest alternative "
+                + "you rejected and why, and the main risk if the opponent answers well. Three to "
+                + "five sentences when you cast, attack, block, activate or target. Leave it out "
+                + "when you are only passing priority. Not part of your memory: it is recorded for "
+                + "the replay, and you will not see it again.") String rationale) {
         // Parse choice into index/id/answer for the handler
         Integer index = null;
         String id = null;

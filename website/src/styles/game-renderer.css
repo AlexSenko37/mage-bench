@@ -1016,6 +1016,28 @@
   color: #fde68a;
 }
 
+.llm-action-rationale {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.llm-action-rationale summary {
+  cursor: pointer;
+  color: #d4c98a;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.llm-action-rationale-text {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(234, 179, 8, 0.35);
+  color: #e5e5e5;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 .llm-action-summary-taken {
   margin-top: 6px;
   font-size: 0.8rem;

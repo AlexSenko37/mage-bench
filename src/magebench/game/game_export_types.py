@@ -528,6 +528,7 @@ class ActionSummaryEvent(_LlmEventBase):
     summary: str
     turn: int | None = field(default=None, metadata={_JSON_KEY_METADATA: "turn"})
     action_taken: str | None = field(default=None, metadata={_JSON_KEY_METADATA: "action_taken"})
+    rationale: str | None = field(default=None, metadata={_JSON_KEY_METADATA: "rationale"})
 
 
 LlmEvent: TypeAlias = (
