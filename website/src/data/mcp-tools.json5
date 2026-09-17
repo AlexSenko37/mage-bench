@@ -1249,7 +1249,7 @@
       "properties": {
         "summary": {
           "type": "string",
-          "description": "Brief recap of what happened since your last action (opponent's plays, attacks, triggers) and why you're making this choice now. Required for every real decision; this becomes your only memory of prior turns.",
+          "description": "One-line recap of what happened since your last action (opponent's plays, attacks, triggers) and what you are doing now. Required for every real decision; this becomes your only memory of prior turns.",
         },
         "choice": {
           "type": "string",
@@ -1289,6 +1289,10 @@
         "blockers": {
           "type": "string",
           "description": "Batch block: comma-separated \"blocker:attacker\" pairs (e.g. \"p5:p1,p6:p2\"). Auto-confirms.",
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Your reasoning for this decision, written after you have decided -- a record, not a plan to revise. Say what the board state means right now, the line you are taking and what you expect it to achieve, the strongest alternative you rejected and why, and the main risk if the opponent answers well. Three to five sentences when you cast, attack, block, activate or target. Leave it out when you are only passing priority. Not part of your memory: it is recorded for the replay, and you will not see it again.",
         }
       },
       "required": [
