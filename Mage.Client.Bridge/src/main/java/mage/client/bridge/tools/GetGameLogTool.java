@@ -34,6 +34,12 @@ public class GetGameLogTool {
         @ResultField(description = "Player whose turn the log starts from",
             conditional = "when since_turn parameter was used")
         public String since_player;
+
+        @ResultField(description = "Error message", conditional = "the call was malformed")
+        public String error;
+
+        @ResultField(description = "Can retry with different parameters")
+        public Boolean retryable;
     }
 
     @Tool(
@@ -49,7 +55,14 @@ public class GetGameLogTool {
             @Param(description = "Player for since_turn filter (defaults to you)") String since_player) {
 
         if (since_turn != null && cursor != null) {
-            throw new RuntimeException("since_turn and cursor are mutually exclusive — provide one or neither");
+            // Returned rather than thrown: an MCP exception reaches the pilot as a fatal
+            // tool error and ends the game. GPT-6 Astra asked for the log both ways at once
+            // on turn 3 and the run died there (game_20260916_223648). Every other bad
+            // argument comes back as a result the model can read and correct.
+            Result invalid = new Result();
+            invalid.error = "since_turn and cursor are mutually exclusive — provide one or neither";
+            invalid.retryable = true;
+            return invalid;
         }
 
         if (since_turn != null) {
