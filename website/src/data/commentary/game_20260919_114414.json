@@ -1,0 +1,115 @@
+{
+  "gameId": "game_20260919_114414",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Muse Spark"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on high effort against Meta's Muse Spark 1.3 on high effort. Both are new to the benchmark, and this is the first game either has played here.",
+        "The effort setting cost them very differently. Over the 42 picks of the draft, Muse Spark spent 89,097 reasoning tokens to Kimi's 18,355 — five times as much thinking for a deck that lost. The whole match, draft and game together, came to $1.95."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "The models drafted their own decks from an eight-seat pod. Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi K3 built Selesnya Allies and earthbend, and said so out loud from early in the draft: white Ally payoffs, green earthbend creatures, and fight-based removal in [[card:Rocky Rebuke]], [[card:Allies at Last]] and [[card:Earth Kingdom Jailer]]. It refused a splash on the grounds that the only off-colour cards in its pool were a Swamp and a dual it did not need.",
+        "Muse Spark drafted Rakdos aggro: three [[card:Vindictive Warden]], two [[card:Deadly Precision]], [[card:Azula, On the Hunt]] and [[card:Firebender Ascension]] as an early engine. It is the faster deck on paper, and for four turns it played like it."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] takes the play and keeps a seven of four Swamps, [[card:Vindictive Warden]], [[card:Azula, On the Hunt]] and [[card:Firebender Ascension]] — light on spells, but every spell is one it wants.",
+        "[[player:PilotA|Kimi K3]] keeps three lands with [[card:Raucous Audience]], [[card:Rocky Rebuke]], [[card:Earth Kingdom Jailer]] and [[card:Earth Kingdom General]], and plays a Forest."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] plays a Mountain and casts [[card:Firebender Ascension]], which makes a 2/2 Soldier token immediately and starts collecting quest counters.",
+        "[[player:PilotA|Kimi K3]] plays a Plains and casts [[card:Haru, Hidden Talent]], explicitly sequencing for next turn: with Haru down, casting an Ally will earthbend a land into a creature."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] attacks with the token for 2 and adds [[card:Vindictive Warden]], a 2/3 with menace, postcombat.",
+        "[[player:PilotA|Kimi K3]] declines the block — trading its 1/1 engine for a token is a bad deal — takes 2 down to 18, and casts [[card:Raucous Audience]] postcombat to trigger Haru's earthbend."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] attacks with both creatures for 4, pushing [[card:Firebender Ascension]] to three counters, and lands [[card:Azula, On the Hunt]] postcombat. Kimi is on 14 facing a 4/3, a menace creature, a token and a nearly-online enchantment. This is the high-water mark.",
+        "[[player:PilotA|Kimi K3]] casts a second [[card:Raucous Audience]] and then finds the turn: [[card:Allies at Last]] lets two of its creatures deal damage equal to their power, and two 2-power Audiences make exactly 4 — enough to kill the 4/3 Azula before it ever untaps, without trading a creature or touching Haru."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] answers in kind. It attacks with the Soldier alone so the Warden cannot be double-blocked, then casts [[card:Deadly Precision]] postcombat, sacrificing the already-tapped token to pay for it, and kills [[card:Haru, Hidden Talent]]. Using a creature that had already attacked is a genuinely tidy piece of sequencing.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Earth Kingdom Jailer]] and exiles the Warden with its enter trigger, which leaves Muse Spark with no creatures at all, then attacks with both Audiences for 4."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotB": 11,
+        "PilotA": 12
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] casts [[card:Fire Navy Trebuchet]], a 0/4 wall, as a blocker for the Jailer.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Earth Kingdom General]], earthbending a Forest into a hasty 2/2 and gaining 2 life, then attacks with everything. Its notes twice claim the Trebuchet \"can't block\" because it has defender — which is backwards, defender stops a creature attacking, not blocking. Muse Spark duly blocks the Jailer with it. The misread costs nothing, because attacking wide was right anyway and 4 damage still gets through."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotB": 13,
+        "PilotA": 14
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] casts [[card:Treetop Freedom Fighters]], which brings an Ally token with it — two more blockers against a board that now outclasses it.",
+        "[[player:PilotA|Kimi K3]] removes one of them first: [[card:Rocky Rebuke]] with the 3/3 Jailer kills the 2/1 Freedom Fighters and the Jailer survives. It then attacks with five creatures for 11; the token chumps, the wall blocks, and 6 gets through. Muse Spark is on 6."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotB": 15,
+        "PilotA": 16
+      },
+      "paragraphs": [
+        "[[player:PilotB|Muse Spark]] plays a Mountain and, facing lethal with one wall, blocks the Jailer again to minimise the damage. Its own note says it plainly: likely dead.",
+        "[[player:PilotA|Kimi K3]] attacks for lethal and wins on turn 16, at 13 life.",
+        "Muse Spark drafted the faster deck and played the better turn 5, and still lost by four turns. Two things did it: [[card:Allies at Last]] answering Azula for one card and no trades, and [[card:Earth Kingdom Jailer]] exiling the Warden a turn later. After that it was a Rakdos aggro deck with no creatures, facing an engine that turns lands into attackers."
+      ]
+    }
+  ]
+}
