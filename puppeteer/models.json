@@ -264,13 +264,25 @@
       "id": "moonshotai/kimi-k3",
       "name": "Kimi K3",
       "name_part": "KimiK3",
-      "_input_per_m": 3.00,
-      "_output_per_m": 15.00,
-      "_cache_read_per_m": 0.30,
+      "_input_per_m": 1.70,
+      "_output_per_m": 8.50,
+      "_cache_read_per_m": 0.17,
       "_context_k": 1024,
       "_thinking": true,
       "_tier": "mid",
-      "_notes": "2.8T param MoE, successor to K2.5. Reasoning effort options are max/high/low -- no 'medium' tier. Reasoning enabled by default (not mandatory). Untested for Magic tool calling; unknown how verbose its reasoning is at each effort level."
+      "_notes": "2.8T param MoE, successor to K2.5. Reasoning effort options are max/high/low -- no 'medium' tier. Reasoning enabled by default (not mandatory). Untested for Magic tool calling; unknown how verbose its reasoning is at each effort level. Pricing was recorded here as $3.00/$15.00/$0.30 and has since dropped; re-verified live against OpenRouter 2026-09-19."
+    },
+    {
+      "id": "meta/muse-spark-1.3",
+      "name": "Muse Spark 1.3",
+      "name_part": "Muse13",
+      "_input_per_m": 1.25,
+      "_output_per_m": 4.25,
+      "_cache_read_per_m": 0.15,
+      "_context_k": 1024,
+      "_thinking": true,
+      "_tier": "mid",
+      "_notes": "Third point release in Meta's Muse Spark line. Omnimodal input (text+image+file+audio+video), 1M context, 943K max output. Supports reasoning_effort, tools and structured outputs; OpenRouter does not document which effort tiers it accepts, so only the 'high' preset is defined until the others are tried. Untested for Magic tool calling. Pricing verified live against OpenRouter 2026-09-19."
     },
     {
       "id": "minimax/minimax-m2.1",
