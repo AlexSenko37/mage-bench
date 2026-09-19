@@ -1,0 +1,146 @@
+{
+  "gameId": "game_20260919_124711",
+  "players": {
+    "PilotA": "Fable",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Fable 5.1 on low effort against GPT-6 Astra on low effort.",
+        "This is also the first match drafted without the colour advice the harness used to put in the draft prompt — two paragraphs telling the models that limited decks are usually two colours and to commit early. Both models picked two colours anyway."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "The models drafted their own decks from an eight-seat pod. Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Fable built Orzhov, and barely used the black half: thirteen Plains to three Swamps, with [[card:Jeong Jeong's Deserters]], [[card:Glider Kids]] and two [[card:Kyoshi Warriors]] as the curve, and [[card:Glider Staff]] as the card that ends up deciding the game.",
+        "Astra built Dimir Clues and sacrifice, and did the one thing the deleted advice used to rule out: it splashed. [[card:Fire Lord Azula]] and [[card:Iroh's Demonstration]] want red, and Astra supported them with four red sources — three [[card:Airship Engine Room]] and a Boiling Rock Prison — rather than leaving them stranded. The splash never mattered; Azula was the card it bottomed on its mulligan and it drew neither. But the mana was built correctly for it, which is the judgement the prompt used to make on the model's behalf."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotA": 1,
+        "PilotB": 2
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] takes the play, keeps four lands and three cheap white spells, and plays a Plains.",
+        "[[player:PilotB|Astra]] mulligans a seven with four lands, no red source for its removal and a single early creature. Its six keeps, bottoming [[card:Fire Lord Azula]] as too expensive and too demanding on colours, and it plays a tapped [[card:Airship Engine Room]]."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotA": 3,
+        "PilotB": 4
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] plays a second Plains and casts [[card:Jeong Jeong's Deserters]].",
+        "[[player:PilotB|Astra]] plays a Swamp and casts [[card:Mai, Scornful Striker]], a 2/2 with first strike."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotA": 5,
+        "PilotB": 6
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with the Deserters for 2 — Mai blocking would only die to it — and casts [[card:Glider Kids]] postcombat.",
+        "[[player:PilotB|Astra]] casts [[card:Fire Navy Trebuchet]] and then attacks Mai into the Glider Kids on purpose, to turn on the Trebuchet's attack trigger. Mai dies to the 2/3, first strike and all, but the Boulder token it produced gets in for 2. A deliberate trade of a two-drop for a flying token and a turn of reach."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotA": 7,
+        "PilotB": 8
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with both creatures into the lone 0/4 wall, gets 2 through, and adds [[card:Kyoshi Warriors]] with its Ally token.",
+        "[[player:PilotB|Astra]] plays a fourth land and casts [[card:Iguana Parrot]]."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotA": 9,
+        "PilotB": 10
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with three, taking Astra to 12, and casts a second [[card:Kyoshi Warriors]]. It deliberately keeps its 1/1 token home so the Parrot cannot eat it for free.",
+        "[[player:PilotB|Astra]] kills [[card:Glider Kids]] with [[card:Swampsnare Trap]] — cast at a discount, and pumping the Parrot to 3/3 in the process — adds a second Parrot, and attacks in the air for 5. Fable, with no flying blockers, goes to 13."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotA": 11,
+        "PilotB": 12
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with everything, 10 power into three blockers, and forces trades that leave Astra on 7. Then it casts [[card:Glider Staff]], airbends the Trebuchet away with the enter trigger, and equips a [[card:Kyoshi Warriors]] into a 4/4 flier.",
+        "[[player:PilotB|Astra]] answers immediately with [[card:Lost Days]], exiling the equipped Warriors and pumping both Parrots, then attacks for 6. Fable is on 7, Astra on 7, and both boards are now built around the same question: who can block a flier."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotA": 13,
+        "PilotB": 14
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with the Deserters and a Warriors and takes Astra to 2, then exiles a Parrot with [[card:Epic Downfall]] and re-equips the Staff to the other Warriors.",
+        "[[player:PilotB|Astra]] exiles that Warriors too, with [[card:Sold Out]], and attacks with its last Parrot to put Fable on 4. From here every turn is lethal for whoever untaps with an unanswered flier."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotA": 15,
+        "PilotB": 16
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] moves the Staff onto the Deserters and attacks; Astra chump-blocks with its last Parrot.",
+        "[[player:PilotB|Astra]] recasts the airbent [[card:Fire Navy Trebuchet]] as a flying blocker, adds [[card:Callous Inspector]], and cracks a Clue looking for an answer. It finds [[card:Obsessive Pursuit]] and correctly declines to play it: an enchantment that costs life is unaffordable at 2."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": {
+        "PilotA": 17,
+        "PilotB": 18
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks into the wall, gets blocked, and rebuilds: a third [[card:Kyoshi Warriors]] and the Staff again.",
+        "[[player:PilotB|Astra]] finds the best card it has left. [[card:Barrels of Blasting Jelly]] is cast purely as food, then [[card:Hei Bai, Spirit of Balance]] eats it to arrive as a 5/5. At 2 life against a board of fliers, it is a wall that also threatens to end the race."
+      ]
+    },
+    {
+      "label": "Turn 10",
+      "gameTurns": {
+        "PilotA": 19,
+        "PilotB": 20
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] adds [[card:Pretending Poxbearers]] as an extra body and attacks with only the 4/4 flying Warriors — the Trebuchet has to block it and die, or Astra loses. The Trebuchet blocks and dies.",
+        "[[player:PilotB|Astra]] swings back with Hei Bai and the menace Inspector. Fable chumps the 5/5 with its Ally token and double-blocks the Inspector with the Deserters and the Poxbearers; the Inspector dies, and its death trigger puts Astra on 1. Astra sacrifices an [[card:Airship Engine Room]] to dig for an answer and draws a Swamp."
+      ]
+    },
+    {
+      "label": "Turn 11",
+      "gameTurns": {
+        "PilotA": 21
+      },
+      "paragraphs": [
+        "[[player:PilotA|Fable]] attacks with everything into an empty board. Astra dies on turn 21; Fable finishes on 4 life.",
+        "Two decks that each drew the right answers at the right time, and the difference was one card the other could not remove twice. Astra exiled an equipped [[card:Kyoshi Warriors]] with [[card:Lost Days]] and another with [[card:Sold Out]], and Fable simply moved [[card:Glider Staff]] onto the next body. Equipment survives its creature; removal spells do not come back."
+      ]
+    }
+  ]
+}
