@@ -93,51 +93,21 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
     private static final String LOG_DIR = System.getProperty("xmage.llmDraft.logDir", "");
     private static final Object LOG_LOCK = new Object();
 
-    /**
-     * How colours work in limited, stated once for both prompts.
+    /*
+     * Both prompts used to carry colour advice: a COLOUR_CONVENTION paragraph ("limited
+     * decks are usually two colours", with the mana cost of a splash spelled out) in the
+     * pick and deckbuild prompts, and a DRAFT_COMMITMENT paragraph ("soft-commit to two
+     * colours early", for the pick prompt only). Both were removed deliberately -- the
+     * benchmark is meant to measure how well a model drafts, and telling it the answer
+     * measures how well it follows instructions instead.
      *
-     * Format convention plus the mechanism behind it, in the same register as "40 cards"
-     * and "lands are unlimited". Leaving it out measures how much Magic a model absorbed
-     * in pretraining rather than how well it drafts.
-     *
-     * An earlier attempt stated only the cost and closed with "whether a card is worth
-     * that is your call", on the theory that naming the trade-off was enough and the rest
-     * was the model's judgement to make. It was not: those decks came out four and five
-     * colours, indistinguishable from saying nothing at all, while the prescriptive
-     * version reliably produced two and three. Describing a cost is not the same as
-     * telling a model what drafters actually do, and the closing sentence read as
-     * permission to splash. What follows states the norm as well as the reason.
+     * What that advice was holding back, from the runs that led to it being written:
+     * without a prescriptive version, pools came out four and five colours, and decks
+     * lose more games to their mana than they win on card quality. Stating only the cost
+     * of a splash and leaving the choice to the model produced the same five-colour decks
+     * as saying nothing at all. So expect worse decks here, and read a five-colour pile
+     * as a real result about the model rather than a harness regression.
      */
-    private static final String COLOUR_CONVENTION =
-            "Limited decks are usually two colours: pick the two colours your best cards "
-            + "are in and play essentially all of your playables in them. Every extra "
-            + "colour takes land slots from the others -- a splash costs 2-3 lands that "
-            + "cannot cast your main colours, which makes every other card in the deck "
-            + "less reliable to cast on time -- so a splash has to earn that. Four- and "
-            + "five-colour decks lose more games to their mana than they win on card "
-            + "quality.";
-
-    /**
-     * When to settle on colours, for the pick prompt only.
-     *
-     * COLOUR_CONVENTION says what the finished deck should look like, but read on its own
-     * during the draft it leaves room to take the best card every pick and sort out
-     * colours at deckbuilding. By then it is too late: a card outside the final two
-     * colours was a wasted pick, and a pool spread across five colours has nothing to
-     * build from. Like the convention itself this is format knowledge a model with less
-     * Magic in its pretraining will not have. It is left out of the deckbuild prompt,
-     * where the picks are already over.
-     */
-    private static final String DRAFT_COMMITMENT =
-            "Colours are chosen during the draft, not after it. You can only build from "
-            + "the cards you took, so a pick outside your eventual two colours is a wasted "
-            + "pick. Stay open for the first few picks, but soft-commit to two colours "
-            + "early -- usually somewhere in the first booster -- based on the strongest "
-            + "cards in your pool and the colours that keep coming to you in later picks, "
-            + "which tells you what the players passing to you are not taking. From then "
-            + "on let those colours guide your picks, favouring on-colour cards over "
-            + "slightly stronger off-colour ones. Switch only if one of your colours has "
-            + "clearly dried up and another is clearly open.";
 
     private static final List<String> BASIC_LAND_NAMES =
             List.of("Plains", "Island", "Swamp", "Mountain", "Forest");
@@ -1256,7 +1226,6 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
                 .append("A list outside ").append(minSpells(deckMinSize)).append("-")
                 .append(maxSpells(deckMinSize)).append(" spells cannot be used.\n");
         sb.append("Anything you leave out stays in your sideboard.\n");
-        sb.append(COLOUR_CONVENTION).append("\n");
         sb.append("\nIn \"analysis\", say what deck you are building and what you left out of ")
                 .append("it. Then give the exact card names in \"chosen_spells\" -- names only, ")
                 .append("copied from the list above. You can only play cards you drafted.");
@@ -1687,9 +1656,7 @@ public class LlmDraftPlayer extends ComputerDraftPlayer {
         sb.append("When the draft ends you will build a deck from the cards you took. It must ")
                 .append("be exactly 40 cards: roughly 23 of your drafted cards plus roughly 17 ")
                 .append("basic lands. Basic lands are added in a separate step afterwards and ")
-                .append("are unlimited, so you do not need to draft them.\n");
-        sb.append(COLOUR_CONVENTION).append("\n");
-        sb.append(DRAFT_COMMITMENT).append("\n\n");
+                .append("are unlimited, so you do not need to draft them.\n\n");
 
         // DraftPlayer.addPick() files every pick into the sideboard, never into
         // deck.getCards() -- which is what construct() reads too (see the pool it builds
