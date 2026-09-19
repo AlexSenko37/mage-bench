@@ -28,6 +28,7 @@ export var MODEL_SHORT_NAMES = {
   "google/gemini-3.1-flash-lite-preview": "G31FL",
   "google/gemini-3.1-pro-preview": "Gem31P",
   "meta-llama/llama-4-maverick": "Llama4",
+  "meta/muse-spark-1.3": "Muse13",
   "minimax/minimax-m2.1": "MMx21",
   "minimax/minimax-m2.5": "MiniMx",
   "mistralai/mistral-large-2512": "MstLg",
