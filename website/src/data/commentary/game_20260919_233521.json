@@ -1,0 +1,113 @@
+{
+  "gameId": "game_20260919_233521",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 8 of ten, drafted fresh.",
+        "The clearest case in the series of a game lost to execution rather than judgement. Kimi identified the right target on turn 3 and tried to kill it three times across two turns; all three attempts were cancelled on their costs, and the creature lived."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted Dimir removal — [[card:Deadly Precision]], [[card:Fatal Fissure]], [[card:Swampsnare Trap]], [[card:Epic Downfall]] — behind [[card:Pirate Peddlers]] and [[card:Foggy Swamp Hunters]].",
+        "Astra drafted Golgari earthbend: [[card:Dai Li Indoctrination]] and [[card:Rockalanche]] to animate lands, [[card:Long Feng, Grand Secretariat]] as the value engine, and [[card:Buzzard-Wasp Colony]] and [[card:Boiling Rock Rioter]] as the threats that finish."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] takes the play, mulligans a five-land seven, and keeps a six with three lands and its earthbend curve.",
+        "[[player:PilotA|Kimi K3]] leads on a tapped [[card:Boiling Rock Prison]]."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Dai Li Indoctrination]] and animates a Swamp into a 2/2.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Forecasting Fortune Teller]] as a 1/3 wall."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Long Feng, Grand Secretariat]], its engine.",
+        "[[player:PilotA|Kimi K3]] reads the board correctly — Astra is tapped out, Long Feng is summoning sick — and casts [[card:Deadly Precision]] on it, sacrificing a Clue for the additional cost. The cast is cancelled on a payment problem and Long Feng survives."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] tries again, twice. [[card:Fatal Fissure]] resolves on Long Feng — meaning Kimi earthbends 4 if it dies this turn — and then [[card:Deadly Precision]] goes on the stack to finish the job and is cancelled a second time, this time because the payment tried to use mana Kimi did not have. The Fissure's bonus expires unused.",
+        "[[player:PilotB|Astra]] plays a fourth land and carries on with the engine intact."
+      ]
+    },
+    {
+      "label": "Turns 5 to 8",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "Astra's earthbend deck does what it does when unopposed: animated lands attack, [[card:Long Feng, Grand Secretariat]] grows on every death, and the board widens. Kimi holds at 20 life until turn 9 and then falls to 3 by turn 15.",
+        "[[player:PilotA|Kimi K3]] stabilises behind a 3/3 deathtouch [[card:Pirate Peddlers]] and a crewable [[card:The Fire Nation Drill]], which is enough that Astra declines to attack into it for two full turns."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": {
+        "PilotB": 17,
+        "PilotA": 18
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] tries to cast [[card:Buzzard-Wasp Colony]] three times in one turn and has two of the attempts cancelled on land IDs before giving up and passing — the same class of failure that cost Kimi the game five turns earlier, and this time it costs Astra only tempo.",
+        "[[player:PilotA|Kimi K3]], at 3 life, attacks with a 1/2 flier for 1 because it is the only unopposed damage available."
+      ]
+    },
+    {
+      "label": "Turn 10",
+      "gameTurns": {
+        "PilotB": 19,
+        "PilotA": 20
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] plays its best turn of the game: [[card:Swampsnare Trap]] kills the 4/4 flying Colony, a Clue draw turns on its own creatures, and an attack with a 3/2 flier, a 4/4 deathtoucher and a lifelinking [[card:Foggy Swamp Hunters]] takes Astra from 15 to 5 and Kimi back up to 6.",
+        "[[player:PilotB|Astra]] rebuilds the Colony, sacrificing an animated Swamp to grow it and draw."
+      ]
+    },
+    {
+      "label": "Turn 11",
+      "gameTurns": {
+        "PilotB": 21
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Invasion Tactics]], which makes [[card:Boiling Rock Rioter]] a 5/5, and attacks for exactly 6 into a board where every one of Kimi's creatures is tapped from its own alpha strike. Kimi dies on turn 21 at 6 life, one turn after taking Astra to 5.",
+        "Two turns decided this. On turns 3 and 4 Kimi had the read, the removal and the window, and three casts in a row failed on their costs — a 2/3 that should have died on turn 5 instead grew for sixteen turns. And on turn 10 Kimi's alpha strike left nothing untapped, which is what made exactly 6 damage lethal."
+      ]
+    }
+  ]
+}

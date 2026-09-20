@@ -1,0 +1,104 @@
+{
+  "gameId": "game_20260919_144315",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 1 of a ten-game series on the same pairing, each game drafted fresh.",
+        "Max effort is a draft-time expense more than a play-time one: Kimi spent 62,859 reasoning tokens on its 42 picks here, three and a half times what it used at high effort, and then played the game for $0.80 against Astra's $1.94."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted a three-colour Ally deck — white and blue with a two-Forest green splash — built entirely around triggered abilities: [[card:Pretending Poxbearers]] and [[card:Earth King's Lieutenant]] into [[card:Katara, the Fearless]], who doubles Ally triggers, with [[card:Airbender Ascension]] as a repeatable blink once it reaches four quest counters.",
+        "Astra drafted Golgari lands-matter: [[card:Raucous Audience]] to ramp, [[card:Earthbender Ascension]] to animate lands into creatures, and [[card:Long Feng, Grand Secretariat|Long Feng]] as a trampling threat that grows every time something dies."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] takes the play and leads on a tapped [[card:Foggy Bottom Swamp]], explicitly spending the turn it can afford to lose so [[card:Raucous Audience]] arrives on time.",
+        "[[player:PilotA|Kimi K3]] plays a Plains, already sequencing three turns ahead: Plains now for the Poxbearers, Forest next for the Lieutenant, Island after that for Katara."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Raucous Audience]], a 2/1 that taps for mana.",
+        "[[player:PilotA|Kimi K3]] plays the Forest and casts [[card:Pretending Poxbearers]] on curve."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Earthbender Ascension]] before its land drop rather than after — deliberately, to bank an extra quest counter — animates a Swamp into a creature, and fetches a Forest.",
+        "[[player:PilotA|Kimi K3]] attacks for 2 into a board where every possible blocker is tapped, then casts [[card:Katara, the Fearless]]. The sequencing note is the interesting part: Katara first, so that next turn's Lieutenant trigger gets doubled."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] develops [[card:Ostrich-Horse]] and [[card:Long Feng, Grand Secretariat|Long Feng]] with six mana, holding removal for Katara.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Airbender Ascension]] and airbends the Ostrich-Horse away while Astra is tapped out — it cannot be recast this turn — then attacks for 5 into an empty board."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] recasts the airbent Ostrich-Horse for two mana, kills [[card:Katara, the Fearless]] with [[card:Heartless Act]] before those doubled triggers can matter, and attacks with a 3/4 trampling [[card:Long Feng, Grand Secretariat|Long Feng]]. The Horse then trades with an Ally token, and Long Feng grows on the death trigger.",
+        "[[player:PilotA|Kimi K3]] declines to chump-block the trampler — it would save 2 life and cost the Ally synergies — and rebuilds instead: [[card:Earth King's Lieutenant]] and [[card:South Pole Voyager]] in one turn, which together push [[card:Airbender Ascension]] to its fourth quest counter and switch on the end-step blink."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotB": 11,
+        "PilotA": 12
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] grows Long Feng to 5/6, animates a Swamp into a 4/4 with [[card:Rockalanche]], and attacks. Both players are on 14.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Katara, Water Tribe's Hope]], and then the engine does what it was built for: the Ascension blinks her at end step, re-triggering her enter ability for another Ally token while [[card:South Pole Voyager]] gains life and draws. Astra is on 10, Kimi on 16, and Kimi's board is now five creatures wide."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotB": 13,
+        "PilotA": 14
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] animates a second Swamp and tries to build enough blockers, but at 10 life against five creatures it needs three of them to block profitably.",
+        "[[player:PilotA|Kimi K3]] pays Katara's waterbend for X=6, making the whole team 6/6 — one token 7/7 — and attacks with everything. Three get blocked, the rest is lethal. Kimi wins on turn 14 at 18 life.",
+        "The Ally engine took six turns to assemble and one turn to win with. Astra answered every individual piece — the Ostrich-Horse came back, Katara died to [[card:Heartless Act]] — but never answered [[card:Airbender Ascension]], and the blink is what turned a board of 2/1s into a lethal attack."
+      ]
+    }
+  ]
+}

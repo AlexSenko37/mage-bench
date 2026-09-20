@@ -1,0 +1,126 @@
+{
+  "gameId": "game_20260919_161345",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 3 of ten, drafted fresh.",
+        "Astra mulliganed to six, fell to 7 life by turn 13, and never went lower. Kimi held 20 life until turn 12 and then lost from there in three turns — the cleanest example in the series of a board that looks winning right up until it isn't."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted Rakdos as essentially mono-black — twelve Swamps to three Mountains — with [[card:Callous Inspector]], [[card:Hog-Monkey]] and [[card:Beetle-Headed Merchants]] as menace threats, [[card:Swampsnare Trap]] and [[card:Day of Black Sun]] as removal.",
+        "Astra drafted Selesnya go-wide: [[card:The Earth King]] making Bear tokens, [[card:Suki, Courageous Rescuer]] and [[card:Toph, the Blind Bandit]] as bodies, [[card:Razor Rings]] as instant-speed removal, and [[card:White Lotus Reinforcements]] as the anthem that ends games."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotA": 1,
+        "PilotB": 2
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] takes the play and leads on a Swamp.",
+        "[[player:PilotB|Astra]] mulligans an unkeepable one-land seven, keeps a six with three lands and removal, and bottoms [[card:Appa, Loyal Sky Bison]] as too expensive."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotA": 3,
+        "PilotB": 4
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] casts [[card:Callous Inspector]], a 1/1 with menace.",
+        "[[player:PilotB|Astra]] plays a Forest and holds its removal."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotA": 5,
+        "PilotB": 6
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] adds [[card:Hog-Monkey]] and attacks for 1 into an empty board.",
+        "[[player:PilotB|Astra]] casts [[card:Avatar Enthusiasts]]."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotA": 7,
+        "PilotB": 8
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] kills the Enthusiasts with [[card:Swampsnare Trap]] and attacks into the empty board again. Astra is on 15 and has missed its fourth land.",
+        "[[player:PilotB|Astra]] casts [[card:Suki, Courageous Rescuer]], a 2/4, purely to stop the bleeding."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotA": 9,
+        "PilotB": 10
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] exhausts [[card:Hog-Monkey]] into a 5/4 with menace and attacks with both menace creatures. A lone 2/4 cannot block either of them, and Astra drops to 9.",
+        "[[player:PilotB|Astra]] casts [[card:The Earth King]], which brings a Bear token — 4/4 with Suki's buff — and holds all three creatures home."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotA": 11,
+        "PilotB": 12
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] casts [[card:Day of Black Sun]] for X=0, which kills the 4/4 Bear and spares its own creatures, then attacks. Astra double-blocks the Hog-Monkey with Suki and the Earth King, trading its anthem creature for Kimi's best one, and takes 1 from the Inspector.",
+        "[[player:PilotB|Astra]] casts a second [[card:The Earth King]], keeps the untapped original under the legend rule, and banks another Bear."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotA": 13,
+        "PilotB": 14
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks with two menace Inspectors; one trades into the Earth King and Bear double-block, the other connects. Astra is on 7.",
+        "[[player:PilotB|Astra]] casts [[card:Toph, the Blind Bandit]], animates a Forest, and starts attacking back — each Bear attack also ramping a land off the Earth King's trigger. Kimi is on 19 and about to stop being comfortable."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotA": 15,
+        "PilotB": 16
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] deploys [[card:Beetle-Headed Merchants]] as a 5/4 but declines to attack into two untapped blockers.",
+        "[[player:PilotB|Astra]] casts [[card:Suki, Kyoshi Warrior]] and attacks with the Bear, ramping again. Kimi chump-blocks and falls to 13, then 12."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": {
+        "PilotA": 17,
+        "PilotB": 18
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] sacrifices [[card:Barrels of Blasting Jelly]] to kill Suki and attacks with the 5/4 Merchants — and Astra kills it with [[card:Razor Rings]] in response to its attack trigger, gaining a life back to 7. Kimi is left on 12 with an empty board.",
+        "[[player:PilotB|Astra]] casts [[card:White Lotus Reinforcements]] precombat, which pushes the team over the line, and attacks with the Earth King, a Bear, an animated Forest and Toph for exactly 12. Kimi dies on turn 18.",
+        "Kimi was ahead on damage for eight turns and never took a point until turn 13. What it never had was a way to handle a board that rebuilds itself: every Bear attack ramped Astra a land, the Earth Kings kept making more, and the one turn Kimi committed a real threat, [[card:Razor Rings]] answered it at instant speed for a card and a life."
+      ]
+    }
+  ]
+}

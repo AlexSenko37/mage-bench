@@ -1,0 +1,102 @@
+{
+  "gameId": "game_20260920_024058",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 10 of ten, drafted fresh — the shortest game of the series at 13 turns, and the only one where a player is killed by its own card.",
+        "At $3.68 it was also the cheapest match of the ten."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted Azorius Allies with [[card:Earth King's Lieutenant]] as the payoff — every Ally that enters puts a counter on the others — plus [[card:Avatar Enthusiasts]], [[card:Katara, the Fearless]] to double those triggers, and [[card:Hakoda, Selfless Commander]] at the top.",
+        "Astra drafted Golgari aggro around [[card:Obsessive Pursuit]], an enchantment that makes a Clue every upkeep and charges 1 life each time, with [[card:Callous Inspector]] and [[card:June, Bounty Hunter]] as the creatures it pumps."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] takes the play and casts [[card:Callous Inspector]] off a turn-one Swamp.",
+        "[[player:PilotA|Kimi K3]] has no one-drop and plays an Island."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] curves into [[card:June, Bounty Hunter]] and attacks.",
+        "[[player:PilotA|Kimi K3]] has no two-drop either and passes. Astra is ahead on board and on tempo."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Obsessive Pursuit]], paying 1 life for the first Clue, and attacks with both creatures. Kimi is on 16.",
+        "[[player:PilotA|Kimi K3]] finally deploys, with [[card:Avatar Enthusiasts]]."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] animates a Forest into a hasty 4/4 with [[card:Earthbending Lesson]] and keeps attacking with the menace Inspector.",
+        "[[player:PilotA|Kimi K3]] plays the turn that changes the game: [[card:Earth King's Lieutenant]] and [[card:Momo, Playful Pet]] in the same turn, each one triggering the other's Ally counters, which leaves [[card:Avatar Enthusiasts]] a 5/5. It attacks into a board that cannot block it profitably."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] exiles the 5/5 with [[card:Sold Out]] and attacks with the animated Forest and the Inspector.",
+        "[[player:PilotA|Kimi K3]] sacrifices [[card:Momo, Playful Pet]] as a blocker and uses its death trigger to grow the Lieutenant, then casts [[card:Katara, the Fearless]] — which doubles every Ally trigger from here. The Lieutenant is a 5/5 trampler and Astra is on 12."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotB": 11,
+        "PilotA": 12
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] goes all in on its engine: three Clues sacrificed in one turn to give [[card:June, Bounty Hunter]] +3/+3 and lifelink, attacking unblockable for 5 and gaining it back. It is on 11, Kimi on 8.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Hakoda, Selfless Commander]], whose enter trigger is doubled by Katara, making the Lieutenant a 7/7 trampler. Astra's board is entirely tapped from its own attack. Seven trample damage plus Katara puts Astra on 1."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotB": 13
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] never gets to untap into a real turn. [[card:Obsessive Pursuit]] triggers on its upkeep, and the 1 life it costs is the last one Astra has. Its own notes track it precisely — at one life with a lethal upkeep trigger pending, it cracks a Clue looking for a rescue, finds [[card:Raucous Audience]], sacrifices an animated Forest to June for one more Clue, and finds nothing. Kimi wins on turn 13 without attacking.",
+        "Astra had spent the game converting life into pressure — 1 for the Pursuit, 1 per upkeep, three Clues in a turn to make June lethal — and the arithmetic caught up one turn before its opponent would have. Kimi's win came from the same Ally engine it used in game 1: two creatures in one turn, each trigger doubled, a 2/2 into a 7/7 trampler in two turns."
+      ]
+    }
+  ]
+}
