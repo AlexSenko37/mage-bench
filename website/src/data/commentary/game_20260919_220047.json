@@ -1,0 +1,135 @@
+{
+  "gameId": "game_20260919_220047",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 7 of ten — the longest of the series at 23 turns, and the closest thing in it to a proper limited game.",
+        "Both models drafted Azorius fliers out of the same pod, so this is a mirror fought almost entirely in the air. Astra spent the last thirteen turns on 8 life or less, and the last seven on 3, searching every turn for a flying blocker it never found."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted white-blue fliers with [[card:First-Time Flyer]] and [[card:Glider Kids]] as the clock and [[card:Airbender Ascension]] as the engine — at four quest counters it blinks a creature at end step, every turn, forever.",
+        "Astra drafted the same colours with heavier ground creatures — [[card:Water Tribe Rallier]], [[card:Otter-Penguin]], [[card:Jeong Jeong's Deserters]] — and [[card:Aang, Swift Savior]] and [[card:Geyser Leaper]] as its answers to fliers."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotA": 1,
+        "PilotB": 2
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] takes the play and plays an Island.",
+        "[[player:PilotB|Astra]] mulligans a landless seven, keeps a six with two tapped duals and three two-drops."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotA": 3,
+        "PilotB": 4
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] casts [[card:First-Time Flyer]].",
+        "[[player:PilotB|Astra]] casts [[card:Water Tribe Rallier]] — a ground creature that will spend the game unable to block anything Kimi attacks with."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotA": 5,
+        "PilotB": 6
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks in the air for 1 and adds [[card:Glider Kids]].",
+        "[[player:PilotB|Astra]] matches with its own [[card:Glider Kids]]."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotA": 7,
+        "PilotB": 8
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks with both fliers and holds up [[card:Octopus Form]]. Astra blocks the 1/2 Flyer with its 2/3 Kids, and the Octopus Form turns the block into a blowout: the Flyer survives as a 3/4 and the Kids dies. Kimi follows with [[card:Airbender Ascension]], airbending Astra's Rallier into exile.",
+        "[[player:PilotB|Astra]] tries three times to recast the exiled Rallier — its notes show two failed attempts on mana IDs before concluding it is not offered as playable — then gives up and deploys [[card:Otter-Penguin]] and [[card:Jeong Jeong's Deserters]] instead."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotA": 9,
+        "PilotB": 10
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] keeps attacking in the air; Astra is on 11.",
+        "[[player:PilotB|Astra]] builds a ground board that cannot interact with the game being played above it."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotA": 11,
+        "PilotB": 12
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks for seven with an equipped team.",
+        "[[player:PilotB|Astra]] flashes in [[card:Aang, Swift Savior]] mid-combat, airbends the First-Time Flyer away and blocks [[card:Momo, Playful Pet]] to kill it — the best turn it plays all game — then lands [[card:Katara, Water Tribe's Hope]]. It is on 8."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotA": 13,
+        "PilotB": 14
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] exiles Aang — Astra's only flying blocker — with [[card:Aang's Iceberg]], recasts its own Flyer, and pushes [[card:Airbender Ascension]] to four quest counters. From this turn on, the Ascension blinks [[card:Glider Kids]] at every end step, re-triggering its scry and adding another counter.",
+        "[[player:PilotB|Astra]] casts [[card:Geyser Leaper]] purely as air defence and trades Katara off in a double block. It is on 6."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotA": 15,
+        "PilotB": 16
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]]'s equipped Flyer trades with [[card:Geyser Leaper]], removing the last thing that could block it.",
+        "[[player:PilotB|Astra]] finally recasts the exiled Rallier for its airbend tax and starts using its waterbend search, tapping four permanents at a time, to dig for a flier."
+      ]
+    },
+    {
+      "label": "Turns 9 to 11",
+      "gameTurns": {
+        "PilotA": 17,
+        "PilotB": 18
+      },
+      "paragraphs": [
+        "The game settles into its final shape. [[player:PilotA|Kimi K3]] has a 3/3 flier and an Ascension that blinks a creature every end step; [[player:PilotB|Astra]] is on 3 life with an empty hand, searching with the Rallier every turn.",
+        "[[player:PilotB|Astra]] finds [[card:North Pole Patrol]] and then a second one, holding them untapped to tap the attacker down — the only line it has left. It chumps with a 1/2 Flyer to survive another turn."
+      ]
+    },
+    {
+      "label": "Turn 12",
+      "gameTurns": {
+        "PilotA": 23
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks with the 3/3 for lethal. Both Patrols are tapped, the hand is empty, Aang is still exiled under the Iceberg. Astra's own note is the epitaph: the flier has already been declared, so tapping it cannot stop combat. It spends its last mana on one more search and finds nothing. Kimi wins on turn 23 at 13 life.",
+        "This is the one game in the series where max effort's extra thinking clearly bought something. Kimi found a genuine two-card interaction in the turn-4 [[card:Octopus Form]] blowout, then identified [[card:Airbender Ascension]] as the engine worth protecting and spent the rest of the game keeping the sky clear for it. Astra played the ground well and was never in the game being played."
+      ]
+    }
+  ]
+}

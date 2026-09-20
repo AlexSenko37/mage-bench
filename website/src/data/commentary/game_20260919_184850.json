@@ -1,0 +1,104 @@
+{
+  "gameId": "game_20260919_184850",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 5 of ten, drafted fresh.",
+        "Nobody took a point of damage until turn 7. Both models spent the opening on mana, and the game was decided by which ramp deck converted first."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted Gruul lands: [[card:Leaves from the Vine]] and [[card:Cycle of Renewal]] to ramp, [[card:Earthbending Lesson]] and [[card:Badgermole]] to animate those lands into attackers, and [[card:Bitter Work]] for cards.",
+        "Astra drafted Golgari sacrifice with the same lands theme pointed at a different payoff: [[card:Earthbender Ascension]] and [[card:Cycle of Renewal]] to ramp, [[card:Tolls of War]] making Ally tokens, and [[card:Hei Bai, Spirit of Balance]] plus [[card:The Fire Nation Drill]] as the finishers."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotA": 1,
+        "PilotB": 2
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] takes the play with a smooth green hand and casts [[card:Leaves from the Vine]] on turn one.",
+        "[[player:PilotB|Astra]] leads on a tapped [[card:Kyoshi Village]] to set up [[card:Tolls of War]] next turn."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotA": 3,
+        "PilotB": 4
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] plays a second Forest.",
+        "[[player:PilotB|Astra]] casts [[card:Tolls of War]], its Clue and token engine."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotA": 5,
+        "PilotB": 6
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]]'s Saga hits its second chapter with no creatures on board, so the trigger does nothing. It ramps with [[card:Cycle of Renewal]], sacrificing a tapped Forest to fetch two basics.",
+        "[[player:PilotB|Astra]] casts [[card:Earthbender Ascension]], animates the Village, and fetches a Swamp."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotA": 7,
+        "PilotB": 8
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]]'s third Saga chapter also finds nothing — no creature or Lesson in the graveyard to return. It animates a Mountain into a 4/4 with haste via [[card:Earthbending Lesson]] and attacks into a board whose only creature is tapped.",
+        "[[player:PilotB|Astra]] casts its own [[card:Cycle of Renewal]], sacrificing the animated Village so it returns — which triggers landfall, [[card:Tolls of War]] and the Ascension all at once, and fetches two lands."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotA": 9,
+        "PilotB": 10
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] casts [[card:Bitter Work]] and keeps hitting with the animated Mountain.",
+        "[[player:PilotB|Astra]] is still assembling and takes the damage; it is on 12, Kimi untouched on 20."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotA": 11,
+        "PilotB": 12
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] casts [[card:Earth Kingdom Soldier]], pumping the animated Mountain to 5/5, and attacks again.",
+        "[[player:PilotB|Astra]] finally turns the corner, and does it in one turn. [[card:The Fire Nation Drill]] arrives and immediately kills the Soldier, then Astra attacks with [[card:Hei Bai, Spirit of Balance]] and two Allies, sacrificing a Clue mid-combat to grow Hei Bai to 7/7. Twelve damage: Kimi goes from 16 to 4."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotA": 13,
+        "PilotB": 14
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks with the 5/5 Mountain, kills the blocking [[card:Fire Navy Trebuchet]], and adds [[card:Badgermole]] to animate another land. At 4 life it needs blockers more than attackers, and it has two.",
+        "[[player:PilotB|Astra]] has three. A land drop grows [[card:Hei Bai, Spirit of Balance]] to 8/8 with trample, the Drill is crewed with two 1/1 Allies that could not have attacked anyway, and the attack goes in with more trample damage than Kimi has blockers or life. Kimi dies on turn 14.",
+        "Both decks were built to turn lands into damage, and for six turns Kimi's version was strictly ahead — it had a 5/5 attacking while Astra had nothing. What Astra had instead was a board where every piece fed another: the Clue that grew Hei Bai, the land drop that gave it trample, the tokens that crewed the Drill for free. Kimi's 5/5 was one creature, and Astra's turn 6 killed everything else Kimi had."
+      ]
+    }
+  ]
+}

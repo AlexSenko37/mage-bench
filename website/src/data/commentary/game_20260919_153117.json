@@ -1,0 +1,124 @@
+{
+  "gameId": "game_20260919_153117",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 2 of ten, drafted fresh.",
+        "Astra mulliganed to six here and still won comfortably, which is the short version of the whole game: it spent its turns building one creature into a threat, while Kimi spent its turns answering whatever had just arrived."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted three colours again — white and blue over four Mountains — with [[card:Sokka, Tenacious Tactician|Sokka]] as its best card and [[card:Airbending Lesson]] and [[card:Rowdy Snowballers]] as interaction.",
+        "Astra drafted Izzet around cheap creatures that grow: [[card:Master Pakku]] with prowess, [[card:Katara, Bending Prodigy]], and [[card:War Balloon]], which can be paid up over several turns into a permanent flier."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] takes the play, mulligans a hand with no red mana, and keeps a six with two lands, [[card:Master Pakku]] and filtering, bottoming its most expensive card.",
+        "[[player:PilotA|Kimi K3]] keeps five lands, [[card:Bender's Waterskin]] and [[card:Sokka, Tenacious Tactician|Sokka]], and leads on a tapped land since it has nothing to cast anyway."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Master Pakku]] on curve.",
+        "[[player:PilotA|Kimi K3]] plays a Plains and casts [[card:Curious Farm Animals]]."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] plays a tapped land, filters a duplicate card away to draw two, and attacks with Pakku.",
+        "[[player:PilotA|Kimi K3]] chump-blocks with the Farm Animals and gains 3, going up to 23 — the high-water mark of its game."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] adds [[card:Katara, Bending Prodigy]] and attacks unopposed with Pakku.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Sokka, Tenacious Tactician|Sokka]], using [[card:Bender's Waterskin]] to help pay. He is summoning sick, so nothing attacks."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] deploys [[card:War Balloon]] and keeps attacking with Pakku, which Sokka blocks without either dying.",
+        "[[player:PilotA|Kimi K3]] airbends the Balloon away with [[card:Airbending Lesson]] while Astra is tapped out. The spell triggers Sokka's prowess and makes an Ally token, and a 5/5 menace Sokka gets in for the first real damage of the game. Astra is on 16."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotB": 11,
+        "PilotA": 12
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] simply recasts the airbent [[card:War Balloon]] for two mana and carries on. Exiling it bought a turn, not a card.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Rowdy Snowballers]] and stuns [[card:Katara, Bending Prodigy]] with the enter trigger, keeping Astra's card-draw engine tapped, then attacks into an empty board."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotB": 13,
+        "PilotA": 14
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] spends the whole turn paying fire counters onto [[card:War Balloon]] to make it permanent — attacking with [[card:Jeong Jeong, the Deserter|Jeong Jeong]] partly to generate the red mana to do it — and adds [[card:Boar-q-pine]] as a blocker.",
+        "[[player:PilotA|Kimi K3]] attacks with everything. Astra double-blocks Sokka with the Balloon and Pakku and kills him, while 3 damage gets through. Kimi's best creature is gone and Astra is on 9."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotB": 15,
+        "PilotA": 16
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] plays the turn that ends it. A second [[card:Boar-q-pine]] lands, then it attacks with three, casts [[card:Octopus Form]] on the attacking Katara for extra damage and an untap, and uses [[card:Jeong Jeong, the Deserter|Jeong Jeong]]'s exhaust to copy the spell onto Jeong himself — so both attackers get bigger, hexproof, and untap to block. Twelve power attacking that is also a full defence.",
+        "[[player:PilotA|Kimi K3]] is on 6 with a 2/1 and a 1/1. It attacks anyway; both blockers die for nothing."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": {
+        "PilotB": 17
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] attacks with all five for 14 into two blockers. Kimi dies on turn 17.",
+        "Kimi answered three things — the Balloon, Katara, the attacks — and none of the answers stuck. [[card:Airbending Lesson]] exiled a Balloon that came back for two mana; [[card:Rowdy Snowballers]] stunned a Katara that untapped. Meanwhile Astra's turn-8 double [[card:Octopus Form]] did four jobs at once, and that was the game."
+      ]
+    }
+  ]
+}

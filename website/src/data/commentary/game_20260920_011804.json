@@ -1,0 +1,103 @@
+{
+  "gameId": "game_20260920_011804",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 9 of ten, drafted fresh.",
+        "The most lopsided game of the series. Astra finished on 32 life having gained twelve and grown a single creature to 13/13; Kimi never dealt a point of damage to it after turn 3."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Astra drafted the Ally deck this time: [[card:Earth King's Lieutenant]] and [[card:South Pole Voyager]] with [[card:Invasion Reinforcements]] and [[card:Katara, the Fearless]], who doubles Ally triggers. Every Ally that enters pumps the Lieutenant, gains life and draws.",
+        "Kimi drafted Dimir with [[card:North Pole Patrol]] and [[card:Tiger-Seal]] as defensive pieces and [[card:Deadly Precision]] as its removal — a deck built to trade one-for-one against a deck that does not trade."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotB": 1,
+        "PilotA": 2
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] takes the play, keeps four lands with two strong two-drops, and leads on a tapped [[card:Kyoshi Village]].",
+        "[[player:PilotA|Kimi K3]] reads the tapped green-white land correctly and notes in its own log that Astra is on Allies."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotB": 3,
+        "PilotA": 4
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] spends four attempts trying to cast [[card:Earth King's Lieutenant]], each one cancelled on which colour the Village should produce, and eventually gives up and casts [[card:South Pole Voyager]] instead so the turn is not wasted.",
+        "[[player:PilotA|Kimi K3]] casts [[card:Forecasting Fortune Teller]] as a 1/3 blocker."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotB": 5,
+        "PilotA": 6
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] gets the Lieutenant down on its second try, which immediately pumps the Voyager to 3/3, and attacks. The Fortune Teller blocks and dies.",
+        "[[player:PilotA|Kimi K3]] is already out of blockers."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotB": 7,
+        "PilotA": 8
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:Invasion Reinforcements]], which grows the Lieutenant again, gains life and draws a card, and adds [[card:Airbender Ascension]] — airbending its own creature for value rather than using it as removal.",
+        "[[player:PilotA|Kimi K3]] has no creatures and passes. Astra is on 21 and climbing."
+      ]
+    },
+    {
+      "label": "Turns 5 and 6",
+      "gameTurns": {
+        "PilotB": 9,
+        "PilotA": 10
+      },
+      "paragraphs": [
+        "The Ally engine compounds. [[card:Katara, the Fearless]] arrives to double every Ally trigger, [[card:Airbender Ascension]] starts blinking [[card:Rowdy Snowballers]] at end step to stun Kimi's blockers, and [[card:Earth King's Lieutenant]] grows with each one.",
+        "[[player:PilotA|Kimi K3]] holds at 14 behind [[card:North Pole Patrol]] and [[card:Tiger-Seal]], with no way to attack into a board that gains life faster than it can deal damage. Astra passes 28 life."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotB": 13,
+        "PilotA": 14
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] goes for lethal and clears the way first: [[card:Honest Work]] on [[card:North Pole Patrol]] to strip the tap ability that is holding the game together.",
+        "[[player:PilotA|Kimi K3]] plays the best card of its game in response — it pays the Patrol's waterbend cost to tap the now-13/13 trampling Lieutenant before the aura resolves. The alpha strike still deals 13, but Kimi survives on 1 life instead of dying.",
+        "[[player:PilotB|Astra]] blinks [[card:Rowdy Snowballers]] at end step anyway, with Katara doubling the trigger, stunning two of Kimi's remaining blockers for the following turn."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotB": 15
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] attacks with everything into a board of three blockers. The 13/13 is blocked by a 3/3, tramples ten over, and the rest is academic. Kimi dies on turn 15; Astra finishes on 32.",
+        "There was never a turn where Kimi could have traded profitably. Its deck answers cards one at a time and Astra's deck produces two or three triggers per card — the same Ally engine Kimi itself had won game 1 with, on the other side of the table. The one genuinely excellent play of the game, tapping a 13/13 in response to the aura meant to disable the tapper, bought exactly one turn."
+      ]
+    }
+  ]
+}

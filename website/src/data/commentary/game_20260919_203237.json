@@ -1,0 +1,127 @@
+{
+  "gameId": "game_20260919_203237",
+  "players": {
+    "PilotA": "Kimi K3",
+    "PilotB": "Astra"
+  },
+  "sections": [
+    {
+      "label": "The Models",
+      "paragraphs": [
+        "Kimi K3 on max effort against GPT-6 Astra on low effort. Game 6 of ten, drafted fresh, and the most expensive game of the series at $8.95.",
+        "Kimi was at 20 life on turn 15 of an 18-turn game and lost without ever being at parity afterwards. Astra sat on 6 life from turn 11 onward and won from there."
+      ]
+    },
+    {
+      "label": "Draft",
+      "paragraphs": [
+        "Picks and reasoning are [[view:draft|here]], the final lists [[view:decks|here]].",
+        "Kimi drafted Azorius tempo: [[card:Water Tribe Rallier]], [[card:Earth Kingdom Jailer]] and two [[card:Cat-Owl]] as evasive pressure, with [[card:Airbending Lesson]] as its removal.",
+        "Astra drafted Golgari control around one card: [[card:The Rise of Sozin]], a Saga whose first chapter destroys every creature and whose later chapters exile a card name and then flip into a 5/5. Everything else — [[card:Ostrich-Horse]], [[card:Phoenix Fleet Airship]], [[card:Bumi, Unleashed]] — exists to survive to it."
+      ]
+    }
+  ],
+  "rounds": [
+    {
+      "label": "Turn 1",
+      "gameTurns": {
+        "PilotA": 1,
+        "PilotB": 2
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] takes the play with a hand of three lands, a one-drop and removal.",
+        "[[player:PilotB|Astra]] leads on a tapped dual."
+      ]
+    },
+    {
+      "label": "Turn 2",
+      "gameTurns": {
+        "PilotA": 3,
+        "PilotB": 4
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] casts [[card:Water Tribe Rallier]].",
+        "[[player:PilotB|Astra]] plays another tapped land, curving toward its three-drop."
+      ]
+    },
+    {
+      "label": "Turn 3",
+      "gameTurns": {
+        "PilotA": 5,
+        "PilotB": 6
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks for 2 and adds [[card:Earth Kingdom Jailer]] — whose enter trigger finds nothing, since Astra controls no permanents worth exiling.",
+        "[[player:PilotB|Astra]] casts [[card:Ostrich-Horse]] to find a land, explicitly holding six mana open in future turns for its sweeper."
+      ]
+    },
+    {
+      "label": "Turn 4",
+      "gameTurns": {
+        "PilotA": 7,
+        "PilotB": 8
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks with both; the Jailer trades with the Ostrich-Horse and the Rallier connects. It adds a [[card:Cat-Owl]].",
+        "[[player:PilotB|Astra]] deploys [[card:Phoenix Fleet Airship]] — chosen, by its own note, because a vehicle survives the sweeper it is planning to cast."
+      ]
+    },
+    {
+      "label": "Turn 5",
+      "gameTurns": {
+        "PilotA": 9,
+        "PilotB": 10
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] attacks with the Rallier and a Cat-Owl into an empty board; Astra falls to 11.",
+        "[[player:PilotB|Astra]] casts [[card:Long Feng, Grand Secretariat]] as a crew member, still holding the sweeper."
+      ]
+    },
+    {
+      "label": "Turn 6",
+      "gameTurns": {
+        "PilotA": 11,
+        "PilotB": 12
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] keeps attacking. Astra is on 6 with nothing on board that matters, and Kimi is untouched on 20.",
+        "[[player:PilotB|Astra]] is one card away and finds it."
+      ]
+    },
+    {
+      "label": "Turn 7",
+      "gameTurns": {
+        "PilotA": 13,
+        "PilotB": 14
+      },
+      "paragraphs": [
+        "[[player:PilotB|Astra]] casts [[card:The Rise of Sozin]]. Chapter I destroys every creature on the table — Kimi's Rallier, Jailer and both Cat-Owls, and Astra's own Long Feng. Kimi had committed four creatures to the board; Astra had committed a vehicle that does not die to it.",
+        "[[player:PilotA|Kimi K3]] rebuilds with [[card:Katara, Bending Prodigy]].",
+        "[[player:PilotB|Astra]] uses chapter II to name [[card:Airbending Lesson]] and strip it from Kimi's graveyard and library — removing the one card that could have answered what comes next — then casts [[card:Bumi, Unleashed]] and animates a Mountain."
+      ]
+    },
+    {
+      "label": "Turn 8",
+      "gameTurns": {
+        "PilotA": 15,
+        "PilotB": 16
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] digs with [[card:Waterbending Lesson]] but cannot afford Katara's waterbend, and is holding a hand it has no mana to use.",
+        "[[player:PilotB|Astra]] attacks with [[card:Bumi, Unleashed]] and the animated Mountain for 9 trample, then takes an extra combat phase from Bumi and attacks again. Kimi goes from 20 to 7 in a single turn."
+      ]
+    },
+    {
+      "label": "Turn 9",
+      "gameTurns": {
+        "PilotA": 17,
+        "PilotB": 18
+      },
+      "paragraphs": [
+        "[[player:PilotA|Kimi K3]] digs again, finds exactly the card it needs in [[card:Crashing Wave]], and cannot cast it — every land is tapped. It holds its creatures back as blockers.",
+        "[[player:PilotB|Astra]] exiles [[card:First-Time Flyer]] with [[card:Sold Out]] at instant speed, specifically to remove a blocker while Kimi is tapped out, then attacks with everything. Kimi dies on turn 18.",
+        "The Saga is the whole story. Kimi spent six turns building a board and was rewarded with a 14-point life lead; one card turned that board into nothing, and the same card then exiled Kimi's answer to the follow-up. Committing four creatures into an untapped six-mana opponent was the risk, and Astra's note from turn 4 shows it was playing for exactly that."
+      ]
+    }
+  ]
+}
